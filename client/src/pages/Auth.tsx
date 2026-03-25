@@ -5,6 +5,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "../components/ui/Button";
 import { SorobossFooter } from "../components/promo/SorobossFooter";
+import { MonetizationBottomBar } from "../components/promo/MonetizationBottomBar";
 import { Input } from "../components/ui/Input";
 import { Checkbox } from "../components/ui/Checkbox";
 import { useAuthStore } from "../store/authStore";
@@ -315,6 +316,8 @@ export default function Auth({ initialTab }: Props) {
           <SorobossFooter />
         </div>
       </div>
+
+      <MonetizationBottomBar />
     </div>
   );
 }

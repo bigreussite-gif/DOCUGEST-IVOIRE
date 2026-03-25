@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "../components/ui/Button";
 import { MonetizationTopBar } from "../components/promo/MonetizationTopBar";
+import { MonetizationBottomBar } from "../components/promo/MonetizationBottomBar";
 import { BottomAdZone } from "../components/promo/BottomAdZone";
 import { SorobossFooter } from "../components/promo/SorobossFooter";
 
@@ -140,6 +141,8 @@ export default function Landing() {
       </div>
 
       <BottomAdZone />
+
+      <MonetizationBottomBar />
 
       <div className="border-t border-slate-100 bg-bg px-4 py-8">
         <SorobossFooter />

@@ -5,6 +5,7 @@ import { Button } from "../components/ui/Button";
 import { apiFetch } from "../lib/api";
 import { formatFCFA } from "../utils/formatters";
 import { MonetizationTopBar } from "../components/promo/MonetizationTopBar";
+import { MonetizationBottomBar } from "../components/promo/MonetizationBottomBar";
 import { InlineAdStrip } from "../components/promo/InlineAdStrip";
 import { SorobossFooter } from "../components/promo/SorobossFooter";
 
@@ -261,6 +262,7 @@ export default function Dashboard() {
           </Routes>
         </main>
       </div>
+      <MonetizationBottomBar />
     </div>
   );
 }
