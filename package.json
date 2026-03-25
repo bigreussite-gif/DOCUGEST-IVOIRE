@@ -10,6 +10,8 @@
   },
   "devDependencies": {
     "@insforge/cli": "^0.1.31",
-    "concurrently": "^9.1.2"
+    "@vercel/node": "^5.0.0",
+    "concurrently": "^9.1.2",
+    "typescript": "~5.9.3"
   }
 }
