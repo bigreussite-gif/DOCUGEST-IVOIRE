@@ -15,3 +15,4 @@ dist/
 
 # Données de dev locales (JSON)
 server/local-inforge-dev/
+.vercel
