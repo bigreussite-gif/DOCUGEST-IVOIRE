@@ -19,17 +19,28 @@ export async function apiFetch<T>(path: string, init?: RequestInit & { json?: un
     body: init?.json !== undefined ? JSON.stringify(init.json) : init?.body
   });
 
+  const raw = await res.text();
+
   if (!res.ok) {
-    let payload: ApiError | undefined;
+    let payload: ApiError;
     try {
-      payload = await res.json();
+      const parsed = raw ? (JSON.parse(raw) as unknown) : null;
+      if (parsed && typeof parsed === "object" && parsed !== null && "message" in parsed) {
+        payload = parsed as ApiError;
+      } else {
+        payload = { message: raw || `Erreur ${res.status}` };
+      }
     } catch {
-      payload = { message: await res.text() };
+      payload = { message: raw || `Erreur ${res.status}` };
     }
-    throw payload ?? { message: "Erreur API inconnue" };
+    throw payload;
   }
 
-  if (res.status === 204) return undefined as T;
-  return (await res.json()) as T;
+  if (res.status === 204 || raw === "") return undefined as T;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    throw { message: "Réponse serveur invalide" } satisfies ApiError;
+  }
 }
 
