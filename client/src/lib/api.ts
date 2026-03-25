@@ -5,6 +5,12 @@ export type ApiError = {
   details?: unknown;
 };
 
+/** Lecture unique du corps (évite « body stream already read » si .json() puis .text()). */
+async function readBodyAsText(res: Response): Promise<string> {
+  const buf = await res.arrayBuffer();
+  return new TextDecoder("utf-8").decode(buf);
+}
+
 export async function apiFetch<T>(path: string, init?: RequestInit & { json?: unknown }) {
   const token = localStorage.getItem("docugest_token");
 
@@ -19,7 +25,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit & { json?: un
     body: init?.json !== undefined ? JSON.stringify(init.json) : init?.body
   });
 
-  const raw = await res.text();
+  const raw = await readBodyAsText(res);
 
   if (!res.ok) {
     let payload: ApiError;

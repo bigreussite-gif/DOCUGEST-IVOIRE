@@ -6,8 +6,13 @@ function apiErrorMessage(e: unknown): string {
     const m = (e as ApiError).message;
     if (typeof m === "string" && m.trim().length > 0) return m;
   }
-  if (e instanceof TypeError && e.message === "Failed to fetch") {
-    return "Impossible de joindre le serveur. Vérifiez que l’API est démarrée (port 4000).";
+  if (e instanceof TypeError) {
+    if (e.message === "Failed to fetch") {
+      return "Impossible de joindre le serveur. Vérifiez que l’API est démarrée (port 4000).";
+    }
+    if (e.message.includes("body stream already read") || e.message.includes("already read")) {
+      return "Erreur réseau. Rechargez la page et réessayez.";
+    }
   }
   if (e instanceof Error && e.message) return e.message;
   return "Une erreur est survenue. Réessayez.";
