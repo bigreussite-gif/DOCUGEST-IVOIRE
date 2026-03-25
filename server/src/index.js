@@ -1,0 +1,42 @@
+require("dotenv").config();
+
+const express = require("express");
+const cors = require("cors");
+const cookieParser = require("cookie-parser");
+const rateLimit = require("express-rate-limit");
+
+const { authRouter } = require("./routes/auth");
+const { documentsRouter } = require("./routes/documents");
+
+const app = express();
+
+const port = Number(process.env.PORT || 4000);
+const clientOrigin = process.env.CLIENT_ORIGIN || "http://localhost:5173";
+
+app.use(
+  cors({
+    origin: clientOrigin,
+    credentials: true
+  })
+);
+app.use(cookieParser());
+app.use(express.json({ limit: "2mb" }));
+
+// Rate limiting spécifique aux endpoints d'auth
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+app.get("/health", (_req, res) => res.json({ ok: true }));
+
+app.use("/api/auth", authLimiter, authRouter);
+app.use("/api/documents", documentsRouter);
+
+app.listen(port, () => {
+  // eslint-disable-next-line no-console
+  console.log(`DocuGest API listening on http://localhost:${port}`);
+});
+

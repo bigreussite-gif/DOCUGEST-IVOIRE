@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Secrets & env
+.env
+.env.*
+!.env.example
+
+# Build
+dist/
+*.tsbuildinfo
+
+# OS
+.DS_Store
+
+# Données de dev locales (JSON)
+server/local-inforge-dev/

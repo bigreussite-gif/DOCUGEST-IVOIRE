@@ -1,0 +1,14 @@
+{
+  "name": "docugest-ivoire",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n api,web -c cyan,magenta \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "dev:plain": "concurrently -n api,web -c cyan,magenta \"npm run dev:plain --prefix server\" \"npm run dev --prefix client\"",
+    "dev:client": "npm run dev --prefix client",
+    "dev:server": "npm run dev --prefix server"
+  },
+  "devDependencies": {
+    "@insforge/cli": "^0.1.31",
+    "concurrently": "^9.1.2"
+  }
+}
