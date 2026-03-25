@@ -2,6 +2,7 @@
   "name": "docugest-ivoire",
   "private": true,
   "scripts": {
+    "build": "npm run build --prefix client",
     "dev": "concurrently -n api,web -c cyan,magenta \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
     "dev:plain": "concurrently -n api,web -c cyan,magenta \"npm run dev:plain --prefix server\" \"npm run dev --prefix client\"",
     "dev:client": "npm run dev --prefix client",
