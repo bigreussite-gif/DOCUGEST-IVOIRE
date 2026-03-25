@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 
@@ -14,6 +14,8 @@ import { computeInvoiceTotals } from "../../utils/calculations";
 import { DEFAULT_VAT_RATE_PCT, VAT_RATE_PRESETS } from "../../constants/taxes";
 import { formatDateCI, formatFCFA, clampMoney } from "../../utils/formatters";
 import InvoicePreview from "./InvoicePreview";
+import { apiFetch } from "../../lib/api";
+import { InlineAdStrip } from "../../components/promo/InlineAdStrip";
 
 type DocType = "invoice" | "proforma" | "devis";
 
@@ -82,6 +84,7 @@ function docPrefix(docType: DocType) {
 export default function InvoiceEditor() {
   const navigate = useNavigate();
   const params = useParams();
+  const [searchParams] = useSearchParams();
   const auth = useAuthStore();
   const [saving, setSaving] = useState(false);
   const [pdfDownloading, setPdfDownloading] = useState(false);
@@ -90,9 +93,13 @@ export default function InvoiceEditor() {
 
   const defaultValues: EditorValues = useMemo(() => {
     const year = new Date().getFullYear();
+    const t = searchParams.get("type");
+    const docType: DocType =
+      t === "devis" ? "devis" : t === "proforma" ? "proforma" : t === "invoice" ? "invoice" : "invoice";
+    const pref = docPrefix(docType);
     return {
-      docType: "invoice",
-      docNumber: `FAC-${year}-001`,
+      docType,
+      docNumber: `${pref}-${year}-001`,
       emissionDate: todayISO(),
       dueDateMode: "net30",
       dueDateManual: "",
@@ -113,7 +120,7 @@ export default function InvoiceEditor() {
       conditions: "Paiement à 30 jours",
       footerNote: "Merci pour votre confiance."
     };
-  }, [auth.user]);
+  }, [auth.user, searchParams]);
 
   const form = useForm<EditorValues>({
     resolver: zodResolver(editorSchema) as any,
@@ -146,8 +153,74 @@ export default function InvoiceEditor() {
   }, [watched.docType]);
 
   useEffect(() => {
+    if (!auth.user || params.id) return;
+    const v = form.getValues();
+    if (!v.senderCompanyName) form.setValue("senderCompanyName", auth.user.company_name || "");
+    if (!v.senderAddress) form.setValue("senderAddress", auth.user.company_address || "");
+    if (!v.senderPhone) form.setValue("senderPhone", auth.user.phone || "");
+    if (!v.senderEmail) form.setValue("senderEmail", auth.user.email || "");
+  }, [auth.user, params.id, form]);
+
+  useEffect(() => {
     if (!params.id) return;
-    // Pour l'instant, V1: pas de rechargement automatique du document.
+    let cancelled = false;
+    (async () => {
+      try {
+        const doc = await apiFetch<{
+          type: string;
+          doc_number: string;
+          doc_data: Record<string, unknown>;
+        }>(`/api/documents/${params.id}`);
+        if (cancelled || !doc?.doc_data) return;
+        const d = doc.doc_data as {
+          sender?: { companyName?: string; address?: string; phone?: string; email?: string };
+          client?: { name?: string; address?: string; phone?: string; email?: string };
+          docNumber?: string;
+          emissionDate?: string;
+          dueDateMode?: EditorValues["dueDateMode"];
+          dueDateManual?: string;
+          fiscalRegime?: EditorValues["fiscalRegime"];
+          lines?: EditorValues["lines"];
+          globalDiscountPct?: number;
+          vatRatePct?: number;
+          conditions?: string;
+          footerNote?: string;
+        };
+        const dt: DocType =
+          doc.type === "devis" ? "devis" : doc.type === "proforma" ? "proforma" : "invoice";
+        form.reset({
+          ...form.getValues(),
+          docType: dt,
+          docNumber: doc.doc_number || form.getValues("docNumber"),
+          senderCompanyName: d.sender?.companyName ?? "",
+          senderAddress: d.sender?.address ?? "",
+          senderPhone: d.sender?.phone ?? "",
+          senderEmail: d.sender?.email ?? "",
+          clientName: d.client?.name ?? "",
+          clientAddress: d.client?.address ?? "",
+          clientPhone: d.client?.phone ?? "",
+          clientEmail: d.client?.email ?? "",
+          emissionDate: d.emissionDate || todayISO(),
+          dueDateMode: d.dueDateMode ?? "net30",
+          dueDateManual: d.dueDateManual ?? "",
+          fiscalRegime: d.fiscalRegime ?? "informal",
+          lines:
+            Array.isArray(d.lines) && d.lines.length > 0
+              ? (d.lines as EditorValues["lines"])
+              : [{ description: "", quantity: 1, unit: "Forfait", unitPriceHT: 0, discountPct: 0 }],
+          globalDiscountPct: Number(d.globalDiscountPct ?? 0),
+          vatRatePct: Number(d.vatRatePct ?? DEFAULT_VAT_RATE_PCT),
+          conditions: d.conditions ?? "Paiement à 30 jours",
+          footerNote: d.footerNote ?? "Merci pour votre confiance."
+        });
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- chargement one-shot à l’ouverture
   }, [params.id]);
 
   const computedTotals = useMemo(() => {
@@ -157,32 +230,6 @@ export default function InvoiceEditor() {
       globalDiscountPct: previewValues.globalDiscountPct,
       vatRatePct: previewValues.vatRatePct
     });
-  }, [previewValues]);
-
-  const docDataForApi = useMemo(() => {
-    return {
-      sender: {
-        companyName: previewValues.senderCompanyName,
-        address: previewValues.senderAddress,
-        phone: previewValues.senderPhone,
-        email: previewValues.senderEmail
-      },
-      client: {
-        name: previewValues.clientName,
-        address: previewValues.clientAddress,
-        phone: previewValues.clientPhone,
-        email: previewValues.clientEmail
-      },
-      docNumber: previewValues.docNumber,
-      emissionDate: previewValues.emissionDate,
-      dueDateText: dueDateText(previewValues),
-      fiscalRegime: previewValues.fiscalRegime,
-      lines: previewValues.lines,
-      globalDiscountPct: previewValues.globalDiscountPct,
-      vatRatePct: previewValues.vatRatePct,
-      conditions: previewValues.conditions,
-      footerNote: previewValues.footerNote
-    };
   }, [previewValues]);
 
   const onReset = () => {
@@ -207,34 +254,63 @@ export default function InvoiceEditor() {
   }
 
   async function onSave() {
+    const values = form.getValues();
     setSaving(true);
     try {
-      const tokenDocNumber = previewValues.docNumber;
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || "http://localhost:4000"}/api/documents`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: localStorage.getItem("docugest_token") ? `Bearer ${localStorage.getItem("docugest_token")}` : ""
-        },
-        body: JSON.stringify({
-          type: previewValues.docType,
-          doc_number: tokenDocNumber,
-          client_name: previewValues.clientName,
-          total_amount: clampMoney(computedTotals.totalTTC),
-          currency: "FCFA",
-          status: "draft",
-          doc_data: docDataForApi
-        })
+      const totals = computeInvoiceTotals({
+        lines: values.lines,
+        fiscalRegime: values.fiscalRegime,
+        globalDiscountPct: values.globalDiscountPct,
+        vatRatePct: values.vatRatePct
       });
+      const doc_data = {
+        sender: {
+          companyName: values.senderCompanyName,
+          address: values.senderAddress,
+          phone: values.senderPhone,
+          email: values.senderEmail
+        },
+        client: {
+          name: values.clientName,
+          address: values.clientAddress,
+          phone: values.clientPhone,
+          email: values.clientEmail
+        },
+        docNumber: values.docNumber,
+        emissionDate: values.emissionDate,
+        dueDateText: dueDateText(values),
+        dueDateMode: values.dueDateMode,
+        dueDateManual: values.dueDateManual,
+        fiscalRegime: values.fiscalRegime,
+        lines: values.lines,
+        globalDiscountPct: values.globalDiscountPct,
+        vatRatePct: values.vatRatePct,
+        conditions: values.conditions,
+        footerNote: values.footerNote
+      };
+      const payload = {
+        type: values.docType,
+        doc_number: values.docNumber,
+        client_name: values.clientName,
+        total_amount: clampMoney(totals.totalTTC),
+        currency: "FCFA",
+        status: "draft" as const,
+        doc_data
+      };
 
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        throw new Error(payload.message || "Erreur sauvegarde");
+      if (params.id) {
+        await apiFetch(`/api/documents/${params.id}`, {
+          method: "PUT",
+          json: payload
+        });
+        navigate(`/dashboard/invoice/${params.id}`);
+      } else {
+        const created = await apiFetch<{ id: string }>("/api/documents", {
+          method: "POST",
+          json: payload
+        });
+        navigate(`/dashboard/invoice/${created.id}`);
       }
-
-      const created = await res.json();
-      // On redirige vers une URL d'édition (V1: sans chargement du contenu)
-      navigate(`/dashboard/invoice/${created.id}`);
     } catch (e) {
       // eslint-disable-next-line no-console
       console.error(e);
@@ -258,6 +334,9 @@ export default function InvoiceEditor() {
 
   return (
     <div className="p-6">
+      <div className="mb-4">
+        <InlineAdStrip variant="compact" />
+      </div>
       <div className="rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
@@ -286,7 +365,7 @@ export default function InvoiceEditor() {
             <Button variant="ghost" onClick={onReset} disabled={saving}>
               Réinitialiser
             </Button>
-            <Button onClick={onSave} disabled={saving}>
+            <Button onClick={form.handleSubmit(onSave)} disabled={saving}>
               {saving ? "Sauvegarde..." : "Sauvegarder"}
             </Button>
           </div>
@@ -306,9 +385,8 @@ export default function InvoiceEditor() {
                 <div className="mt-3">
                   <Textarea label="Adresse complète" rows={3} {...form.register("senderAddress")} />
                 </div>
-                <div className="mt-3 grid gap-4 md:grid-cols-2">
-                  <Input label="Email" {...form.register("senderEmail")} />
-                  <Input label="N/A" value="" disabled />
+                <div className="mt-3">
+                  <Input label="Email" type="email" {...form.register("senderEmail")} />
                 </div>
               </div>
 

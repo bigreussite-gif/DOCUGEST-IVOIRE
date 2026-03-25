@@ -51,6 +51,41 @@ router.get("/", async (req, res) => {
   return res.json({ items: list.items ?? [], page, limit, total: list.total });
 });
 
+// PUT /api/documents/:id
+router.put("/:id", async (req, res) => {
+  const schema = z.object({
+    type: z.enum(["invoice", "proforma", "devis", "payslip"]),
+    doc_number: z.string().min(1),
+    client_name: z.string().min(1),
+    total_amount: z.number().finite(),
+    currency: z.string().min(1).default("FCFA"),
+    status: z.enum(["draft", "sent", "paid", "cancelled"]).optional().default("draft"),
+    doc_data: z.record(z.any())
+  });
+
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ message: "Champs invalides", details: parsed.error.flatten() });
+
+  const userId = req.auth.sub;
+  try {
+    const updated = await store.updateDocument({
+      userId,
+      id: req.params.id,
+      type: parsed.data.type,
+      doc_number: parsed.data.doc_number,
+      client_name: parsed.data.client_name,
+      total_amount: parsed.data.total_amount,
+      currency: parsed.data.currency,
+      status: parsed.data.status,
+      doc_data: parsed.data.doc_data
+    });
+    if (!updated) return res.status(404).json({ message: "Document introuvable" });
+    return res.json(updated);
+  } catch (e) {
+    return res.status(500).json({ message: "Erreur mise à jour", details: e?.message });
+  }
+});
+
 // GET /api/documents/:id
 router.get("/:id", async (req, res) => {
   const userId = req.auth.sub;

@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { useAuthStore } from "../store/authStore";
+import { SorobossFooter } from "../components/promo/SorobossFooter";
 
 const schema = z.object({
   newPassword: z.string().min(8, "Min. 8 caractères")
@@ -70,6 +71,9 @@ export default function ResetPassword() {
               </Button>
             </form>
           )}
+        </div>
+        <div className="mt-8">
+          <SorobossFooter />
         </div>
       </div>
     </div>

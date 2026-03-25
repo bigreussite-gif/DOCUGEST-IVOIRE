@@ -137,6 +137,24 @@ async function createDocument(doc) {
   return mapDoc(rows[0]);
 }
 
+async function updateDocument({ userId, id, type, doc_number, client_name, total_amount, currency, status, doc_data }) {
+  const { rows } = await pool.query(
+    `UPDATE public.documents SET
+      type = $3,
+      doc_number = $4,
+      client_name = $5,
+      total_amount = $6,
+      currency = $7,
+      status = $8,
+      doc_data = $9::jsonb,
+      updated_at = NOW()
+    WHERE user_id = $1 AND id = $2
+    RETURNING *`,
+    [userId, id, type, doc_number, client_name, total_amount, currency ?? "FCFA", status ?? "draft", doc_data]
+  );
+  return mapDoc(rows[0] ?? null);
+}
+
 async function listDocuments({ userId, type, page, limit }) {
   const offset = (page - 1) * limit;
   const typeFilter = type || null;
@@ -184,6 +202,7 @@ module.exports = {
   updatePassword,
   touchLastLogin,
   createDocument,
+  updateDocument,
   listDocuments,
   getDocumentById,
   deleteDocumentById,

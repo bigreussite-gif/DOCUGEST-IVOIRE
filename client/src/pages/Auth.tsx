@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "../components/ui/Button";
+import { SorobossFooter } from "../components/promo/SorobossFooter";
 import { Input } from "../components/ui/Input";
 import { Checkbox } from "../components/ui/Checkbox";
 import { useAuthStore } from "../store/authStore";
@@ -308,7 +309,10 @@ export default function Auth({ initialTab }: Props) {
         </div>
 
         <div className="mt-6 text-center text-xs text-slate-600">
-          Version V1 : application gratuite financée par la publicité.
+          Application gratuite financée par la publicité — pensée pour les entrepreneurs d’Afrique francophone.
+        </div>
+        <div className="mt-8 border-t border-border/60 pt-6">
+          <SorobossFooter />
         </div>
       </div>
     </div>

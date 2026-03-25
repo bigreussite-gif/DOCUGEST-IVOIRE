@@ -164,6 +164,25 @@ async function createDocument(doc) {
   return row;
 }
 
+async function updateDocument({ userId, id, type, doc_number, client_name, total_amount, currency, status, doc_data }) {
+  const docs = await loadDocuments();
+  const idx = docs.findIndex((d) => d.user_id === userId && d.id === id);
+  if (idx < 0) return null;
+  docs[idx] = {
+    ...docs[idx],
+    type,
+    doc_number,
+    client_name,
+    total_amount,
+    currency: currency ?? "FCFA",
+    status: status ?? "draft",
+    doc_data,
+    updated_at: new Date().toISOString()
+  };
+  await saveDocuments(docs);
+  return docs[idx];
+}
+
 async function listDocuments({ userId, type, page, limit }) {
   const docs = await loadDocuments();
   let filtered = docs.filter((d) => d.user_id === userId);
@@ -200,6 +219,7 @@ module.exports = {
   updatePassword,
   touchLastLogin,
   createDocument,
+  updateDocument,
   listDocuments,
   getDocumentById,
   deleteDocumentById,
