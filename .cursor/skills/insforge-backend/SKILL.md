@@ -28,6 +28,12 @@ description: >-
 | Logique applicative (auth, CRUD, storage) | SDK `@insforge/sdk` dans le code (pas le MCP) |
 | Tâches infra / terminal | **InsForge CLI** (voir ci-dessous) |
 
+## Base PostgreSQL (MCP + API Express)
+
+- Schéma appliqué via MCP `run-raw-sql` : tables `public.users`, `public.documents` (voir `supabase/migrations/001_docugest_core.sql`).
+- L’API Express utilise **`pg`** si `DATABASE_URL` / `INSFORGE_DATABASE_URL` est défini (`server/src/lib/pgStore.js`), sinon JSON local.
+- Copier la **chaîne de connexion Postgres** depuis le dashboard InsForge dans `server/.env` (souvent SSL : `PGSSL=1`).
+
 ## InsForge CLI (tâches backend)
 
 Toujours exécuter depuis la racine du repo **`docugest-ivoire`** :

@@ -2,7 +2,7 @@ const express = require("express");
 const { z } = require("zod");
 
 const { requireAuth } = require("../middleware/auth");
-const store = require("../lib/inforgeDevStore");
+const store = require("../lib/store");
 
 const router = express.Router();
 router.use(requireAuth);

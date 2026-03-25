@@ -5,7 +5,7 @@ const { z } = require("zod");
 
 const { requireAuth } = require("../middleware/auth");
 const { sendMail } = require("../lib/mailer");
-const store = require("../lib/inforgeDevStore");
+const store = require("../lib/store");
 
 const router = express.Router();
 

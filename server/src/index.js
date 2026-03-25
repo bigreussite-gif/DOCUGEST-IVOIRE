@@ -1,5 +1,9 @@
 require("dotenv").config();
 
+const usePg = Boolean(
+  process.env.DATABASE_URL || process.env.INSFORGE_DATABASE_URL || process.env.POSTGRES_URL
+);
+
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
@@ -38,5 +42,7 @@ app.use("/api/documents", documentsRouter);
 app.listen(port, () => {
   // eslint-disable-next-line no-console
   console.log(`DocuGest API listening on http://localhost:${port}`);
+  // eslint-disable-next-line no-console
+  console.log(`Stockage: ${usePg ? "PostgreSQL (InsForge)" : "JSON local (local-inforge-dev)"}`);
 });
 
