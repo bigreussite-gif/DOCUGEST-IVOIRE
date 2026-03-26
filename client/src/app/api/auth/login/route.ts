@@ -54,17 +54,31 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Identifiant ou mot de passe incorrect" }, { status: 401 });
     }
 
-    await store.touchLastLogin(userRow.id);
-    await store.ensureBootstrapAdmin(userRow.id);
+    try {
+      await store.touchLastLogin(userRow.id);
+    } catch (e) {
+      console.warn("[api/auth/login] touchLastLogin ignoré", e);
+    }
+    try {
+      await store.ensureBootstrapAdmin(userRow.id);
+    } catch (e) {
+      console.warn("[api/auth/login] ensureBootstrapAdmin ignoré", e);
+    }
     const me = await store.getMe(userRow.id);
     if (!me) {
       return NextResponse.json({ message: "Erreur profil" }, { status: 500 });
     }
-    const token = signSessionToken({
-      userId: userRow.id,
-      rememberMe,
-      role: String(me.role ?? "user")
-    });
+    let token = "";
+    try {
+      token = signSessionToken({
+        userId: userRow.id,
+        rememberMe,
+        role: String(me.role ?? "user")
+      });
+    } catch (e) {
+      console.error("[api/auth/login] signature JWT impossible", e);
+      return NextResponse.json({ message: "Configuration auth incomplète (JWT_SECRET)." }, { status: 503 });
+    }
     console.log("[api/auth/login] succès", userRow.id);
     return NextResponse.json({ token, user: me });
   } catch (e) {
