@@ -33,16 +33,19 @@ async function ensureBootstrapAdmin(pool: ReturnType<typeof getPool>, userId: st
 }
 
 export async function POST(req: Request) {
+  console.log("[api/auth/register] POST — début");
   try {
     let json: unknown;
     try {
       json = await req.json();
     } catch {
+      console.log("[api/auth/register] corps JSON invalide");
       return NextResponse.json({ message: "Corps JSON invalide" }, { status: 400 });
     }
 
     const parsed = bodySchema.safeParse(json);
     if (!parsed.success) {
+      console.log("[api/auth/register] validation Zod", parsed.error.flatten());
       return NextResponse.json(
         { message: "Champs invalides", details: parsed.error.flatten() },
         { status: 400 }
@@ -50,10 +53,12 @@ export async function POST(req: Request) {
     }
 
     const { name, email, password } = parsed.data;
+    console.log("[api/auth/register] email candidat", email);
     const pool = getPool();
 
     const taken = await pool.query(`SELECT 1 FROM public.users WHERE lower(email) = lower($1) LIMIT 1`, [email]);
     if (taken.rows.length > 0) {
+      console.log("[api/auth/register] email déjà pris");
       return NextResponse.json({ message: "Email déjà utilisé" }, { status: 409 });
     }
 
@@ -86,6 +91,7 @@ export async function POST(req: Request) {
     const me = toPublicUser(dbUser);
     const token = signSessionToken({ userId: me.id, role: String(me.role ?? "user"), rememberMe: true });
 
+    console.log("[api/auth/register] succès user id=", me.id);
     return NextResponse.json({ token, user: me }, { status: 200 });
   } catch (e) {
     console.error("[register]", e);

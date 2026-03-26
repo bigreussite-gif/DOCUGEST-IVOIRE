@@ -11,6 +11,15 @@ export async function hashPassword(plain: string): Promise<string> {
   return bcrypt.hash(plain, SALT_ROUNDS);
 }
 
+/** Token de réinitialisation mot de passe (1h, purpose: reset) */
+export function signPasswordResetToken(userId: string): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("JWT_SECRET manquant dans l’environnement.");
+  }
+  return jwt.sign({ sub: userId, purpose: "reset" }, secret, { expiresIn: "1h" });
+}
+
 /** Même convention que l’API Express historique : { sub, role } */
 export function signSessionToken(params: { userId: string; role: string; rememberMe?: boolean }): string {
   const secret = process.env.JWT_SECRET;

@@ -14,13 +14,16 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setSuccess(false);
     setLoading(true);
     try {
+      console.log("[register] envoi POST /api/auth/register");
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -30,9 +33,13 @@ export default function RegisterPage() {
       const data = (await res.json().catch(() => ({}))) as { message?: string; token?: string; user?: unknown };
 
       if (!res.ok) {
+        console.log("[register] erreur HTTP", res.status, data);
         setError(typeof data.message === "string" ? data.message : "Inscription impossible");
         return;
       }
+
+      console.log("[register] succès, redirection dashboard");
+      setSuccess(true);
 
       if (data.token && typeof window !== "undefined") {
         localStorage.setItem("docugest_token", data.token);
@@ -105,6 +112,12 @@ export default function RegisterPage() {
             />
             <p className="mt-1 text-xs text-slate-500">Au moins 8 caractères.</p>
           </div>
+
+          {success ? (
+            <p className="rounded-lg bg-emerald-500/10 px-3 py-2 text-sm text-emerald-800 dark:text-emerald-200" role="status">
+              Compte créé. Redirection…
+            </p>
+          ) : null}
 
           {error ? (
             <p className="rounded-lg bg-error/10 px-3 py-2 text-sm text-error" role="alert">

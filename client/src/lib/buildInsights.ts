@@ -1,0 +1,100 @@
+/**
+ * Synthèses locales à partir des agrégats analytics (sans LLM externe).
+ */
+export type AnalyticsSnapshot = Record<string, unknown>;
+
+function findPeak(hourMap: unknown): number | null {
+  if (!hourMap || typeof hourMap !== "object") return null;
+  const o = hourMap as Record<string, number>;
+  let bestH: number | null = null;
+  let bestN = -1;
+  for (let h = 0; h < 24; h++) {
+    const n = Number(o[h] ?? o[String(h)] ?? 0);
+    if (n > bestN) {
+      bestN = n;
+      bestH = h;
+    }
+  }
+  return bestN > 0 ? bestH : null;
+}
+
+function findPeakDow(dowMap: unknown): number | null {
+  if (!dowMap || typeof dowMap !== "object") return null;
+  const o = dowMap as Record<string, number>;
+  let bestD: number | null = null;
+  let bestN = -1;
+  for (let d = 0; d < 7; d++) {
+    const n = Number(o[d] ?? o[String(d)] ?? 0);
+    if (n > bestN) {
+      bestN = n;
+      bestD = d;
+    }
+  }
+  return bestN > 0 ? bestD : null;
+}
+
+export function buildInsights(snapshot: AnalyticsSnapshot) {
+  const lines: string[] = [];
+  const recos: string[] = [];
+
+  const byType = (snapshot.documentsByType as Record<string, number>) || {};
+  const inv = byType.invoice || 0;
+  const prof = (byType.proforma || 0) + (byType.devis || 0);
+  const pay = byType.payslip || 0;
+  const total = inv + prof + pay || 1;
+
+  lines.push(
+    `Volume documents : factures ${Math.round((inv / total) * 100)} %, proformas/devis ${Math.round((prof / total) * 100)} %, bulletins ${Math.round((pay / total) * 100)} %.`
+  );
+
+  const peakHour = findPeak(snapshot.documentsByHour);
+  if (peakHour != null) {
+    lines.push(`Pic d’activité documentaire autour de ${peakHour}h (heure serveur UTC).`);
+    recos.push(
+      `Les utilisateurs semblent plus actifs vers ${peakHour}h–${peakHour + 2}h : tester des campagnes ou créneaux de communication sur cette plage.`
+    );
+  }
+
+  const peakDow = findPeakDow(snapshot.documentsByWeekday);
+  if (peakDow != null) {
+    const days = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+    lines.push(`Jour le plus chargé : ${days[peakDow]}.`);
+  }
+
+  const mau = (snapshot.monthlyActiveUsers as number) ?? 0;
+  const ucount = (snapshot.userCount as number) ?? 0;
+  if (ucount > 0) {
+    lines.push(`Utilisateurs actifs (30j) : ${mau} sur ${ucount} comptes enregistrés.`);
+    if (mau / ucount < 0.2) {
+      recos.push(
+        "Faible ratio d’activité récente : envisager relance email, tutoriels ou offre d’accompagnement pour réactiver les comptes dormants."
+      );
+    }
+  }
+
+  const ads = (snapshot.adSummary as { views?: number; clicks?: number; ctrPct?: number }) || {};
+  const ctr = ads.ctrPct ?? 0;
+  if ((ads.views || 0) > 0) {
+    lines.push(`Publicités : ${ads.views} vues, ${ads.clicks} clics (CTR ≈ ${ctr} %).`);
+    if (ctr < 0.5 && (ads.views || 0) > 100) {
+      recos.push("CTR sous 0,5 % : revoir le placement, le libellé ou le visuel des emplacements peu performants.");
+    }
+  }
+
+  const demographics = (snapshot.demographics as { gender?: Record<string, number> }) ?? {};
+  const demo = demographics.gender ?? {};
+  if (Object.keys(demo).length > 0) {
+    lines.push("Répartition démographique (genre renseigné) disponible pour cibler des partenariats.");
+  }
+
+  recos.push(
+    "Pour la prospection partenaires : mettre en avant le volume de documents générés et le créneau d’activité dominante dans un one-pager PDF."
+  );
+
+  return {
+    summary: lines.join(" "),
+    recommendations: recos,
+    generatedAt: new Date().toISOString(),
+    model: "docugest-heuristics-v1"
+  };
+}
