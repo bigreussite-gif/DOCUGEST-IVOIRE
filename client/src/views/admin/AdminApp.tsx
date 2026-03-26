@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 import { AdminApiError, adminFetch, type AdminSession } from "../../lib/adminApi";
 import { AdminLayout } from "./AdminLayout";
 import { AdminDashboard } from "./AdminDashboard";
@@ -27,6 +27,12 @@ export default function AdminApp() {
     };
   }, []);
 
+  useEffect(() => {
+    if (session !== null) return;
+    // Redirection hard vers la page Next.js de connexion moderne.
+    window.location.replace("/login");
+  }, [session]);
+
   if (session === "loading") {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-600">
@@ -51,7 +57,11 @@ export default function AdminApp() {
   }
 
   if (!session) {
-    return <Navigate to="/login" replace />;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-600">
+        Redirection vers la connexion…
+      </div>
+    );
   }
 
   return (

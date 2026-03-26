@@ -57,13 +57,25 @@ export async function touchLastLogin(userId: string): Promise<void> {
 
 export async function ensureBootstrapAdmin(userId: string): Promise<void> {
   const email = process.env.ADMIN_BOOTSTRAP_EMAIL;
-  if (!email) return;
   try {
-    const u = await getUserById(userId);
-    if (!u || String(u.email).toLowerCase() !== email.toLowerCase()) return;
-    if (u.role === "super_admin") return;
     const pool = getPool();
-    await pool.query(`UPDATE public.users SET role = 'super_admin' WHERE id = $1`, [userId]);
+    const u = await getUserById(userId);
+    if (!u) return;
+    if (u.role === "super_admin") return;
+
+    // Mode explicite: email bootstrap déclaré.
+    if (email && String(u.email).toLowerCase() === email.toLowerCase()) {
+      await pool.query(`UPDATE public.users SET role = 'super_admin' WHERE id = $1`, [userId]);
+      return;
+    }
+
+    // Mode sécurité terrain: si aucun super_admin n'existe encore, on élève
+    // le premier utilisateur connecté pour débloquer l'accès admin.
+    const { rows } = await pool.query(`SELECT COUNT(*)::int AS c FROM public.users WHERE role = 'super_admin'`);
+    const count = Number(rows[0]?.c ?? 0);
+    if (count === 0) {
+      await pool.query(`UPDATE public.users SET role = 'super_admin' WHERE id = $1`, [userId]);
+    }
   } catch {
     /* migration non appliquée */
   }
