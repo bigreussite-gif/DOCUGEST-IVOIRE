@@ -2,7 +2,7 @@
  * Accès données Postgres (Insforge) pour les Route Handlers Next.js.
  * Logique alignée sur server/lib/pgStore.js (sans Express).
  */
-import { getPool } from "@/lib/db";
+import { getPool, resetPool } from "@/lib/db";
 import type { PublicUser, UserRow } from "@/models/User";
 
 function iso(d: unknown): string | null {
@@ -33,9 +33,30 @@ export function pickUser(row: UserRow | null): PublicUser | null {
   };
 }
 
+function isTransientPgConnectionError(e: unknown): boolean {
+  const msg = e instanceof Error ? e.message : String(e ?? "");
+  return (
+    msg.includes("Connection terminated unexpectedly") ||
+    msg.includes("ECONNRESET") ||
+    msg.includes("Connection ended unexpectedly")
+  );
+}
+
+async function withPgRetry<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (e) {
+    if (!isTransientPgConnectionError(e)) throw e;
+    resetPool();
+    return fn();
+  }
+}
+
 export async function getUserByEmail(email: string): Promise<UserRow | null> {
-  const pool = getPool();
-  const { rows } = await pool.query(`SELECT * FROM public.users WHERE lower(email) = lower($1) LIMIT 1`, [email]);
+  const { rows } = await withPgRetry(async () => {
+    const pool = getPool();
+    return pool.query(`SELECT * FROM public.users WHERE lower(email) = lower($1) LIMIT 1`, [email]);
+  });
   return (rows[0] as UserRow) ?? null;
 }
 
@@ -82,7 +103,6 @@ function buildLoginDigitCandidates(rawDigits: string): string[] {
 
 /** Recherche login par email, téléphone ou WhatsApp. */
 export async function getUserByLoginIdentifier(identifier: string): Promise<UserRow | null> {
-  const pool = getPool();
   const clean = identifier.trim();
   if (!clean) return null;
   const digits = digitsOnly(clean);
@@ -94,13 +114,16 @@ export async function getUserByLoginIdentifier(identifier: string): Promise<User
     // 2) Fallback par numéro (téléphone/WhatsApp) avec variantes locales/internationales.
     const digitCandidates = buildLoginDigitCandidates(digits);
     for (const candidate of digitCandidates) {
-      const { rows } = await pool.query(
-        `SELECT * FROM public.users
-         WHERE regexp_replace(coalesce(phone::text, ''), '[^0-9]', '', 'g') = $1
-            OR regexp_replace(coalesce(whatsapp::text, ''), '[^0-9]', '', 'g') = $1
-         LIMIT 1`,
-        [candidate]
-      );
+      const { rows } = await withPgRetry(async () => {
+        const pool = getPool();
+        return pool.query(
+          `SELECT * FROM public.users
+           WHERE regexp_replace(coalesce(phone::text, ''), '[^0-9]', '', 'g') = $1
+              OR regexp_replace(coalesce(whatsapp::text, ''), '[^0-9]', '', 'g') = $1
+           LIMIT 1`,
+          [candidate]
+        );
+      });
       if (rows[0]) return rows[0] as UserRow;
     }
 

@@ -43,3 +43,14 @@ export function getPool(): Pool {
   }
   return globalForPool.__docugestPgPool;
 }
+
+/** Réinitialise explicitement le pool (utile après rupture réseau côté DB). */
+export function resetPool(): void {
+  const p = globalForPool.__docugestPgPool;
+  globalForPool.__docugestPgPool = undefined;
+  if (p) {
+    void p.end().catch(() => {
+      /* noop */
+    });
+  }
+}
