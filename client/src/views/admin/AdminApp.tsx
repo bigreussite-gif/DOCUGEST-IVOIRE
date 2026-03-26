@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { AdminApiError, adminFetch, type AdminSession } from "../../lib/adminApi";
 import { AdminLayout } from "./AdminLayout";
 import { AdminDashboard } from "./AdminDashboard";
@@ -11,6 +11,7 @@ import { Input } from "../../components/ui/Input";
 import { apiFetch } from "../../lib/api";
 
 export default function AdminApp() {
+  const location = useLocation();
   const [session, setSession] = useState<AdminSession | null | "forbidden" | "loading">("loading");
   const [bootstrapBusy, setBootstrapBusy] = useState(false);
 
@@ -42,6 +43,9 @@ export default function AdminApp() {
   }
 
   if (session === "forbidden") {
+    if (location.pathname.startsWith("/admin/login")) {
+      return <AdminLogin onLoggedIn={(s) => setSession(s)} forceFreshLogin />;
+    }
     return (
       <div className="mx-auto max-w-lg px-6 py-20 text-center">
         <h1 className="text-xl font-bold text-text">Accès réservé</h1>
@@ -67,6 +71,17 @@ export default function AdminApp() {
           }}
         >
           {bootstrapBusy ? "Activation..." : "Tenter activation super admin"}
+        </button>
+        <button
+          type="button"
+          className="mt-3 rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          onClick={() => {
+            localStorage.removeItem("docugest_token");
+            localStorage.removeItem("docugest_user_cache");
+            window.location.replace("/admin/login");
+          }}
+        >
+          Se connecter avec un autre compte
         </button>
         <a href="/dashboard" className="mt-6 inline-block text-primary underline">
           Retour à l’app
@@ -97,12 +112,24 @@ export default function AdminApp() {
   );
 }
 
-function AdminLogin({ onLoggedIn }: { onLoggedIn: (s: AdminSession) => void }) {
+function AdminLogin({
+  onLoggedIn,
+  forceFreshLogin = false
+}: {
+  onLoggedIn: (s: AdminSession) => void;
+  forceFreshLogin?: boolean;
+}) {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!forceFreshLogin) return;
+    localStorage.removeItem("docugest_token");
+    localStorage.removeItem("docugest_user_cache");
+  }, [forceFreshLogin]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
