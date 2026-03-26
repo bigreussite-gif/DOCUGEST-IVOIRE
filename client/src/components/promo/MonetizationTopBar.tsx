@@ -9,6 +9,7 @@ export function MonetizationTopBar() {
           <AdPlaceholder
             label="Partenaires & sponsors"
             hint="Espace réservé — logos partenaires"
+            adSlot="top-bar-partners"
             minHeight="min-h-[52px]"
             className="w-full border-amber-200/60 bg-gradient-to-br from-amber-50/50 to-white"
           />

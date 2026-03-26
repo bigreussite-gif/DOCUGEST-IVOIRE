@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { adminFetch } from "../../lib/adminApi";
+import { notifyAdSlotsUpdated } from "../../store/adSlotsStore";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { compressImageToWebP } from "../../lib/imageCompress";
@@ -20,6 +21,7 @@ type AdCfg = {
 };
 
 const PRESET_SLOTS = [
+  "top-bar-partners",
   "top-banner",
   "bottom-bar-partners",
   "bottom-bar-adsense",
@@ -29,7 +31,8 @@ const PRESET_SLOTS = [
 ];
 
 const SLOT_LABELS: Record<string, string> = {
-  "top-banner": "Bandeau haut",
+  "top-bar-partners": "Barre haut — partenaires",
+  "top-banner": "Bandeau haut — pub principale",
   "bottom-bar-partners": "Barre bas — partenaires",
   "bottom-bar-adsense": "Barre bas — Ads",
   "landing-hero": "Landing — héros",
@@ -122,6 +125,7 @@ export function AdminAds() {
       });
       setMsg("Publicité enregistrée.");
       await load();
+      notifyAdSlotsUpdated();
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Erreur sauvegarde");
     } finally {

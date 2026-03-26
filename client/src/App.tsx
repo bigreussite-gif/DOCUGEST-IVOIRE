@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { AdSlotsBootstrap } from "./components/promo/AdSlotsBootstrap";
 import Landing from "./views/Landing";
 import Login from "./views/Login";
 import Dashboard from "./views/Dashboard";
@@ -10,6 +11,7 @@ const AdminApp = lazy(() => import("./views/admin/AdminApp"));
 export default function App() {
   return (
     <BrowserRouter>
+      <AdSlotsBootstrap />
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />

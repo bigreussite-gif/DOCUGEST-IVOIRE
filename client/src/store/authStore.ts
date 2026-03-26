@@ -1,9 +1,19 @@
 import { create } from "zustand";
 import { apiFetch, type ApiError } from "../lib/api";
-import { networkFetch, isNetworkFailure } from "../lib/apiNetwork";
+import { networkFetch, isNetworkFailure, getHttpStatusFromError } from "../lib/apiNetwork";
 import { flushSyncQueue } from "../lib/offline/sync";
 
 const USER_CACHE_KEY = "docugest_user_cache";
+
+function readUserCache(): AuthUser | null {
+  try {
+    const raw = localStorage.getItem(USER_CACHE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as AuthUser;
+  } catch {
+    return null;
+  }
+}
 
 function apiErrorMessage(e: unknown): string {
   if (e && typeof e === "object" && "message" in e) {
@@ -71,30 +81,60 @@ export const useAuthStore = create<AuthState>((set) => ({
   loadMe: async () => {
     const token = localStorage.getItem("docugest_token");
     if (!token) {
-      set({ user: null });
+      set({ user: null, loading: false });
       return;
     }
-    set({ loading: true, error: null });
+    const cached = readUserCache();
+    // Affichage immédiat depuis le cache : pas d’écran bloquant à chaque reconnexion.
+    if (cached) {
+      set({ user: cached, loading: false, error: null });
+    } else {
+      set({ loading: true, error: null });
+    }
     try {
       const me = await networkFetch<AuthUser>("/api/auth/me", { method: "GET" });
       localStorage.setItem(USER_CACHE_KEY, JSON.stringify(me));
-      set({ user: me, loading: false });
+      set({ user: me, loading: false, error: null });
     } catch (e) {
       if (isNetworkFailure(e)) {
-        const raw = localStorage.getItem(USER_CACHE_KEY);
-        if (raw) {
-          try {
-            const me = JSON.parse(raw) as AuthUser;
-            set({ user: me, loading: false });
-            return;
-          } catch {
-            /* vide */
-          }
+        if (cached) {
+          set({ user: cached, loading: false });
+          return;
         }
+        set({ loading: false });
+        return;
       }
-      localStorage.removeItem("docugest_token");
-      localStorage.removeItem(USER_CACHE_KEY);
-      set({ user: null, loading: false });
+      const status = getHttpStatusFromError(e);
+      if (status === 401 || status === 403) {
+        localStorage.removeItem("docugest_token");
+        localStorage.removeItem(USER_CACHE_KEY);
+        set({ user: null, loading: false });
+        return;
+      }
+      if (status === 404) {
+        localStorage.removeItem("docugest_token");
+        localStorage.removeItem(USER_CACHE_KEY);
+        set({ user: null, loading: false });
+        return;
+      }
+      if (status !== undefined && status >= 500) {
+        if (cached) {
+          set({ user: cached, loading: false, error: null });
+        } else {
+          set({
+            user: null,
+            loading: false,
+            error: "Serveur temporairement indisponible. Vous pouvez réessayer dans un instant."
+          });
+        }
+        return;
+      }
+      // Autres erreurs (4xx hors 401–403, ou réponse ambiguë) : ne pas déconnecter l’utilisateur.
+      if (cached) {
+        set({ user: cached, loading: false, error: null });
+      } else {
+        set({ loading: false });
+      }
     }
   },
 
@@ -119,7 +159,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     localStorage.removeItem("docugest_token");
     localStorage.removeItem(USER_CACHE_KEY);
-    set({ user: null });
+    set({ user: null, loading: false, error: null });
+    if (typeof window !== "undefined") {
+      window.location.assign("/login");
+    }
   },
 
   requestPasswordReset: async ({ email }) => {

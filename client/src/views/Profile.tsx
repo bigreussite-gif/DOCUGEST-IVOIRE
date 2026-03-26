@@ -142,8 +142,9 @@ export default function Profile() {
         </dl>
 
         <p className="mt-8 rounded-xl bg-primary/5 px-4 py-3 text-sm leading-relaxed text-slate-700 ring-1 ring-primary/15">
-          Les logos et couleurs de marque sur les factures, devis et bulletins se configurent dans chaque éditeur de
-          document (section « Identité visuelle »).
+          Les logos et couleurs de marque sur les factures, devis et bulletins se règlent dans chaque éditeur (section
+          « Identité visuelle ») : vous pouvez importer un logo — les teintes dominantes sont proposées automatiquement
+          — ou définir vous-même la couleur principale du document (nuancier ou code hexadécimal).
         </p>
 
         <div className="mt-8 rounded-2xl bg-surface p-5 ring-1 ring-border/70">

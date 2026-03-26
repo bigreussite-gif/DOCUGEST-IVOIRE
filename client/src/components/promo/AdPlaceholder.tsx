@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { trackAdEvent } from "../../lib/adTracking";
+import { useAdSlotsStore } from "../../store/adSlotsStore";
 
 type Props = {
   label: string;
@@ -38,61 +39,36 @@ function normalizeHref(raw: string): string {
 }
 
 const FRAME_BOX: Record<SlotConfig["imageFrame"], string> = {
-  /** Bandeau type header */
   banner: "aspect-[21/9] w-full min-h-[48px] max-h-[120px]",
-  /** Photo / carte produit */
   photo: "aspect-[4/3] w-full max-h-[min(280px,50vh)]",
-  /** Carré type réseaux sociaux */
   square: "aspect-square w-full max-h-[min(280px,45vh)]"
 };
 
 /**
- * Emplacement publicitaire — image cliquable vers le lien, cadre & object-fit configurables côté admin.
+ * Emplacement publicitaire — données partagées via le store (un seul fetch + cache localStorage).
  */
 export function AdPlaceholder({ label, hint, adSlot, className = "", minHeight = "min-h-[72px]" }: Props) {
-  const [dynamic, setDynamic] = useState<SlotConfig | null>(null);
+  const raw = useAdSlotsStore((s) => (adSlot ? s.bySlot[adSlot] : undefined));
+
+  const dynamic = useMemo((): SlotConfig | null => {
+    if (!raw) return null;
+    return {
+      title: String(raw.title ?? ""),
+      body: String(raw.body ?? ""),
+      ctaLabel: String(raw.ctaLabel ?? ""),
+      ctaUrl: String(raw.ctaUrl ?? ""),
+      imageDataUrl: String(raw.imageDataUrl ?? ""),
+      imageFit: raw.imageFit === "contain" ? "contain" : "cover",
+      imageFrame:
+        raw.imageFrame === "banner" || raw.imageFrame === "square"
+          ? (raw.imageFrame as "banner" | "square")
+          : "photo"
+    };
+  }, [raw]);
 
   useEffect(() => {
     if (!adSlot) return;
     trackAdEvent("view", adSlot);
-  }, [adSlot]);
-
-  useEffect(() => {
-    if (!adSlot) return;
-    let cancelled = false;
-    void fetch("/api/ads/slots")
-      .then((r) => r.json())
-      .then((data) => {
-        if (cancelled) return;
-        const item = (data?.items ?? []).find((x: { slot?: string }) => x.slot === adSlot) as
-          | {
-              title?: string;
-              body?: string;
-              ctaLabel?: string;
-              ctaUrl?: string;
-              imageDataUrl?: string;
-              imageFit?: string;
-              imageFrame?: string;
-            }
-          | undefined;
-        if (!item) return;
-        setDynamic({
-          title: String(item.title ?? ""),
-          body: String(item.body ?? ""),
-          ctaLabel: String(item.ctaLabel ?? ""),
-          ctaUrl: String(item.ctaUrl ?? ""),
-          imageDataUrl: String(item.imageDataUrl ?? ""),
-          imageFit: item.imageFit === "contain" ? "contain" : "cover",
-          imageFrame:
-            item.imageFrame === "banner" || item.imageFrame === "square"
-              ? (item.imageFrame as "banner" | "square")
-              : "photo"
-        });
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
   }, [adSlot]);
 
   const href = dynamic?.ctaUrl ? normalizeHref(dynamic.ctaUrl) : "";
@@ -105,11 +81,13 @@ export function AdPlaceholder({ label, hint, adSlot, className = "", minHeight =
     if (adSlot) trackAdEvent("click", adSlot);
   }
 
+  const hasContent = Boolean(dynamic?.imageDataUrl?.trim() || dynamic?.title?.trim() || dynamic?.body?.trim());
+
   const imageBlock =
     dynamic?.imageDataUrl ? (
       <div
         className={[
-          "relative w-full overflow-hidden rounded-lg bg-slate-200/60 ring-1 ring-slate-200/80",
+          "relative w-full overflow-hidden rounded-lg bg-slate-200/50 ring-1 ring-slate-200/70",
           FRAME_BOX[frame]
         ].join(" ")}
       >
@@ -117,7 +95,7 @@ export function AdPlaceholder({ label, hint, adSlot, className = "", minHeight =
           src={dynamic.imageDataUrl}
           alt={dynamic.title || label || "Publicité"}
           className={`h-full w-full ${imgFitClass} object-center`}
-          loading="lazy"
+          loading={adSlot === "top-banner" || adSlot === "top-bar-partners" ? "eager" : "lazy"}
           decoding="async"
         />
       </div>
@@ -140,19 +118,21 @@ export function AdPlaceholder({ label, hint, adSlot, className = "", minHeight =
 
   const hasImage = Boolean(dynamic?.imageDataUrl?.trim());
 
+  const shellClass = hasContent
+    ? "border border-slate-200/90 bg-white/95 shadow-sm"
+    : "border border-dashed border-slate-300/80 bg-gradient-to-br from-slate-50 to-slate-100/90";
+
   return (
     <div
-      className={`flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300/80 bg-gradient-to-br from-slate-50 to-slate-100/90 px-3 py-2 text-center ${minHeight} ${className}`}
+      className={`flex flex-col items-center justify-center rounded-xl px-3 py-2 text-center ${minHeight} ${shellClass} ${className}`}
       data-ad-slot={adSlot}
     >
-      {dynamic?.imageDataUrl ? (
-        <div className="w-full">{imageWithLink}</div>
-      ) : null}
+      {dynamic?.imageDataUrl ? <div className="w-full">{imageWithLink}</div> : null}
 
       <span className="mt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
         {dynamic?.title || label}
       </span>
-      {dynamic?.body ? <span className="mt-1 text-[11px] text-slate-500">{dynamic.body}</span> : null}
+      {dynamic?.body ? <span className="mt-1 text-[11px] text-slate-600">{dynamic.body}</span> : null}
       {!dynamic?.body && !dynamic?.imageDataUrl && hint ? (
         <span className="mt-1 text-[11px] text-slate-500">{hint}</span>
       ) : null}

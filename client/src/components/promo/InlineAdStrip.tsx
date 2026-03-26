@@ -8,7 +8,7 @@ export function InlineAdStrip({ variant = "default" }: { variant?: "default" | "
       <AdPlaceholder
         label="Sponsorisé"
         hint="Emplacement non intrusif"
-        adSlot="app-inline"
+        adSlot="dashboard-inline"
         minHeight={h}
         className="w-full border-0 bg-transparent"
       />

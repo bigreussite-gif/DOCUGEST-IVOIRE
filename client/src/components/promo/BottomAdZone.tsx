@@ -12,13 +12,14 @@ export function BottomAdZone() {
           <AdPlaceholder
             label="Partenaires & annonceurs"
             hint="Bloc large — bandeaux, campagnes locales, marques"
+            adSlot="bottom-bar-partners"
             minHeight="min-h-[140px]"
             className="border-slate-300/70 bg-white shadow-sm"
           />
           <AdPlaceholder
             label="Google AdSense"
             hint="Bloc large — format 300×250 / responsive"
-            adSlot="bottom-primary"
+            adSlot="bottom-bar-adsense"
             minHeight="min-h-[140px]"
             className="border-emerald-200/60 bg-white shadow-sm"
           />

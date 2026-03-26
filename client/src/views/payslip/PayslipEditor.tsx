@@ -331,7 +331,8 @@ export default function PayslipEditor() {
           <div className="rounded-xl bg-surface p-5 ring-1 ring-border/70">
             <div className="text-sm font-semibold text-text">Identité employeur</div>
             <p className="mt-1 text-xs leading-relaxed text-slate-600">
-              Logo affiché en haut du bulletin — couleurs détectées automatiquement (local).
+              Logo en haut du bulletin : teintes dominantes détectées automatiquement (local). Sans logo ou pour
+              affiner, définissez la couleur principale ci-dessous.
             </p>
             <div className="mt-4 flex flex-wrap items-end gap-4">
               <label className="block min-w-[200px]">

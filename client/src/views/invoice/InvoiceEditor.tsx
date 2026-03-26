@@ -526,9 +526,8 @@ export default function InvoiceEditor() {
               <div className="rounded-xl bg-surface p-5 ring-1 ring-border/70">
                 <div className="text-sm font-semibold text-text">Identité visuelle</div>
                 <p className="mt-1.5 text-xs leading-relaxed text-slate-600">
-                  Importez le logo de votre entreprise : les couleurs dominantes sont détectées automatiquement
-                  (traitement local, sans envoi serveur). Option avancée : branchement futur vers une API d’analyse
-                  IA pour des propositions de mise en page.
+                  Importez le logo : les couleurs dominantes sont détectées automatiquement (traitement local,
+                  sans envoi serveur). Sans logo, ou pour affiner, choisissez la couleur principale ci-dessous.
                 </p>
                 <div className="mt-4 flex flex-wrap items-end gap-4">
                   <label className="block min-w-[200px]">

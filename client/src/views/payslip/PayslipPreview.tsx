@@ -26,138 +26,199 @@ export type PayslipPreviewData = {
   netPay: number;
   notes: string;
   logoDataUrl?: string | null;
-  /** Couleur d’accent (marque), ex. issue du logo */
   accentHex?: string | null;
 };
 
+const PEACH = "#fde4d6";
+const BLUE = "#1e3a5f";
+const BLUE_LIGHT = "#2563eb";
+
 export default function PayslipPreview({ data }: { data: PayslipPreviewData }) {
-  const accent = data.accentHex && data.accentHex.trim() !== "" ? data.accentHex : "#059669";
+  const accent = data.accentHex && data.accentHex.trim() !== "" ? data.accentHex : BLUE_LIGHT;
+  const gross =
+    data.baseSalary + data.transportAllowance + data.otherAllowances + data.bonuses;
+  const totalDed = data.cnpsEmployee + data.otherDeductions;
 
   return (
-    <div className="bg-bg p-2">
-      <div className="flex h-[297mm] w-[210mm] flex-col rounded-sm bg-white p-8 text-[12px] leading-relaxed text-black shadow-none">
-        <div className="flex justify-between gap-6 border-b border-slate-200 pb-5">
-          <div className="flex min-w-0 flex-1 items-start gap-4">
+    <div className="bg-slate-100/80 p-2 print:bg-white print:p-0">
+      <div
+        className="mx-auto flex min-h-[297mm] w-[210mm] flex-col bg-white p-6 text-[10px] leading-snug text-slate-800 shadow-sm ring-1 ring-slate-200/80 print:shadow-none print:ring-0"
+        style={{ fontFamily: "ui-sans-serif, system-ui, 'Segoe UI', Roboto, sans-serif" }}
+      >
+        <p className="text-center text-[9px] font-medium" style={{ color: accent }}>
+          (Document généré — bulletin personnalisable)
+        </p>
+
+        <header className="mt-3 flex flex-wrap items-start justify-between gap-4">
+          <div className="flex min-w-0 items-start gap-3">
             {data.logoDataUrl ? (
-              <img src={data.logoDataUrl} alt="" className="h-20 w-20 shrink-0 rounded-lg border border-slate-100 object-contain p-1" />
-            ) : null}
-            <div className="min-w-0">
-              <div className="text-[15px] font-bold uppercase tracking-wide" style={{ color: accent }}>
-                Bulletin de salaire
+              <img
+                src={data.logoDataUrl}
+                alt=""
+                className="h-16 w-16 shrink-0 rounded-lg border border-slate-100 object-contain p-1"
+              />
+            ) : (
+              <div
+                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold text-white"
+                style={{ backgroundColor: accent }}
+              >
+                LOGO
               </div>
-              <div className="mt-2 text-[14px] font-semibold leading-snug">{data.employerName}</div>
-              <div className="mt-2 whitespace-pre-line text-slate-700">{data.employerAddress}</div>
-              <div className="mt-1">{data.employerPhone}</div>
-              {data.employerEmail ? <div className="mt-1">{data.employerEmail}</div> : null}
+            )}
+            <div className="min-w-0">
+              <div className="text-[11px] font-semibold" style={{ color: BLUE }}>
+                {data.employerName}
+              </div>
+              <div className="mt-1 max-w-[14rem] whitespace-pre-line text-[9px] text-slate-600">{data.employerAddress}</div>
+              <div className="mt-1 text-[9px] text-slate-600">{data.employerPhone}</div>
+              {data.employerEmail ? <div className="text-[9px] text-slate-600">{data.employerEmail}</div> : null}
             </div>
           </div>
-          <div className="shrink-0 text-right">
-            <div className="text-xs font-medium text-slate-500">Période</div>
-            <div className="font-semibold text-text">{data.periodLabel}</div>
-            <div className="mt-3 text-xs font-medium text-slate-500">Émis le</div>
-            <div>{formatDateCI(data.emissionDate)}</div>
+
+          <div className="text-right">
+            <div className="text-[9px] font-medium text-slate-500">Émis le</div>
+            <div className="font-semibold text-slate-900">{formatDateCI(data.emissionDate)}</div>
+          </div>
+        </header>
+
+        {/* Titre type fiche paie FR */}
+        <div className="mt-5 flex justify-center">
+          <div
+            className="border-2 border-slate-900 px-10 py-2 text-center"
+            style={{ backgroundColor: PEACH }}
+          >
+            <h1 className="text-[15px] font-bold tracking-wide text-slate-900">BULLETIN DE PAIE</h1>
           </div>
         </div>
 
-        <div className="mt-8">
-          <div className="mb-1 text-xs font-bold uppercase tracking-wide text-slate-500">Salarié</div>
-          <table className="w-full border-collapse text-[11px]">
+        <div className="mt-3 text-center text-[9px] text-slate-600">
+          {data.employerLegalForm ? <span>Société · {data.employerLegalForm}</span> : null}
+          {data.employerNcc ? (
+            <span className={data.employerLegalForm ? " ml-2" : ""}>N° NCC / IFU : {data.employerNcc}</span>
+          ) : null}
+        </div>
+
+        {/* Blocs salarié + période */}
+        <div className="mt-6 grid gap-3 md:grid-cols-2">
+          <div className="overflow-hidden rounded-md ring-1 ring-slate-200" style={{ borderColor: accent }}>
+            <div className="px-3 py-1.5 text-[9px] font-bold uppercase tracking-wide text-white" style={{ backgroundColor: BLUE }}>
+              Salarié
+            </div>
+            <div className="space-y-2 bg-slate-50/50 p-3">
+              <div className="flex justify-between gap-2 border-b border-slate-100 pb-2">
+                <span className="text-slate-500">Nom</span>
+                <span className="font-semibold text-slate-900">{data.employeeName || "—"}</span>
+              </div>
+              <div className="flex justify-between gap-2 border-b border-slate-100 pb-2">
+                <span className="text-slate-500">Emploi</span>
+                <span className="text-right text-slate-800">{data.employeeRole || "—"}</span>
+              </div>
+              <div className="flex justify-between gap-2">
+                <span className="text-slate-500">Période</span>
+                <span className="font-medium text-slate-800">{data.periodLabel || "—"}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-md ring-1 ring-slate-200">
+            <div className="px-3 py-1.5 text-[9px] font-bold uppercase tracking-wide text-white" style={{ backgroundColor: BLUE }}>
+              Période & paiement
+            </div>
+            <div className="space-y-2 bg-white p-3">
+              <div className="flex justify-between border-b border-slate-100 pb-2">
+                <span className="text-slate-500">Période de paie</span>
+                <span className="font-medium">{data.periodLabel}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Émission</span>
+                <span>{formatDateCI(data.emissionDate)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Table gains / retenues */}
+        <div className="mt-6 overflow-hidden rounded-t-md border border-slate-200">
+          <table className="w-full border-collapse text-[9.5px]">
+            <thead>
+              <tr className="text-white" style={{ backgroundColor: BLUE }}>
+                <th className="px-2 py-2 text-left font-semibold">Libellé</th>
+                <th className="w-28 px-2 py-2 text-right font-semibold">Montant (FCFA)</th>
+              </tr>
+            </thead>
             <tbody>
-              <tr>
-                <td className="border-b border-slate-100 py-2 pl-2 text-slate-600">Nom</td>
-                <td className="border-b border-slate-100 py-2 pr-2 text-right font-semibold">{data.employeeName || "—"}</td>
+              <tr className="bg-white">
+                <td className="border-b border-slate-100 px-2 py-2">Salaire de base</td>
+                <td className="border-b border-slate-100 px-2 py-2 text-right font-medium tabular-nums">{formatFCFA(data.baseSalary)}</td>
               </tr>
-              <tr>
-                <td className="border-b border-slate-100 py-2 pl-2 text-slate-600">Poste</td>
-                <td className="border-b border-slate-100 py-2 pr-2 text-right">{data.employeeRole || "—"}</td>
+              <tr className="bg-slate-50/80">
+                <td className="border-b border-slate-100 px-2 py-2">Primes & gratifications</td>
+                <td className="border-b border-slate-100 px-2 py-2 text-right tabular-nums">{formatFCFA(data.bonuses)}</td>
               </tr>
-              <tr>
-                <td className="border-b border-slate-100 py-2 pl-2 text-slate-600">Période</td>
-                <td className="border-b border-slate-100 py-2 pr-2 text-right">{data.periodLabel || "—"}</td>
+              <tr className="bg-white">
+                <td className="border-b border-slate-100 px-2 py-2">Indemnités & transport</td>
+                <td className="border-b border-slate-100 px-2 py-2 text-right tabular-nums">
+                  {formatFCFA(data.transportAllowance + data.otherAllowances)}
+                </td>
+              </tr>
+              <tr className="bg-rose-50/60">
+                <td className="border-b border-slate-200 px-2 py-2 font-medium text-rose-900">Retenues (CNPS, autres)</td>
+                <td className="border-b border-slate-200 px-2 py-2 text-right font-semibold tabular-nums text-rose-800">
+                  − {formatFCFA(totalDed)}
+                </td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <table className="mt-8 w-full border-collapse text-left text-[11px]">
-          <thead>
-            <tr className="border-b-2 text-left" style={{ borderColor: accent }}>
-              <th className="py-3 pl-3 font-bold text-slate-800">Libellé</th>
-              <th className="py-3 pr-3 text-right font-bold text-slate-800">Montant (FCFA)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr className="border-b border-slate-100">
-              <td className="py-3 pl-3">Salaire de base</td>
-              <td className="py-3 pr-3 text-right font-medium">{formatFCFA(data.baseSalary)}</td>
-            </tr>
-            <tr className="border-b border-slate-100">
-              <td className="py-3 pl-3">Primes & gratifications</td>
-              <td className="py-3 pr-3 text-right">{formatFCFA(data.bonuses)}</td>
-            </tr>
-            <tr className="border-b border-slate-100">
-              <td className="py-3 pl-3">Transport / indemnités</td>
-              <td className="py-3 pr-3 text-right">{formatFCFA(data.transportAllowance + data.otherAllowances)}</td>
-            </tr>
-            <tr className="border-b border-slate-200 bg-rose-50/50">
-              <td className="py-3 pl-3">Retenues (CNPS, autres)</td>
-              <td className="py-3 pr-3 text-right font-medium text-rose-800">
-                − {formatFCFA(data.cnpsEmployee + data.otherDeductions)}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
-        <div className="mt-8">
-          <table className="w-full border-collapse text-[11px]">
+        {/* Synthèse */}
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <table className="w-full border-collapse text-[9.5px]">
             <tbody>
-              <tr>
-                <td className="border-b border-slate-100 py-2 pl-2 text-slate-700">Total brut</td>
-                <td className="border-b border-slate-100 py-2 pr-2 text-right font-semibold">
-                  {formatFCFA(data.baseSalary + data.transportAllowance + data.otherAllowances + data.bonuses)}
-                </td>
+              <tr className="border-b border-slate-100">
+                <td className="py-2 text-slate-600">Total gains</td>
+                <td className="py-2 text-right font-semibold tabular-nums">{formatFCFA(gross)}</td>
               </tr>
-              <tr>
-                <td className="border-b border-slate-100 py-2 pl-2 text-slate-700">Total retenues</td>
-                <td className="border-b border-slate-100 py-2 pr-2 text-right font-semibold text-rose-700">
-                  {formatFCFA(data.cnpsEmployee + data.otherDeductions)}
-                </td>
-              </tr>
-              <tr style={{ backgroundColor: `${accent}14` }}>
-                <td className="py-2 pl-2 text-sm font-bold uppercase" style={{ color: accent }}>
-                  Net à payer
-                </td>
-                <td className="py-2 pr-2 text-right text-xl font-bold" style={{ color: accent }}>
-                  {formatFCFA(data.netPay)}
-                </td>
+              <tr className="border-b border-slate-100">
+                <td className="py-2 text-slate-600">Total retenues</td>
+                <td className="py-2 text-right font-semibold tabular-nums text-rose-700">{formatFCFA(totalDed)}</td>
               </tr>
             </tbody>
           </table>
+
+          <div
+            className="flex flex-col justify-center rounded-lg px-4 py-3 text-white shadow-md"
+            style={{ backgroundColor: accent }}
+          >
+            <div className="text-[9px] font-bold uppercase tracking-widest opacity-90">Net à payer</div>
+            <div className="mt-1 text-right text-[20px] font-bold tabular-nums tracking-tight">{formatFCFA(data.netPay)}</div>
+          </div>
         </div>
 
         {data.notes ? (
-          <div className="mt-8 border-t border-slate-200 pt-5 text-[11px] leading-relaxed text-slate-600">
-            <div className="font-semibold text-slate-800">Notes</div>
-            <div className="mt-2 whitespace-pre-line">{data.notes}</div>
+          <div className="mt-6 rounded-md border border-dashed border-slate-200 bg-slate-50/50 p-3">
+            <div className="text-[9px] font-bold uppercase text-slate-500">Notes</div>
+            <p className="mt-1 whitespace-pre-line text-[9px] leading-relaxed text-slate-700">{data.notes}</p>
           </div>
         ) : null}
 
-        <div className="mt-auto pt-6">
-          <div className="border-t border-dashed border-slate-300 pt-3 text-center text-[9px] text-slate-500">
-            <div>Document généré avec DocuGest Ivoire — à conserver pour vos archives.</div>
-            <div className="mt-1">
-              {[data.employerPhone, data.employerWhatsapp, data.employerEmail, data.employerWebsite].filter(Boolean).join(" · ")}
-            </div>
-            <div className="mt-1">
-              {[data.employerHeadOffice || data.employerAddress, data.employerLegalForm, data.employerRib].filter(Boolean).join(" · ")}
-            </div>
-            <div className="mt-1">
-              {[data.employerNcc ? `NCC: ${data.employerNcc}` : "", data.employerRccm ? `RCCM: ${data.employerRccm}` : "", data.employerDfe ? `DFE: ${data.employerDfe}` : ""]
-                .filter(Boolean)
-                .join(" · ")}
-            </div>
+        <footer className="mt-auto border-t border-slate-200 pt-4 text-center text-[8px] leading-relaxed text-slate-500">
+          <p className="text-slate-600">
+            Conservez ce document pour vos archives et pour faire valoir vos droits.
+          </p>
+          <div className="mt-2 font-medium text-slate-600">
+            {[data.employerPhone, data.employerWhatsapp, data.employerEmail, data.employerWebsite].filter(Boolean).join(" · ")}
           </div>
-        </div>
+          <div className="mt-1">
+            {[data.employerHeadOffice || data.employerAddress, data.employerRib].filter(Boolean).join(" · ")}
+          </div>
+          <div className="mt-1">
+            {[data.employerNcc ? `NCC: ${data.employerNcc}` : "", data.employerRccm ? `RCCM: ${data.employerRccm}` : "", data.employerDfe ? `DFE: ${data.employerDfe}` : ""]
+              .filter(Boolean)
+              .join(" · ")}
+          </div>
+          <div className="mt-3 text-slate-400">Document généré avec DocuGest Ivoire</div>
+        </footer>
       </div>
     </div>
   );

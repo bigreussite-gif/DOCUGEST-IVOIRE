@@ -12,7 +12,6 @@ type Line = {
 export type InvoicePreviewProps = {
   docTypeLabel: string;
   themeColor: "emerald" | "navy" | "orange" | "bordeaux" | "anthracite" | "violet";
-  /** Si défini (ex. couleur extraite du logo), remplace la barre de thème */
   customAccentHex?: string | null;
   data: {
     sender: {
@@ -49,14 +48,17 @@ export type InvoicePreviewProps = {
   };
 };
 
+const NAVY = "#1a2b48";
+const TEAL_DEFAULT = "#3d9c86";
+
 function themeBar(themeColor: InvoicePreviewProps["themeColor"]) {
   const map: Record<InvoicePreviewProps["themeColor"], string> = {
-    emerald: "#00A86B",
-    navy: "#0F172A",
-    orange: "#FF6B2B",
+    emerald: TEAL_DEFAULT,
+    navy: NAVY,
+    orange: "#c2410c",
     bordeaux: "#7F1D1D",
     anthracite: "#111827",
-    violet: "#6D28D9"
+    violet: "#5b21b6"
   };
   return map[themeColor];
 }
@@ -69,152 +71,183 @@ export default function InvoicePreview({ docTypeLabel, themeColor, customAccentH
     vatRatePct: data.vatRatePct
   });
 
-  const bar = customAccentHex && customAccentHex.trim() !== "" ? customAccentHex : themeBar(themeColor);
+  const accentTeal = customAccentHex && customAccentHex.trim() !== "" ? customAccentHex : themeBar(themeColor);
+  const navyTitle = NAVY;
 
   return (
-    <div className="bg-bg p-2">
-      <div className="flex h-[297mm] w-[210mm] flex-col rounded-sm bg-white p-6 text-[10.5px] text-black shadow-none">
-        <div className="flex gap-4">
-          <div className="w-1/2">
-            <div className="flex items-start gap-3">
-              {data.sender.logoDataUrl ? (
-                <img
-                  src={data.sender.logoDataUrl}
-                  alt="Logo"
-                  className="h-14 w-14 rounded"
-                />
-              ) : (
-                <div className="h-14 w-14 rounded bg-slate-100 ring-1 ring-border/70" />
-              )}
-              <div>
-                <div className="text-[13px] font-bold">{data.sender.companyName || "Votre entreprise"}</div>
-                <div className="mt-1">{data.sender.address || ""}</div>
-                <div className="mt-1">{data.sender.phone || ""}</div>
-                <div className="mt-1">{data.sender.email || ""}</div>
+    <div className="bg-slate-100/80 p-2 print:bg-white print:p-0">
+      <div
+        className="mx-auto flex min-h-[297mm] w-[210mm] flex-col bg-white p-8 text-[10px] leading-snug text-slate-800 shadow-sm ring-1 ring-slate-200/80 print:shadow-none print:ring-0"
+        style={{ fontFamily: "ui-sans-serif, system-ui, 'Segoe UI', Roboto, sans-serif" }}
+      >
+        {/* Header — titre type référence + marque */}
+        <header className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-6">
+          <div>
+            <h1 className="text-[22px] font-bold tracking-tight" style={{ color: navyTitle }}>
+              {docTypeLabel}
+            </h1>
+            <p className="mt-2 text-[11px] text-slate-500">
+              N° <span className="font-semibold text-slate-800">{data.docNumber}</span>
+              <span className="mx-2 text-slate-300">|</span>
+              {formatDateCI(data.emissionDate)}
+              <span className="mx-2 text-slate-300">|</span>
+              {data.dueDateText}
+            </p>
+          </div>
+          <div className="flex max-w-[55%] items-start gap-3 text-right sm:max-w-none">
+            {data.sender.logoDataUrl ? (
+              <img src={data.sender.logoDataUrl} alt="" className="h-12 w-12 shrink-0 rounded-lg object-contain ring-1 ring-slate-100" />
+            ) : (
+              <div className="h-12 w-12 shrink-0 rounded-lg bg-gradient-to-br from-teal-50 to-slate-100 ring-1 ring-slate-200" />
+            )}
+            <div className="min-w-0 text-right">
+              <div className="text-[12px] font-bold leading-tight" style={{ color: navyTitle }}>
+                {data.sender.companyName || "Votre entreprise"}
               </div>
+              <div className="mt-1 text-[9.5px] text-slate-600">{data.sender.address}</div>
+              <div className="mt-0.5 text-[9.5px] text-slate-600">{data.sender.phone}</div>
+              <div className="text-[9.5px] text-slate-600">{data.sender.email}</div>
             </div>
           </div>
+        </header>
 
-          <div className="w-1/2 text-right">
-            <div className="text-[18px] font-bold">{docTypeLabel}</div>
-            <div className="mt-1">
-              N° <span className="font-semibold">{data.docNumber}</span>
+        {/* Bill to — grille lisible */}
+        <section className="mt-6">
+          <h2 className="text-[11px] font-bold uppercase tracking-wide" style={{ color: navyTitle }}>
+            Facturer à
+          </h2>
+          <div className="mt-2 h-px w-full bg-slate-200" />
+          <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-4">
+            <div>
+              <div className="text-[9px] font-bold uppercase tracking-wide text-slate-500">Client</div>
+              <div className="mt-0.5 font-semibold text-slate-900">{data.client.name || "—"}</div>
             </div>
-            <div className="mt-1">Date: {formatDateCI(data.emissionDate)}</div>
-            <div className="mt-1">{data.dueDateText}</div>
+            <div>
+              <div className="text-[9px] font-bold uppercase tracking-wide text-slate-500">Coordonnées</div>
+              <div className="mt-0.5 text-slate-700">{data.client.phone || "—"}</div>
+            </div>
+            <div className="sm:col-span-1">
+              <div className="text-[9px] font-bold uppercase tracking-wide text-slate-500">Adresse</div>
+              <div className="mt-0.5 text-slate-700">{data.client.address || "—"}</div>
+            </div>
+            <div>
+              <div className="text-[9px] font-bold uppercase tracking-wide text-slate-500">Email</div>
+              <div className="mt-0.5 text-slate-700">{data.client.email || "—"}</div>
+            </div>
           </div>
+        </section>
+
+        {/* Tableau lignes — en-tête marine */}
+        <div className="mt-6 overflow-hidden rounded-t-lg border border-slate-200">
+          <table className="w-full border-collapse text-[9.5px]">
+            <thead>
+              <tr style={{ backgroundColor: navyTitle }} className="text-white">
+                <th className="px-2 py-2.5 text-left font-semibold">#</th>
+                <th className="px-2 py-2.5 text-left font-semibold">Description</th>
+                <th className="w-10 px-1 py-2.5 text-center font-semibold">Qté</th>
+                <th className="w-12 px-1 py-2.5 text-center font-semibold">Unité</th>
+                <th className="w-[4.5rem] px-1 py-2.5 text-right font-semibold">PU HT</th>
+                <th className="w-10 px-1 py-2.5 text-right font-semibold">Rem.</th>
+                <th className="w-[4.75rem] px-2 py-2.5 text-right font-semibold">Total HT</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.lines.map((l, idx) => {
+                const lineTotal = computeInvoiceTotals({
+                  lines: [l],
+                  fiscalRegime: "informal",
+                  globalDiscountPct: 0,
+                  vatRatePct: 0
+                }).totalHT;
+                return (
+                  <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50/90"}>
+                    <td className="border-b border-slate-100 px-2 py-2 text-slate-600">{idx + 1}</td>
+                    <td className="border-b border-slate-100 px-2 py-2 font-medium text-slate-900">{l.description}</td>
+                    <td className="border-b border-slate-100 px-1 py-2 text-center">{l.quantity}</td>
+                    <td className="border-b border-slate-100 px-1 py-2 text-center text-slate-600">{l.unit}</td>
+                    <td className="border-b border-slate-100 px-1 py-2 text-right tabular-nums">
+                      {formatFCFA(l.unitPriceHT).replace(" FCFA", "")}
+                    </td>
+                    <td className="border-b border-slate-100 px-1 py-2 text-right text-slate-600">{Number(l.discountPct) || 0}%</td>
+                    <td className="border-b border-slate-100 px-2 py-2 text-right font-medium tabular-nums text-slate-900">
+                      {formatFCFA(lineTotal).replace(" FCFA", "")}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
 
-        <div className="mt-4 h-3 w-full rounded bg-black/10" />
-        <div className="mt-2 h-7 w-full rounded" style={{ backgroundColor: bar }} />
-
-        <div className="mt-5 grid gap-4 md:grid-cols-2">
-          <div>
-            <div className="mb-1 font-bold">Informations émetteur</div>
-            <table className="w-full border-collapse text-[10.2px]">
-              <tbody>
-                <tr><td className="border-b px-1 py-1.5 text-slate-600">Entreprise</td><td className="border-b px-1 py-1.5 text-right font-semibold">{data.sender.companyName || "—"}</td></tr>
-                <tr><td className="border-b px-1 py-1.5 text-slate-600">Téléphone</td><td className="border-b px-1 py-1.5 text-right">{data.sender.phone || "—"}</td></tr>
-                <tr><td className="border-b px-1 py-1.5 text-slate-600">Email</td><td className="border-b px-1 py-1.5 text-right">{data.sender.email || "—"}</td></tr>
-                <tr><td className="border-b px-1 py-1.5 text-slate-600">Adresse</td><td className="border-b px-1 py-1.5 text-right">{data.sender.address || "—"}</td></tr>
-              </tbody>
-            </table>
+        {/* Notes + totaux */}
+        <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-h-[4rem] flex-1 rounded-md border border-dashed border-slate-200 bg-slate-50/50 p-3">
+            <div className="text-[9px] font-bold uppercase text-slate-500">Conditions de règlement</div>
+            <p className="mt-1 whitespace-pre-wrap text-[9.5px] leading-relaxed text-slate-700">{data.conditions}</p>
           </div>
-          <div>
-            <div className="mb-1 font-bold">FACTURER À</div>
-            <table className="w-full border-collapse text-[10.2px]">
+          <div className="w-full shrink-0 lg:w-[44%]">
+            <table className="w-full border-collapse overflow-hidden rounded-md text-[9.5px] ring-1 ring-slate-200">
               <tbody>
-                <tr><td className="border-b px-1 py-1.5 text-slate-600">Client</td><td className="border-b px-1 py-1.5 text-right font-semibold">{data.client.name || "—"}</td></tr>
-                <tr><td className="border-b px-1 py-1.5 text-slate-600">Téléphone</td><td className="border-b px-1 py-1.5 text-right">{data.client.phone || "—"}</td></tr>
-                <tr><td className="border-b px-1 py-1.5 text-slate-600">Email</td><td className="border-b px-1 py-1.5 text-right">{data.client.email || "—"}</td></tr>
-                <tr><td className="border-b px-1 py-1.5 text-slate-600">Adresse</td><td className="border-b px-1 py-1.5 text-right">{data.client.address || "—"}</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <table className="mt-5 w-full border-collapse text-[10.2px]">
-          <thead>
-            <tr className="text-left">
-              <th className="border-b px-1 py-2">Description</th>
-              <th className="border-b px-1 py-2 w-10">Qté</th>
-              <th className="border-b px-1 py-2 w-14">Unité</th>
-              <th className="border-b px-1 py-2 w-24 text-right">PU HT</th>
-              <th className="border-b px-1 py-2 w-16 text-right">Remise</th>
-              <th className="border-b px-1 py-2 w-28 text-right">Total HT</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.lines.map((l, idx) => {
-              const total = computeInvoiceTotals({
-                lines: [l],
-                fiscalRegime: "informal",
-                globalDiscountPct: 0,
-                vatRatePct: 0
-              }).totalHT;
-              return (
-                <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
-                  <td className="border-b px-1 py-2">{l.description}</td>
-                  <td className="border-b px-1 py-2">{l.quantity}</td>
-                  <td className="border-b px-1 py-2">{l.unit}</td>
-                  <td className="border-b px-1 py-2 text-right">{formatFCFA(l.unitPriceHT).replace(" FCFA", "")}</td>
-                  <td className="border-b px-1 py-2 text-right">{Number(l.discountPct) || 0}%</td>
-                  <td className="border-b px-1 py-2 text-right">{formatFCFA(total).replace(" FCFA", "")}</td>
+                <tr className="text-white" style={{ backgroundColor: accentTeal }}>
+                  <td className="px-3 py-2 font-semibold">Sous-total HT</td>
+                  <td className="px-3 py-2 text-right font-semibold tabular-nums">{formatFCFA(totals.subtotalHT)}</td>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-
-        <div className="mt-3 flex justify-end">
-          <div className="w-[58%]">
-            <table className="w-full border-collapse text-[10.4px]">
-              <tbody>
-                <tr><td className="border-b px-1 py-1.5">Sous-total HT</td><td className="border-b px-1 py-1.5 text-right font-semibold">{formatFCFA(totals.subtotalHT)}</td></tr>
                 {data.fiscalRegime === "formal" ? (
                   <>
-                    <tr><td className="border-b px-1 py-1.5">Remise globale ({data.globalDiscountPct || 0}%)</td><td className="border-b px-1 py-1.5 text-right font-semibold">{formatFCFA(Math.max(0, totals.subtotalHT - totals.baseTaxableHT))}</td></tr>
-                    <tr><td className="border-b px-1 py-1.5">Base TVA</td><td className="border-b px-1 py-1.5 text-right font-semibold">{formatFCFA(totals.baseTaxableHT)}</td></tr>
-                    <tr><td className="border-b px-1 py-1.5">TVA ({data.vatRatePct}%)</td><td className="border-b px-1 py-1.5 text-right font-semibold">{formatFCFA(totals.vatAmount)}</td></tr>
+                    <tr className="text-white" style={{ backgroundColor: accentTeal }}>
+                      <td className="px-3 py-2">Remise ({data.globalDiscountPct || 0}%)</td>
+                      <td className="px-3 py-2 text-right tabular-nums">
+                        {formatFCFA(Math.max(0, totals.subtotalHT - totals.baseTaxableHT))}
+                      </td>
+                    </tr>
+                    <tr className="text-white" style={{ backgroundColor: accentTeal }}>
+                      <td className="px-3 py-2">TVA ({data.vatRatePct}%)</td>
+                      <td className="px-3 py-2 text-right font-medium tabular-nums">{formatFCFA(totals.vatAmount)}</td>
+                    </tr>
                   </>
                 ) : null}
-                <tr>
-                  <td className="px-1 py-2 font-bold">Total TTC</td>
-                  <td className="px-1 py-2 text-right text-[12px] font-bold" style={{ color: bar }}>
-                    {formatFCFA(totals.totalTTC)}
-                  </td>
+                <tr className="text-white" style={{ backgroundColor: navyTitle }}>
+                  <td className="px-3 py-2.5 text-[11px] font-bold uppercase tracking-wide">Total TTC</td>
+                  <td className="px-3 py-2.5 text-right text-[12px] font-bold tabular-nums">{formatFCFA(totals.totalTTC)}</td>
                 </tr>
               </tbody>
             </table>
-            <div className="mt-2 text-[10px] text-black/80">
-              Montant en lettres : <span className="font-semibold">{amountToWordsFCFA(totals.totalTTC)}</span>
-            </div>
+            <p className="mt-2 text-[8.5px] leading-relaxed text-slate-600">
+              <span className="font-semibold text-slate-700">Arrêté à la somme de :</span> {amountToWordsFCFA(totals.totalTTC)}
+            </p>
           </div>
         </div>
 
-        <div className="mt-4">
-          <div className="font-bold">Conditions de règlement</div>
-          <div className="mt-1 whitespace-pre-wrap">{data.conditions}</div>
+        {/* Pied — conditions & signatures */}
+        <div className="mt-6 border-t border-slate-200 pt-4">
+          <div className="text-[9px] font-bold uppercase tracking-wide text-slate-500">Conditions & mentions</div>
+          <p className="mt-2 whitespace-pre-wrap text-[8.5px] leading-relaxed text-slate-600">{data.footerNote}</p>
         </div>
 
-        <div className="mt-auto pt-4">
-          <div className="border-t border-slate-300 pt-2 text-[9.5px] text-black/80">
-            <div className="text-center">{data.footerNote}</div>
-            <div className="mt-1 text-center">
-              {[data.sender.phone, data.sender.whatsapp, data.sender.email, data.sender.website].filter(Boolean).join(" · ")}
+        <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {["Signature", "Nom", "Date", "Mode de règlement"].map((lab) => (
+            <div key={lab} className="text-center">
+              <div className="h-8 border-b border-slate-300" />
+              <div className="mt-1 text-[8px] font-medium uppercase tracking-wide text-slate-500">{lab}</div>
             </div>
-            <div className="mt-1 text-center">
-              {[data.sender.headOffice || data.sender.address, data.sender.legalForm, data.sender.rib].filter(Boolean).join(" · ")}
-            </div>
-            <div className="mt-1 text-center">
-              {[data.sender.ncc ? `NCC: ${data.sender.ncc}` : "", data.sender.rccm ? `RCCM: ${data.sender.rccm}` : "", data.sender.dfe ? `DFE: ${data.sender.dfe}` : ""]
-                .filter(Boolean)
-                .join(" · ")}
-            </div>
-          </div>
+          ))}
         </div>
+
+        <footer className="mt-auto border-t border-slate-100 pt-4 text-center text-[8px] leading-relaxed text-slate-500">
+          <div className="font-medium text-slate-600">
+            {[data.sender.phone, data.sender.whatsapp, data.sender.email, data.sender.website].filter(Boolean).join(" · ")}
+          </div>
+          <div className="mt-1">
+            {[data.sender.headOffice || data.sender.address, data.sender.legalForm, data.sender.rib].filter(Boolean).join(" · ")}
+          </div>
+          <div className="mt-1">
+            {[data.sender.ncc ? `NCC: ${data.sender.ncc}` : "", data.sender.rccm ? `RCCM: ${data.sender.rccm}` : "", data.sender.dfe ? `DFE: ${data.sender.dfe}` : ""]
+              .filter(Boolean)
+              .join(" · ")}
+          </div>
+          <div className="mt-2 text-slate-400">Document généré avec DocuGest Ivoire</div>
+        </footer>
       </div>
     </div>
   );
 }
-

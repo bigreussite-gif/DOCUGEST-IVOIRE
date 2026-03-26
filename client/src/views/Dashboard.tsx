@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, lazy, Suspense } from "react";
-import { Link, useNavigate, useLocation, Routes, Route } from "react-router-dom";
+import { Link, useLocation, Routes, Route } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 import { Button } from "../components/ui/Button";
 import { apiFetch } from "../lib/api";
@@ -253,7 +253,6 @@ function UserMenu({ compact }: { compact?: boolean }) {
 export default function Dashboard() {
   const auth = useAuthStore();
   const loadMe = useAuthStore((s) => s.loadMe);
-  const navigate = useNavigate();
   const location = useLocation();
   const { mode, setMode } = useNavLayout();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -272,12 +271,14 @@ export default function Dashboard() {
   }, [loadMe]);
 
   useEffect(() => {
-    // Evite la redirection prématurée pendant l'initialisation de session.
     if (!authReady || auth.loading) return;
-    if (!auth.user && location.pathname !== "/login") {
-      navigate("/login", { replace: true });
+    const token = typeof window !== "undefined" ? localStorage.getItem("docugest_token") : null;
+    // Sans jeton : session réellement absente → page Next.js /login (navigation complète, pas de conflit RR).
+    // Avec jeton mais utilisateur encore inconnu (ex. erreur serveur) : on ne force pas la déconnexion.
+    if (!auth.user && !token) {
+      window.location.assign("/login");
     }
-  }, [authReady, auth.loading, auth.user, navigate, location.pathname]);
+  }, [authReady, auth.loading, auth.user]);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -302,6 +303,22 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-surface">
       <ConnectionBanner />
+      {auth.error ? (
+        <div
+          role="status"
+          className="flex flex-col items-center justify-center gap-2 border-b border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-950 sm:flex-row sm:gap-4"
+        >
+          <span className="text-center">{auth.error}</span>
+          <button
+            type="button"
+            disabled={auth.loading}
+            onClick={() => void loadMe()}
+            className="shrink-0 rounded-lg border border-amber-400 bg-white px-3 py-1.5 text-sm font-medium text-amber-950 shadow-sm transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {auth.loading ? "Vérification…" : "Réessayer"}
+          </button>
+        </div>
+      ) : null}
       <MonetizationTopBar />
 
       {mode === "top" ? (
