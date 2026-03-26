@@ -123,6 +123,7 @@ function AdminLogin({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [activating, setActivating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -162,25 +163,88 @@ function AdminLogin({
     }
   }
 
+  async function tryActivateSuperAdmin() {
+    setActivating(true);
+    setError(null);
+    try {
+      await adminFetch("/bootstrap-super-admin", { method: "POST" });
+      const session = await adminFetch<AdminSession>("/session");
+      onLoggedIn(session);
+      navigate("/admin", { replace: true });
+    } catch (e) {
+      if (e && typeof e === "object" && "message" in e) {
+        setError(String((e as { message?: string }).message ?? "Activation impossible"));
+      } else {
+        setError("Activation super admin impossible.");
+      }
+    } finally {
+      setActivating(false);
+    }
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h1 className="text-xl font-bold text-text">Connexion administrateur</h1>
-        <p className="mt-1 text-sm text-slate-600">Accès au tableau de bord admin DocuGest.</p>
-        <form onSubmit={onSubmit} className="mt-5 space-y-3">
-          <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          <Input
-            label="Mot de passe"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          {error ? <p className="text-sm text-error">{error}</p> : null}
-          <Button type="submit" variant="primary" className="w-full" disabled={loading}>
-            {loading ? "Connexion..." : "Se connecter (admin)"}
-          </Button>
-        </form>
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-white to-emerald-50">
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-8 sm:px-6">
+        <div className="grid flex-1 items-center gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="rounded-3xl border border-slate-200/80 bg-white/80 p-6 shadow-sm backdrop-blur sm:p-8">
+            <div className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
+              Espace administration securise
+            </div>
+            <h1 className="mt-4 text-3xl font-extrabold leading-tight text-text sm:text-4xl">
+              Pilotez DocuGest avec une
+              <span className="bg-gradient-to-r from-primary to-emerald-600 bg-clip-text text-transparent"> vision claire </span>
+              et fiable.
+            </h1>
+            <p className="mt-4 text-sm leading-relaxed text-slate-700 sm:text-base">
+              Connectez-vous pour suivre les indicateurs clés, superviser les documents et garder une gouvernance solide de
+              la plateforme.
+            </p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-xl bg-slate-50 p-3 ring-1 ring-border/60">
+                <div className="text-[11px] uppercase tracking-wide text-slate-500">Confiance</div>
+                <div className="mt-1 text-sm font-semibold text-text">Audit & roles</div>
+              </div>
+              <div className="rounded-xl bg-slate-50 p-3 ring-1 ring-border/60">
+                <div className="text-[11px] uppercase tracking-wide text-slate-500">Performance</div>
+                <div className="mt-1 text-sm font-semibold text-text">Metriques live</div>
+              </div>
+              <div className="rounded-xl bg-slate-50 p-3 ring-1 ring-border/60">
+                <div className="text-[11px] uppercase tracking-wide text-slate-500">Croissance</div>
+                <div className="mt-1 text-sm font-semibold text-text">Signal business</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="w-full rounded-3xl border border-slate-200 bg-white p-6 shadow-soft sm:p-8">
+            <div className="mb-5">
+              <h2 className="text-xl font-bold text-text">Connexion administrateur</h2>
+              <p className="mt-1 text-sm text-slate-600">Accès au tableau de bord admin DocuGest.</p>
+            </div>
+            <form onSubmit={onSubmit} className="space-y-3">
+              <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <Input
+                label="Mot de passe"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              {error ? <p className="text-sm text-error">{error}</p> : null}
+              {error === "Compte connecté, mais sans droits admin." ? (
+                <Button type="button" variant="secondary" className="w-full" disabled={activating} onClick={tryActivateSuperAdmin}>
+                  {activating ? "Activation..." : "Activer super admin maintenant"}
+                </Button>
+              ) : null}
+              <Button type="submit" variant="primary" className="w-full" disabled={loading}>
+                {loading ? "Connexion..." : "Se connecter (admin)"}
+              </Button>
+            </form>
+          </div>
+        </div>
+
+        <footer className="mt-8 border-t border-slate-200/80 pt-4 text-center text-xs text-slate-500">
+          DocuGest Ivoire · Administration · by Soroboss · +225 07 57 22 87 31 · soroboss.bossimpact@gmail.com
+        </footer>
       </div>
     </div>
   );
