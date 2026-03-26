@@ -9,10 +9,12 @@ const globalForPool = globalThis as unknown as { __docugestPgPool?: Pool };
 function sslFromConnectionString(conn: string): PoolConfig["ssl"] | undefined {
   if (!conn) return undefined;
   if (process.env.PGSSL === "0") return false;
+  if (/localhost|127\.0\.0\.1/i.test(conn)) return undefined;
   if (/sslmode=require|ssl=true/i.test(conn) || process.env.PGSSL === "1") {
     return { rejectUnauthorized: false };
   }
-  return undefined;
+  // En prod (Insforge/Vercel), on force SSL par défaut pour éviter les erreurs de handshake.
+  return { rejectUnauthorized: false };
 }
 
 function createPool(): Pool {
