@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { adminFetch } from "../../lib/adminApi";
+import { Input } from "../../components/ui/Input";
+import { Button } from "../../components/ui/Button";
 
 type Overview = {
   documentsTotal: number;
@@ -11,6 +13,8 @@ type Overview = {
   recentLogins: { id: string; full_name: string; email: string; last_login: string | null }[];
   demographics: { gender: Record<string, number>; user_typology: Record<string, number> };
   adSummary: { views: number; clicks: number; ctrPct: number; byZone: Record<string, { views?: number; clicks?: number; ctrPct?: number }> };
+  documentsTrendLast14Days?: { day: string; count: number }[];
+  topCountriesByLogin?: { country: string; count: number }[];
 };
 
 type Insights = {
@@ -27,6 +31,14 @@ export function AdminDashboard() {
   const [insights, setInsights] = useState<Insights | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<string | null>(null);
+  const [teamBusy, setTeamBusy] = useState(false);
+  const [teamMsg, setTeamMsg] = useState<string | null>(null);
+  const [memberName, setMemberName] = useState("");
+  const [memberEmail, setMemberEmail] = useState("");
+  const [memberPhone, setMemberPhone] = useState("");
+  const [memberRole, setMemberRole] = useState("operator");
+  const [memberPerm, setMemberPerm] = useState("write");
+  const [memberPwd, setMemberPwd] = useState("");
 
   useEffect(() => {
     let c = false;
@@ -90,6 +102,37 @@ export function AdminDashboard() {
     )
   );
   const liveText = lastRefresh ? new Date(lastRefresh).toLocaleTimeString("fr-FR") : "—";
+  const trend = overview.documentsTrendLast14Days ?? [];
+  const maxTrend = Math.max(1, ...trend.map((d) => Number(d.count || 0)));
+
+  async function createTeamMember() {
+    setTeamBusy(true);
+    setTeamMsg(null);
+    try {
+      await adminFetch("/users", {
+        method: "POST",
+        json: {
+          full_name: memberName,
+          email: memberEmail,
+          phone: memberPhone,
+          password: memberPwd,
+          role: memberRole,
+          permission_level: memberPerm,
+          gender: null,
+          user_typology: "team"
+        }
+      });
+      setTeamMsg("Membre équipe créé.");
+      setMemberName("");
+      setMemberEmail("");
+      setMemberPhone("");
+      setMemberPwd("");
+    } catch (e) {
+      setTeamMsg(e instanceof Error ? e.message : "Erreur création membre");
+    } finally {
+      setTeamBusy(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -128,6 +171,55 @@ export function AdminDashboard() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-semibold text-text">Courbe documents (14 derniers jours)</h2>
+          {trend.length === 0 ? (
+            <p className="mt-3 text-sm text-slate-500">Pas assez de données.</p>
+          ) : (
+            <div className="mt-4 overflow-x-auto">
+              <svg viewBox="0 0 560 170" className="h-[170px] w-full min-w-[560px]">
+                <polyline
+                  fill="none"
+                  stroke="#0f766e"
+                  strokeWidth="3"
+                  points={trend
+                    .map((p, i) => {
+                      const x = (i / Math.max(1, trend.length - 1)) * 540 + 10;
+                      const y = 150 - (Number(p.count || 0) / maxTrend) * 120;
+                      return `${x},${y}`;
+                    })
+                    .join(" ")}
+                />
+                {trend.map((p, i) => {
+                  const x = (i / Math.max(1, trend.length - 1)) * 540 + 10;
+                  const y = 150 - (Number(p.count || 0) / maxTrend) * 120;
+                  return <circle key={p.day} cx={x} cy={y} r="3" fill="#0f766e" />;
+                })}
+              </svg>
+              <div className="mt-2 flex justify-between text-[10px] text-slate-500">
+                <span>{trend[0]?.day ?? "—"}</span>
+                <span>{trend[trend.length - 1]?.day ?? "—"}</span>
+              </div>
+            </div>
+          )}
+        </section>
+
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-semibold text-text">Pays les plus connectés</h2>
+          <div className="mt-3 space-y-2 text-sm">
+            {(overview.topCountriesByLogin ?? []).length === 0 ? (
+              <p className="text-slate-500">Aucune donnée disponible.</p>
+            ) : (
+              (overview.topCountriesByLogin ?? []).map((c) => (
+                <div key={c.country} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                  <span>{c.country}</span>
+                  <span className="font-semibold">{c.count}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold text-text">Mix produit (documents par type)</h2>
           <div className="mt-4 space-y-3">
@@ -173,6 +265,47 @@ export function AdminDashboard() {
           </div>
         </section>
       </div>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 className="text-lg font-semibold text-text">Créer un compte équipe rapidement</h2>
+        <p className="text-xs text-slate-500">Ajoutez vos collaborateurs avec rôle et niveau de permission.</p>
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          <Input label="Nom complet" value={memberName} onChange={(e) => setMemberName(e.target.value)} />
+          <Input label="Email" type="email" value={memberEmail} onChange={(e) => setMemberEmail(e.target.value)} />
+          <Input label="Téléphone" value={memberPhone} onChange={(e) => setMemberPhone(e.target.value)} />
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium text-text">Rôle</span>
+            <select
+              className="w-full rounded-xl border border-border px-3 py-2 text-sm"
+              value={memberRole}
+              onChange={(e) => setMemberRole(e.target.value)}
+            >
+              <option value="operator">Opérateur</option>
+              <option value="manager">Manager</option>
+              <option value="admin">Admin</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium text-text">Permission</span>
+            <select
+              className="w-full rounded-xl border border-border px-3 py-2 text-sm"
+              value={memberPerm}
+              onChange={(e) => setMemberPerm(e.target.value)}
+            >
+              <option value="read">Lecture</option>
+              <option value="write">Écriture</option>
+              <option value="admin">Admin</option>
+            </select>
+          </label>
+          <Input label="Mot de passe initial" type="password" value={memberPwd} onChange={(e) => setMemberPwd(e.target.value)} />
+        </div>
+        <div className="mt-4 flex items-center gap-3">
+          <Button type="button" onClick={() => void createTeamMember()} disabled={teamBusy}>
+            {teamBusy ? "Création..." : "Créer le membre"}
+          </Button>
+          {teamMsg ? <span className="text-sm text-slate-600">{teamMsg}</span> : null}
+        </div>
+      </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="text-lg font-semibold text-text">Saisonnalité hebdomadaire</h2>

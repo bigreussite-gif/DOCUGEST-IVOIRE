@@ -27,6 +27,12 @@ export function AdminLayout({ session }: { session: AdminSession }) {
           >
             Documents (tableau)
           </NavLink>
+          <NavLink
+            to="/admin/ads"
+            className={({ isActive }) => `rounded-xl px-3 py-2.5 text-sm ${isActive ? active : inactive}`}
+          >
+            Affichages pub
+          </NavLink>
           {canManageUsers ? (
             <NavLink
               to="/admin/users"
@@ -67,6 +73,9 @@ export function AdminLayout({ session }: { session: AdminSession }) {
               </NavLink>
               <NavLink to="/admin/documents" className="rounded-lg bg-slate-100 px-3 py-2 text-sm">
                 Documents
+              </NavLink>
+              <NavLink to="/admin/ads" className="rounded-lg bg-slate-100 px-3 py-2 text-sm">
+                Pub
               </NavLink>
               {canManageUsers ? (
                 <NavLink to="/admin/users" className="rounded-lg bg-slate-100 px-3 py-2 text-sm">

@@ -52,8 +52,8 @@ export async function getUserByLoginIdentifier(identifier: string): Promise<User
   const { rows } = await pool.query(
     `SELECT * FROM public.users
      WHERE lower(email) = lower($1)
-        OR regexp_replace(coalesce(phone, ''), '[^0-9]', '', 'g') = $2
-        OR regexp_replace(coalesce(whatsapp, ''), '[^0-9]', '', 'g') = $2
+        OR regexp_replace(coalesce(phone::text, ''), '[^0-9]', '', 'g') = $2
+        OR regexp_replace(coalesce(whatsapp::text, ''), '[^0-9]', '', 'g') = $2
      LIMIT 1`,
     [clean, digits]
   );
@@ -477,6 +477,81 @@ export async function listAuditLogs({ limit = 100 }: { limit?: number }) {
   }));
 }
 
+type AdSlotConfig = {
+  slot: string;
+  page: string;
+  category: string;
+  title: string;
+  body: string;
+  ctaLabel: string;
+  ctaUrl: string;
+  active: boolean;
+  updated_at: string | null;
+};
+
+export async function upsertAdSlotConfig({
+  actorId,
+  slot,
+  page,
+  category,
+  title,
+  body,
+  ctaLabel,
+  ctaUrl,
+  active
+}: {
+  actorId: string;
+  slot: string;
+  page: string;
+  category: string;
+  title: string;
+  body: string;
+  ctaLabel: string;
+  ctaUrl: string;
+  active: boolean;
+}) {
+  await appendAuditLog({
+    actorId,
+    action: "ads.config.upsert",
+    targetType: "ad_slot",
+    targetId: slot,
+    metadata: { slot, page, category, title, body, ctaLabel, ctaUrl, active },
+    ip: null
+  });
+}
+
+export async function listAdSlotsConfig(): Promise<AdSlotConfig[]> {
+  const pool = getPool();
+  const { rows } = await pool.query(
+    `SELECT target_id, metadata, created_at
+     FROM public.admin_audit_logs
+     WHERE action = 'ads.config.upsert'
+     ORDER BY created_at DESC
+     LIMIT 500`
+  );
+
+  const seen = new Set<string>();
+  const out: AdSlotConfig[] = [];
+  for (const row of rows as { target_id: string | null; metadata: unknown; created_at: unknown }[]) {
+    const slot = String(row.target_id ?? "");
+    if (!slot || seen.has(slot)) continue;
+    const m = (row.metadata ?? {}) as Record<string, unknown>;
+    out.push({
+      slot,
+      page: String(m.page ?? "global"),
+      category: String(m.category ?? "general"),
+      title: String(m.title ?? ""),
+      body: String(m.body ?? ""),
+      ctaLabel: String(m.ctaLabel ?? ""),
+      ctaUrl: String(m.ctaUrl ?? ""),
+      active: Boolean(m.active ?? true),
+      updated_at: iso(row.created_at)
+    });
+    seen.add(slot);
+  }
+  return out.sort((a, b) => a.slot.localeCompare(b.slot));
+}
+
 export async function insertAdEvent({
   event_type,
   zone,
@@ -527,6 +602,14 @@ export async function adminAnalyticsSnapshot(): Promise<Record<string, unknown>>
   const { rows: uc } = await pool.query(`SELECT COUNT(*)::int AS c FROM public.users`);
   const userCount = uc[0]?.c ?? 0;
 
+  const { rows: trendRows } = await pool.query(
+    `SELECT to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS d, COUNT(*)::int AS c
+     FROM public.documents
+     WHERE created_at >= NOW() - INTERVAL '14 days'
+     GROUP BY 1 ORDER BY 1`
+  );
+  const documentsTrendLast14Days = (trendRows as { d: string; c: number }[]).map((r) => ({ day: r.d, count: r.c }));
+
   const { rows: mau } = await pool.query(
     `SELECT COUNT(DISTINCT user_id)::int AS c FROM public.documents
      WHERE created_at > NOW() - INTERVAL '30 days'`
@@ -559,6 +642,17 @@ export async function adminAnalyticsSnapshot(): Promise<Record<string, unknown>>
   for (const r of typRows as { user_typology: string; c: number }[]) {
     if (r.user_typology) demographics.user_typology[r.user_typology] = r.c;
   }
+
+  const { rows: countryRows } = await pool.query(
+    `SELECT coalesce(nullif(trim(user_typology), ''), 'Non renseigné') AS country, COUNT(*)::int AS c
+     FROM public.users
+     WHERE last_login IS NOT NULL
+     GROUP BY 1 ORDER BY c DESC LIMIT 10`
+  );
+  const topCountriesByLogin = (countryRows as { country: string; c: number }[]).map((r) => ({
+    country: r.country,
+    count: r.c
+  }));
 
   let adSummary = { views: 0, clicks: 0, ctrPct: 0, byZone: {} as Record<string, unknown> };
   try {
@@ -602,10 +696,12 @@ export async function adminAnalyticsSnapshot(): Promise<Record<string, unknown>>
     documentsByType,
     documentsByHour,
     documentsByWeekday,
+    documentsTrendLast14Days,
     userCount,
     monthlyActiveUsers,
     recentLogins,
     demographics,
-    adSummary
+    adSummary,
+    topCountriesByLogin
   };
 }

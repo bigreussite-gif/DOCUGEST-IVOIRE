@@ -6,6 +6,7 @@ import { AdminDashboard } from "./AdminDashboard";
 import { AdminUsers } from "./AdminUsers";
 import { AdminAudit } from "./AdminAudit";
 import { AdminDocuments } from "./AdminDocuments";
+import { AdminAds } from "./AdminAds";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { apiFetch } from "../../lib/api";
@@ -105,6 +106,7 @@ export default function AdminApp() {
       <Route element={<AdminLayout session={session} />}>
         <Route index element={<AdminDashboard />} />
         <Route path="documents" element={<AdminDocuments />} />
+        <Route path="ads" element={<AdminAds />} />
         <Route path="users" element={<AdminUsers />} />
         <Route path="audit" element={<AdminAudit />} />
       </Route>
