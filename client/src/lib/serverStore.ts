@@ -81,6 +81,18 @@ export async function ensureBootstrapAdmin(userId: string): Promise<void> {
   }
 }
 
+export async function countSuperAdmins(): Promise<number> {
+  const pool = getPool();
+  const { rows } = await pool.query(`SELECT COUNT(*)::int AS c FROM public.users WHERE role = 'super_admin'`);
+  return Number(rows[0]?.c ?? 0);
+}
+
+export async function promoteToSuperAdmin(userId: string): Promise<boolean> {
+  const pool = getPool();
+  const { rowCount } = await pool.query(`UPDATE public.users SET role = 'super_admin' WHERE id = $1`, [userId]);
+  return (rowCount ?? 0) > 0;
+}
+
 export async function updatePassword(userId: string, password_hash: string): Promise<boolean> {
   const pool = getPool();
   const { rowCount } = await pool.query(`UPDATE public.users SET password_hash = $2 WHERE id = $1`, [
@@ -207,6 +219,84 @@ export async function listDocuments({
     [userId, typeFilter, limit, offset]
   );
   return { items: rows.map((r) => mapDoc(r as Record<string, unknown>)), total };
+}
+
+export async function listDocumentsAdmin({
+  page,
+  limit,
+  type,
+  q
+}: {
+  page: number;
+  limit: number;
+  type: string | null;
+  q: string | null;
+}) {
+  const pool = getPool();
+  const offset = (page - 1) * limit;
+  const typeFilter = type || null;
+  const query = q?.trim() ? `%${q.trim().toLowerCase()}%` : null;
+
+  const { rows: countRows } = await pool.query(
+    `SELECT COUNT(*)::int AS c
+     FROM public.documents d
+     LEFT JOIN public.users u ON u.id = d.user_id
+     WHERE ($1::text IS NULL OR d.type = $1)
+       AND (
+         $2::text IS NULL OR
+         lower(d.doc_number) LIKE $2 OR
+         lower(d.client_name) LIKE $2 OR
+         lower(coalesce(u.email, '')) LIKE $2 OR
+         lower(coalesce(u.full_name, '')) LIKE $2
+       )`,
+    [typeFilter, query]
+  );
+  const total = Number(countRows[0]?.c ?? 0);
+
+  const { rows } = await pool.query(
+    `SELECT
+       d.id,
+       d.user_id,
+       d.type,
+       d.doc_number,
+       d.client_name,
+       d.total_amount,
+       d.currency,
+       d.status,
+       d.created_at,
+       u.full_name AS owner_name,
+       u.email AS owner_email
+     FROM public.documents d
+     LEFT JOIN public.users u ON u.id = d.user_id
+     WHERE ($1::text IS NULL OR d.type = $1)
+       AND (
+         $2::text IS NULL OR
+         lower(d.doc_number) LIKE $2 OR
+         lower(d.client_name) LIKE $2 OR
+         lower(coalesce(u.email, '')) LIKE $2 OR
+         lower(coalesce(u.full_name, '')) LIKE $2
+       )
+     ORDER BY d.created_at DESC
+     LIMIT $3 OFFSET $4`,
+    [typeFilter, query, limit, offset]
+  );
+
+  return {
+    items: rows.map((r: Record<string, unknown>) => ({
+      id: String(r.id),
+      user_id: String(r.user_id),
+      type: String(r.type),
+      doc_number: String(r.doc_number),
+      client_name: String(r.client_name),
+      total_amount: r.total_amount != null ? Number(r.total_amount) : 0,
+      currency: String(r.currency ?? "FCFA"),
+      status: String(r.status ?? "draft"),
+      created_at: iso(r.created_at),
+      owner_name: r.owner_name ? String(r.owner_name) : null,
+      owner_email: r.owner_email ? String(r.owner_email) : null
+    })),
+    total
+  };
 }
 
 export async function getDocumentById({ userId, id }: { userId: string; id: string }) {

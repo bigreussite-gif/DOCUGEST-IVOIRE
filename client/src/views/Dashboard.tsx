@@ -156,45 +156,62 @@ function DashboardHome() {
             Aucun document pour l’instant. Lance une facture ou un bulletin pour remplir ton tableau.
           </div>
         ) : (
-          <ul className="mt-4 divide-y divide-border/60">
-            {docs.map((d) => (
-              <li key={d.id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <Link to={openDoc(d)} className="font-medium text-primary hover:underline">
-                    {d.doc_number}
-                  </Link>
-                  <span className="ml-2 rounded-full bg-surface px-2 py-0.5 text-xs text-slate-600">
-                    {typeLabel(d.type)}
-                  </span>
-                  {d._offlinePending ? (
-                    <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
-                      Synchro en attente
+          <div className="mt-4">
+            <ul className="divide-y divide-border/60">
+              {docs.map((d) => (
+                <li key={d.id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <Link to={openDoc(d)} className="font-medium text-primary hover:underline">
+                      {d.doc_number}
+                    </Link>
+                    <span className="ml-2 rounded-full bg-surface px-2 py-0.5 text-xs text-slate-600">
+                      {typeLabel(d.type)}
                     </span>
-                  ) : null}
-                  <div className="text-base text-slate-700">{d.client_name}</div>
-                  <div className="text-sm text-slate-500">
-                    {new Date(d.created_at).toLocaleString("fr-FR")}
+                    {d._offlinePending ? (
+                      <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
+                        Synchro en attente
+                      </span>
+                    ) : null}
+                    <div className="text-base text-slate-700">{d.client_name}</div>
+                    <div className="text-sm text-slate-500">
+                      {new Date(d.created_at).toLocaleString("fr-FR")}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-semibold text-text">{formatFCFA(Number(d.total_amount))}</span>
+                    <Link to={openDoc(d)}>
+                      <Button variant="secondary" className="h-10 text-sm">
+                        Modifier
+                      </Button>
+                    </Link>
+                    <Link to={`${openDoc(d)}?action=print`}>
+                      <Button variant="ghost" className="h-10 text-sm">
+                        Imprimer
+                      </Button>
+                    </Link>
+                    <Button variant="danger" className="h-10 text-sm" type="button" onClick={() => removeDoc(d.id)}>
+                      Supprimer
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="text-sm font-semibold text-emerald-900">Facture rapide e-commerce</div>
+                  <div className="text-xs text-emerald-800">
+                    Pour les ventes en ligne: ouvrez un modele simplifie puis editez en 1 minute.
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-semibold text-text">{formatFCFA(Number(d.total_amount))}</span>
-                  <Link to={openDoc(d)}>
-                    <Button variant="secondary" className="h-10 text-sm">
-                      Modifier
-                    </Button>
-                  </Link>
-                  <Link to={`${openDoc(d)}?action=print`}>
-                    <Button variant="ghost" className="h-10 text-sm">
-                      Imprimer
-                    </Button>
-                  </Link>
-                  <Button variant="danger" className="h-10 text-sm" type="button" onClick={() => removeDoc(d.id)}>
-                    Supprimer
+                <Link to="/dashboard/invoice/new?type=invoice&quick=1">
+                  <Button variant="primary" className="h-10 text-sm">
+                    Nouvelle facture rapide
                   </Button>
-                </div>
-              </li>
-            ))}
-          </ul>
+                </Link>
+              </div>
+            </div>
+          </div>
         )}
       </div>
 

@@ -21,6 +21,12 @@ export function AdminLayout({ session }: { session: AdminSession }) {
           <NavLink to="/admin" end className={({ isActive }) => `rounded-xl px-3 py-2.5 text-sm ${isActive ? active : inactive}`}>
             Vue investisseur
           </NavLink>
+          <NavLink
+            to="/admin/documents"
+            className={({ isActive }) => `rounded-xl px-3 py-2.5 text-sm ${isActive ? active : inactive}`}
+          >
+            Documents (tableau)
+          </NavLink>
           {canManageUsers ? (
             <NavLink
               to="/admin/users"
@@ -58,6 +64,9 @@ export function AdminLayout({ session }: { session: AdminSession }) {
             <div className="flex flex-wrap gap-2 md:hidden">
               <NavLink to="/admin" className="rounded-lg bg-slate-100 px-3 py-2 text-sm">
                 Synthèse
+              </NavLink>
+              <NavLink to="/admin/documents" className="rounded-lg bg-slate-100 px-3 py-2 text-sm">
+                Documents
               </NavLink>
               {canManageUsers ? (
                 <NavLink to="/admin/users" className="rounded-lg bg-slate-100 px-3 py-2 text-sm">
