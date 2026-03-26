@@ -32,18 +32,10 @@ app.use(
 app.use(cookieParser());
 app.use(express.json({ limit: "2mb" }));
 
-/** Sur Vercel (serverless), le chemin peut arriver sans préfixe /api — on réaligne Express. */
-app.use((req, _res, next) => {
-  const u = req.url || "";
-  if (u && !u.startsWith("/api")) {
-    if (u.startsWith("/health")) return next();
-    const nextUrl = `/api${u.startsWith("/") ? u : `/${u}`}`;
-    req.url = nextUrl;
-    if ("originalUrl" in req) req.originalUrl = nextUrl;
-  }
-  next();
-});
-
+/**
+ * En serverless, le chemin peut arriver avec ou sans préfixe /api selon la plateforme.
+ * On monte les routeurs deux fois : avec et sans préfixe /api.
+ */
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 5,
@@ -54,6 +46,9 @@ const authLimiter = rateLimit({
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
 app.use("/api/auth", authLimiter, authRouter);
+app.use("/auth", authLimiter, authRouter);
+
 app.use("/api/documents", documentsRouter);
+app.use("/documents", documentsRouter);
 
 module.exports = { app, usePg, port };
