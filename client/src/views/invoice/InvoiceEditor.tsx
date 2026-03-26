@@ -400,13 +400,13 @@ export default function InvoiceEditor() {
         </div>
       </div>
 
-      <div className="mt-6 grid gap-4 xl:grid-cols-[1fr_minmax(0,520px)]">
+      <div className="mt-6 grid gap-4 xl:grid-cols-2">
         <div className="rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70 sm:p-5">
-          <form className="max-h-[85vh] overflow-auto pr-2" onSubmit={(e) => e.preventDefault()}>
+          <form className="max-h-[85vh] overflow-auto pr-2 text-[13px]" onSubmit={(e) => e.preventDefault()}>
             <div className="grid gap-5">
               <div className="rounded-xl bg-surface p-5 ring-1 ring-border/70">
-                <div className="text-base font-semibold text-text">Identité visuelle</div>
-                <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
+                <div className="text-sm font-semibold text-text">Identité visuelle</div>
+                <p className="mt-1.5 text-xs leading-relaxed text-slate-600">
                   Importez le logo de votre entreprise : les couleurs dominantes sont détectées automatiquement
                   (traitement local, sans envoi serveur). Option avancée : branchement futur vers une API d’analyse
                   IA pour des propositions de mise en page.
@@ -466,7 +466,7 @@ export default function InvoiceEditor() {
               </div>
 
               <div className="rounded-xl bg-surface p-5 ring-1 ring-border/70">
-                <div className="text-base font-semibold text-text">En-tête émetteur</div>
+                <div className="text-sm font-semibold text-text">En-tête émetteur</div>
                 <div className="mt-4 grid gap-4 md:grid-cols-2">
                   <Input label="Nom entreprise" {...form.register("senderCompanyName")} error={form.formState.errors.senderCompanyName?.message} />
                   <Input label="Téléphone" {...form.register("senderPhone")} error={undefined} />
@@ -694,7 +694,7 @@ export default function InvoiceEditor() {
             <div className="flex items-center justify-between gap-3 pb-3">
               <div>
                 <div className="text-sm font-semibold text-text">{docTypeLabel(previewValues.docType)}</div>
-                <div className="text-xs text-slate-600">Aperçu en temps réel (A4)</div>
+                <div className="text-[11px] text-slate-600">Aperçu en temps réel (A4)</div>
               </div>
               <div className="text-right">
                 <div className="text-xs text-slate-600">Total</div>

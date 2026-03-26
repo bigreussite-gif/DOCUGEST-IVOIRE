@@ -241,11 +241,11 @@ export default function PayslipEditor() {
         </div>
       </div>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_minmax(0,520px)]">
-        <form className="space-y-6 rounded-2xl bg-bg p-5 shadow-soft ring-1 ring-border/70" onSubmit={(e) => e.preventDefault()}>
+      <div className="mt-6 grid gap-4 xl:grid-cols-2">
+        <form className="space-y-6 rounded-2xl bg-bg p-5 text-[13px] shadow-soft ring-1 ring-border/70" onSubmit={(e) => e.preventDefault()}>
           <div className="rounded-xl bg-surface p-5 ring-1 ring-border/70">
-            <div className="text-base font-semibold text-text">Identité employeur</div>
-            <p className="mt-1 text-sm leading-relaxed text-slate-600">
+            <div className="text-sm font-semibold text-text">Identité employeur</div>
+            <p className="mt-1 text-xs leading-relaxed text-slate-600">
               Logo affiché en haut du bulletin — couleurs détectées automatiquement (local).
             </p>
             <div className="mt-4 flex flex-wrap items-end gap-4">
@@ -284,7 +284,7 @@ export default function PayslipEditor() {
           </div>
 
           <div className="rounded-xl bg-surface p-5 ring-1 ring-border/70">
-            <div className="text-base font-semibold text-text">Salarié & période</div>
+            <div className="text-sm font-semibold text-text">Salarié & période</div>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <Input label="Nom & prénom" {...form.register("employeeName")} error={form.formState.errors.employeeName?.message} />
               <Input label="Poste / fonction" {...form.register("employeeRole")} />
@@ -296,7 +296,7 @@ export default function PayslipEditor() {
           </div>
 
           <div className="rounded-xl bg-surface p-5 ring-1 ring-border/70">
-            <div className="text-base font-semibold text-text">Montants (FCFA)</div>
+            <div className="text-sm font-semibold text-text">Montants (FCFA)</div>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <Input label="Salaire de base" type="number" {...form.register("baseSalary", { valueAsNumber: true })} />
               <Input label="Primes" type="number" {...form.register("bonuses", { valueAsNumber: true })} />
@@ -309,7 +309,7 @@ export default function PayslipEditor() {
               <Input label="CNPS / retenues sociales" type="number" {...form.register("cnpsEmployee", { valueAsNumber: true })} />
               <Input label="Autres déductions" type="number" {...form.register("otherDeductions", { valueAsNumber: true })} />
             </div>
-            <div className="mt-5 rounded-xl bg-primary/10 px-4 py-4 text-base ring-1 ring-primary/20">
+            <div className="mt-5 rounded-xl bg-primary/10 px-4 py-4 text-sm ring-1 ring-primary/20">
               <span className="text-slate-700">Net à payer : </span>
               <span className="font-bold text-primary">{formatFCFA(netPay)}</span>
             </div>
@@ -322,7 +322,7 @@ export default function PayslipEditor() {
 
         <div className="rounded-2xl bg-bg p-5 shadow-soft ring-1 ring-border/70">
           <div className="sticky top-20 md:top-4">
-            <div className="mb-3 text-sm font-semibold text-text">Aperçu en temps réel</div>
+            <div className="mb-3 text-xs font-semibold text-text">Aperçu en temps réel</div>
             <div ref={previewRef} className="max-h-[78vh] overflow-auto rounded-xl bg-slate-100/80 p-2 ring-1 ring-border/50">
               <PayslipPreview data={previewPayload} />
             </div>
