@@ -4,6 +4,7 @@
  */
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { createHash } from "node:crypto";
 import { getPool } from "@/lib/db";
 import { hashPassword, signSessionToken, toPublicUser } from "@/lib/auth";
 import type { UserRow } from "@/models/User";
@@ -16,8 +17,13 @@ const bodySchema = z.object({
   password: z.string().min(8, "Mot de passe : min. 8 caractères")
 });
 
-/** Téléphone provisoire si le formulaire minimal n’en fournit pas (NOT NULL en base) */
-const PLACEHOLDER_PHONE = "+22500000000";
+/** Téléphone provisoire si le formulaire minimal n’en fournit pas (NOT NULL en base). */
+function buildPlaceholderPhone(email: string): string {
+  // 10 chiffres déterministes à partir de l'email (format E.164 court: +225XXXXXXXXXX)
+  const hash = createHash("sha256").update(email.toLowerCase()).digest("hex");
+  const num = BigInt(`0x${hash.slice(0, 15)}`) % 10_000_000_000n;
+  return `+225${num.toString().padStart(10, "0")}`;
+}
 
 async function ensureBootstrapAdmin(pool: ReturnType<typeof getPool>, userId: string, email: string) {
   const bootstrap = process.env.ADMIN_BOOTSTRAP_EMAIL;
@@ -53,10 +59,11 @@ export async function POST(req: Request) {
     }
 
     const { name, email, password } = parsed.data;
-    console.log("[api/auth/register] email candidat", email);
+    const cleanEmail = email.trim().toLowerCase();
+    console.log("[api/auth/register] email candidat", cleanEmail);
     const pool = getPool();
 
-    const taken = await pool.query(`SELECT 1 FROM public.users WHERE lower(email) = lower($1) LIMIT 1`, [email]);
+    const taken = await pool.query(`SELECT 1 FROM public.users WHERE lower(email) = lower($1) LIMIT 1`, [cleanEmail]);
     if (taken.rows.length > 0) {
       console.log("[api/auth/register] email déjà pris");
       return NextResponse.json({ message: "Email déjà utilisé" }, { status: 409 });
@@ -64,6 +71,7 @@ export async function POST(req: Request) {
 
     const password_hash = await hashPassword(password);
     const full_name = name.trim();
+    const placeholderPhone = buildPlaceholderPhone(cleanEmail);
 
     let row: UserRow;
     try {
@@ -72,19 +80,30 @@ export async function POST(req: Request) {
           full_name, phone, whatsapp, email, password_hash
         ) VALUES ($1, $2, $3, $4, $5)
         RETURNING *`,
-        [full_name, PLACEHOLDER_PHONE, null, email, password_hash]
+        [full_name, placeholderPhone, null, cleanEmail, password_hash]
       );
       row = ins.rows[0] as UserRow;
     } catch (e: unknown) {
-      const err = e as { code?: string };
+      const err = e as { code?: string; constraint?: string; detail?: string };
       if (err.code === "23505") {
-        return NextResponse.json({ message: "Email déjà utilisé" }, { status: 409 });
+        const c = String(err.constraint ?? "").toLowerCase();
+        const d = String(err.detail ?? "").toLowerCase();
+        if (c.includes("email") || d.includes("email")) {
+          return NextResponse.json({ message: "Email déjà utilisé" }, { status: 409 });
+        }
+        if (c.includes("phone") || d.includes("phone")) {
+          return NextResponse.json({ message: "Téléphone déjà utilisé" }, { status: 409 });
+        }
+        return NextResponse.json({ message: "Donnée déjà utilisée (unicité)" }, { status: 409 });
+      }
+      if (err.code === "23502") {
+        return NextResponse.json({ message: "Champ obligatoire manquant côté base de données" }, { status: 500 });
       }
       console.error("[register] insert", e);
       return NextResponse.json({ message: "Erreur lors de la création du compte" }, { status: 500 });
     }
 
-    await ensureBootstrapAdmin(pool, row.id, email);
+    await ensureBootstrapAdmin(pool, row.id, cleanEmail);
 
     const { rows: fresh } = await pool.query(`SELECT * FROM public.users WHERE id = $1 LIMIT 1`, [row.id]);
     const dbUser = fresh[0] ?? row;
