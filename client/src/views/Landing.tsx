@@ -28,7 +28,10 @@ export default function Landing() {
     <div className="min-h-screen bg-bg">
       <MonetizationTopBar />
 
-      <div className="mx-auto max-w-6xl px-4 pb-6 pt-4 sm:pt-5">
+      <div className="relative mx-auto max-w-6xl overflow-hidden px-4 pb-6 pt-4 sm:pt-5">
+        <div className="pointer-events-none absolute -left-20 top-10 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
+        <div className="pointer-events-none absolute -right-16 top-28 h-44 w-44 rounded-full bg-emerald-500/10 blur-3xl" />
+
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <div className="rounded-2xl bg-white px-4 py-2.5 shadow-lg ring-2 ring-primary/20 transition-transform duration-200 hover:scale-[1.01]">
@@ -79,6 +82,21 @@ export default function Landing() {
                 c’est ta vision business.
               </p>
 
+              <div className="mt-5 grid max-w-xl grid-cols-3 gap-2">
+                <div className="rounded-xl bg-white/80 p-3 text-center ring-1 ring-border/60">
+                  <div className="text-lg font-bold text-primary">24/7</div>
+                  <div className="text-[11px] text-slate-600">Disponible</div>
+                </div>
+                <div className="rounded-xl bg-white/80 p-3 text-center ring-1 ring-border/60">
+                  <div className="text-lg font-bold text-primary">FCFA</div>
+                  <div className="text-[11px] text-slate-600">Natif local</div>
+                </div>
+                <div className="rounded-xl bg-white/80 p-3 text-center ring-1 ring-border/60">
+                  <div className="text-lg font-bold text-primary">PDF</div>
+                  <div className="text-[11px] text-slate-600">Prêt en 1 clic</div>
+                </div>
+              </div>
+
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link href="/register">
                   <Button variant="primary" className="min-h-[48px] px-8 text-base shadow-lg shadow-primary/25">
@@ -97,11 +115,15 @@ export default function Landing() {
               </p>
             </div>
 
-            <div className="rounded-3xl bg-gradient-to-br from-surface to-white p-6 shadow-soft ring-1 ring-border/70 sm:p-8">
+            <div className="relative rounded-3xl bg-gradient-to-br from-surface to-white p-6 shadow-soft ring-1 ring-border/70 sm:p-8">
+              <div className="absolute right-4 top-4 h-2.5 w-2.5 animate-pulse rounded-full bg-emerald-500" />
               <div className="text-sm font-bold uppercase tracking-wide text-primary">Pourquoi nous faire confiance</div>
               <ul className="mt-5 grid gap-4">
                 {benefits.map((b) => (
-                  <li key={b.title} className="flex gap-4 rounded-2xl bg-bg/80 p-4 ring-1 ring-border/60">
+                  <li
+                    key={b.title}
+                    className="flex gap-4 rounded-2xl bg-bg/80 p-4 ring-1 ring-border/60 transition duration-200 hover:-translate-y-0.5 hover:bg-white"
+                  >
                     <span className="text-2xl" aria-hidden>
                       {b.icon}
                     </span>
@@ -129,7 +151,7 @@ export default function Landing() {
             <div className="mt-6">
               <Link
                 href="/register"
-                className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-white px-8 text-base font-semibold text-slate-900 shadow-lg shadow-black/20 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-white/60"
+                className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-white px-8 text-base font-semibold text-slate-900 shadow-lg shadow-black/20 transition hover:scale-[1.01] hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-white/60"
               >
                 Créer mon compte gratuit
               </Link>

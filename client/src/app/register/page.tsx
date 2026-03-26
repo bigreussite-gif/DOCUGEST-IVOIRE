@@ -7,6 +7,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { InlineAdStrip } from "@/components/promo/InlineAdStrip";
+import { SorobossFooter } from "@/components/promo/SorobossFooter";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -189,6 +191,21 @@ export default function RegisterPage() {
             Me connecter
           </Link>
         </p>
+
+        <div className="mt-6 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-center">
+          <p className="text-xs font-semibold uppercase tracking-wide text-primary">Pourquoi DocuGest ?</p>
+          <p className="mt-1 text-xs leading-relaxed text-slate-700">
+            Gagnez du temps, professionnalisez vos documents et inspirez confiance a vos clients.
+          </p>
+        </div>
+      </div>
+
+      <div className="mx-auto mt-4 w-full max-w-md">
+        <InlineAdStrip variant="compact" />
+      </div>
+
+      <div className="mx-auto mt-4 w-full max-w-md border-t border-slate-200/70 pt-4">
+        <SorobossFooter />
       </div>
       </div>
     </div>
