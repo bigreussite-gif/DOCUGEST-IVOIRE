@@ -131,7 +131,7 @@ export default function RegisterPage() {
               </label>
               <div className="flex overflow-hidden rounded-xl border border-border bg-bg ring-primary/30 focus-within:ring-2">
                 <span className="inline-flex items-center gap-1 border-r border-border px-3 text-sm text-slate-700">
-                  {findCountryByCode(countryCode)?.flag} {findCountryByCode(countryCode)?.dial}
+                  {findCountryByCode(countryCode)?.dial}
                 </span>
                 <input
                   id="whatsapp"
@@ -159,7 +159,7 @@ export default function RegisterPage() {
               >
                 {FRANCOPHONE_AFRICA_COUNTRIES.map((c) => (
                   <option key={c.code} value={c.code}>
-                    {c.flag} {c.label}
+                    {c.label}
                   </option>
                 ))}
               </select>
