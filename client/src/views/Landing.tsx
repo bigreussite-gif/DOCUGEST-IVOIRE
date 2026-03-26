@@ -59,6 +59,21 @@ export default function Landing() {
           </div>
         </header>
 
+        <div className="mt-4 grid gap-3 rounded-2xl border border-slate-200/80 bg-white/80 p-3 shadow-sm sm:grid-cols-3 sm:items-center">
+          <div className="rounded-xl bg-slate-50 px-3 py-2 text-center ring-1 ring-border/60">
+            <div className="text-[11px] uppercase tracking-wide text-slate-500">Temps moyen</div>
+            <div className="text-sm font-semibold text-text">Document en moins de 3 min</div>
+          </div>
+          <div className="rounded-xl bg-slate-50 px-3 py-2 text-center ring-1 ring-border/60">
+            <div className="text-[11px] uppercase tracking-wide text-slate-500">Confiance</div>
+            <div className="text-sm font-semibold text-text">Format pro + export PDF propre</div>
+          </div>
+          <div className="rounded-xl bg-slate-50 px-3 py-2 text-center ring-1 ring-border/60">
+            <div className="text-[11px] uppercase tracking-wide text-slate-500">Support local</div>
+            <div className="text-sm font-semibold text-text">Equipe DocuGest en Afrique francophone</div>
+          </div>
+        </div>
+
         <main className="mt-6 sm:mt-8">
           <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-center">
             <div>
@@ -142,9 +157,9 @@ export default function Landing() {
             </div>
           </div>
 
-          <section className="mt-12 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-6 py-10 text-center text-white sm:px-12">
-            <h2 className="text-2xl font-bold sm:text-3xl">Ton activité mérite des documents à la hauteur</h2>
-            <p className="mx-auto mt-3 max-w-2xl text-slate-300">
+          <section className="mt-12 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-blue-950 px-6 py-10 text-center sm:px-12">
+            <h2 className="text-2xl font-bold text-white sm:text-3xl">Ton activité mérite des documents à la hauteur</h2>
+            <p className="mx-auto mt-3 max-w-2xl text-slate-200">
               Pas de jargon inutile : juste des outils qui te font gagner du temps, de la crédibilité et la sérénité pour
               encaisser et payer en toute clarté.
             </p>

@@ -20,6 +20,9 @@ export type InvoicePreviewProps = {
       address: string;
       phone: string;
       email: string;
+      headOffice?: string;
+      rib?: string;
+      legalForm?: string;
       ncc?: string;
       rccm?: string;
       dfe?: string;
@@ -70,7 +73,7 @@ export default function InvoicePreview({ docTypeLabel, themeColor, customAccentH
 
   return (
     <div className="bg-bg p-2">
-      <div className="w-[210mm] min-h-[297mm] rounded-sm bg-white p-6 text-[10.5px] text-black shadow-none">
+      <div className="flex h-[297mm] w-[210mm] flex-col rounded-sm bg-white p-6 text-[10.5px] text-black shadow-none">
         <div className="flex gap-4">
           <div className="w-1/2">
             <div className="flex items-start gap-3">
@@ -194,8 +197,21 @@ export default function InvoicePreview({ docTypeLabel, themeColor, customAccentH
           <div className="mt-1 whitespace-pre-wrap">{data.conditions}</div>
         </div>
 
-        <div className="mt-6 text-center text-[10px] text-black/80">
-          {data.footerNote}
+        <div className="mt-auto pt-4">
+          <div className="border-t border-slate-300 pt-2 text-[9.5px] text-black/80">
+            <div className="text-center">{data.footerNote}</div>
+            <div className="mt-1 text-center">
+              {[data.sender.phone, data.sender.whatsapp, data.sender.email, data.sender.website].filter(Boolean).join(" · ")}
+            </div>
+            <div className="mt-1 text-center">
+              {[data.sender.headOffice || data.sender.address, data.sender.legalForm, data.sender.rib].filter(Boolean).join(" · ")}
+            </div>
+            <div className="mt-1 text-center">
+              {[data.sender.ncc ? `NCC: ${data.sender.ncc}` : "", data.sender.rccm ? `RCCM: ${data.sender.rccm}` : "", data.sender.dfe ? `DFE: ${data.sender.dfe}` : ""]
+                .filter(Boolean)
+                .join(" · ")}
+            </div>
+          </div>
         </div>
       </div>
     </div>

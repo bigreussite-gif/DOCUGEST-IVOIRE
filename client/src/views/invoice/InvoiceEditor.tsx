@@ -45,6 +45,14 @@ const editorSchema = z.object({
   senderAddress: z.string().default(""),
   senderPhone: z.string().default(""),
   senderEmail: z.string().default(""),
+  senderHeadOffice: z.string().default(""),
+  senderLegalForm: z.string().default(""),
+  senderRib: z.string().default(""),
+  senderNcc: z.string().default(""),
+  senderRccm: z.string().default(""),
+  senderDfe: z.string().default(""),
+  senderWebsite: z.string().default(""),
+  senderWhatsapp: z.string().default(""),
   lines: z.array(lineSchema).min(1),
   conditions: z.string().default("Paiement à 30 jours."),
   footerNote: z.string().default("Merci pour votre confiance.")
@@ -93,6 +101,7 @@ export default function InvoiceEditor() {
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
   const [brandPrimaryHex, setBrandPrimaryHex] = useState<string | null>(null);
   const previewWrapRef = useRef<HTMLDivElement | null>(null);
+  const printWrapRef = useRef<HTMLDivElement | null>(null);
 
   const defaultValues: EditorValues = useMemo(() => {
     const year = new Date().getFullYear();
@@ -117,6 +126,14 @@ export default function InvoiceEditor() {
       senderAddress: auth.user?.company_address ?? "",
       senderPhone: auth.user?.phone ?? "",
       senderEmail: auth.user?.email ?? "",
+      senderHeadOffice: auth.user?.company_address ?? "",
+      senderLegalForm: "",
+      senderRib: "",
+      senderNcc: auth.user?.company_ncc ?? "",
+      senderRccm: auth.user?.company_rccm ?? "",
+      senderDfe: auth.user?.company_dfe ?? "",
+      senderWebsite: "",
+      senderWhatsapp: auth.user?.whatsapp ?? "",
       lines: [
         { description: "", quantity: 1, unit: "Forfait", unitPriceHT: 0, discountPct: 0 }
       ],
@@ -173,6 +190,11 @@ export default function InvoiceEditor() {
     if (!v.senderAddress) form.setValue("senderAddress", auth.user.company_address || "");
     if (!v.senderPhone) form.setValue("senderPhone", auth.user.phone || "");
     if (!v.senderEmail) form.setValue("senderEmail", auth.user.email || "");
+    if (!v.senderHeadOffice) form.setValue("senderHeadOffice", auth.user.company_address || "");
+    if (!v.senderNcc) form.setValue("senderNcc", auth.user.company_ncc || "");
+    if (!v.senderRccm) form.setValue("senderRccm", auth.user.company_rccm || "");
+    if (!v.senderDfe) form.setValue("senderDfe", auth.user.company_dfe || "");
+    if (!v.senderWhatsapp) form.setValue("senderWhatsapp", auth.user.whatsapp || "");
   }, [auth.user, params.id, form]);
 
   useEffect(() => {
@@ -192,6 +214,14 @@ export default function InvoiceEditor() {
             address?: string;
             phone?: string;
             email?: string;
+            headOffice?: string;
+            legalForm?: string;
+            rib?: string;
+            ncc?: string;
+            rccm?: string;
+            dfe?: string;
+            website?: string;
+            whatsapp?: string;
             logoDataUrl?: string | null;
           };
           brandPrimaryHex?: string | null;
@@ -219,6 +249,14 @@ export default function InvoiceEditor() {
           senderAddress: d.sender?.address ?? "",
           senderPhone: d.sender?.phone ?? "",
           senderEmail: d.sender?.email ?? "",
+          senderHeadOffice: d.sender?.headOffice ?? "",
+          senderLegalForm: d.sender?.legalForm ?? "",
+          senderRib: d.sender?.rib ?? "",
+          senderNcc: d.sender?.ncc ?? "",
+          senderRccm: d.sender?.rccm ?? "",
+          senderDfe: d.sender?.dfe ?? "",
+          senderWebsite: d.sender?.website ?? "",
+          senderWhatsapp: d.sender?.whatsapp ?? "",
           clientName: d.client?.name ?? "",
           clientAddress: d.client?.address ?? "",
           clientPhone: d.client?.phone ?? "",
@@ -264,10 +302,12 @@ export default function InvoiceEditor() {
   const accentForPreview = brandPrimaryHex ? readableOnWhite(brandPrimaryHex) : null;
 
   async function downloadPdf() {
-    if (!previewWrapRef.current) return;
+    if (!printWrapRef.current && !previewWrapRef.current) return;
     setPdfDownloading(true);
     try {
-      const canvas = await html2canvas(previewWrapRef.current, { scale: 2, useCORS: true });
+      const source = printWrapRef.current ?? previewWrapRef.current;
+      if (!source) return;
+      const canvas = await html2canvas(source, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF("p", "mm", "a4");
       const imgProps = pdf.getImageProperties(imgData);
@@ -296,6 +336,14 @@ export default function InvoiceEditor() {
           address: values.senderAddress,
           phone: values.senderPhone,
           email: values.senderEmail,
+          headOffice: values.senderHeadOffice,
+          legalForm: values.senderLegalForm,
+          rib: values.senderRib,
+          ncc: values.senderNcc,
+          rccm: values.senderRccm,
+          dfe: values.senderDfe,
+          website: values.senderWebsite,
+          whatsapp: values.senderWhatsapp,
           logoDataUrl: logoDataUrl || undefined
         },
         brandPrimaryHex: brandPrimaryHex || undefined,
@@ -463,6 +511,24 @@ export default function InvoiceEditor() {
                     </Button>
                   ) : null}
                 </div>
+                <div className="mt-4 max-w-xs">
+                  <span className="mb-2 block text-sm font-medium text-text">Couleur principale du document</span>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={brandPrimaryHex ?? "#00A86B"}
+                      onChange={(e) => setBrandPrimaryHex(e.target.value)}
+                      className="h-10 w-14 cursor-pointer rounded border border-border bg-white p-1"
+                      aria-label="Choisir une couleur principale"
+                    />
+                    <input
+                      type="text"
+                      value={brandPrimaryHex ?? "#00A86B"}
+                      onChange={(e) => setBrandPrimaryHex(e.target.value)}
+                      className="w-full rounded-lg border border-border px-3 py-2 text-sm"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="rounded-xl bg-surface p-5 ring-1 ring-border/70">
@@ -476,6 +542,10 @@ export default function InvoiceEditor() {
                 </div>
                 <div className="mt-3">
                   <Input label="Email" type="email" {...form.register("senderEmail")} />
+                </div>
+                <div className="mt-3 grid gap-4 md:grid-cols-2">
+                  <Input label="WhatsApp entreprise" {...form.register("senderWhatsapp")} />
+                  <Input label="Site web" {...form.register("senderWebsite")} />
                 </div>
               </div>
 
@@ -503,6 +573,22 @@ export default function InvoiceEditor() {
                   ) : (
                     <div />
                   )}
+                </div>
+              </div>
+
+              <div className="rounded-xl bg-surface p-4 ring-1 ring-border/70">
+                <div className="text-sm font-semibold text-text">Mentions légales & bancaires</div>
+                <div className="mt-3 grid gap-4 md:grid-cols-2">
+                  <Input label="Siège social" {...form.register("senderHeadOffice")} />
+                  <Input label="Forme juridique" {...form.register("senderLegalForm")} />
+                </div>
+                <div className="mt-3 grid gap-4 md:grid-cols-2">
+                  <Input label="RIB / Compte bancaire" {...form.register("senderRib")} />
+                  <Input label="NCC" {...form.register("senderNcc")} />
+                </div>
+                <div className="mt-3 grid gap-4 md:grid-cols-2">
+                  <Input label="RCCM" {...form.register("senderRccm")} />
+                  <Input label="DFE" {...form.register("senderDfe")} />
                 </div>
               </div>
 
@@ -718,6 +804,14 @@ export default function InvoiceEditor() {
                     address: previewValues.senderAddress,
                     phone: previewValues.senderPhone,
                     email: previewValues.senderEmail,
+                    headOffice: previewValues.senderHeadOffice,
+                    legalForm: previewValues.senderLegalForm,
+                    rib: previewValues.senderRib,
+                    ncc: previewValues.senderNcc,
+                    rccm: previewValues.senderRccm,
+                    dfe: previewValues.senderDfe,
+                    website: previewValues.senderWebsite,
+                    whatsapp: previewValues.senderWhatsapp,
                     logoDataUrl: logoDataUrl || undefined
                   },
                   client: {
@@ -742,6 +836,52 @@ export default function InvoiceEditor() {
                   footerNote: previewValues.footerNote
                 }}
               />
+            </div>
+            <div className="pointer-events-none absolute -left-[99999px] top-0 opacity-0">
+              <div ref={printWrapRef}>
+                <InvoicePreview
+                  themeColor={themeColor}
+                  customAccentHex={accentForPreview}
+                  docTypeLabel={docTypeLabel(previewValues.docType)}
+                  data={{
+                    sender: {
+                      companyName: previewValues.senderCompanyName,
+                      address: previewValues.senderAddress,
+                      phone: previewValues.senderPhone,
+                      email: previewValues.senderEmail,
+                      headOffice: previewValues.senderHeadOffice,
+                      legalForm: previewValues.senderLegalForm,
+                      rib: previewValues.senderRib,
+                      ncc: previewValues.senderNcc,
+                      rccm: previewValues.senderRccm,
+                      dfe: previewValues.senderDfe,
+                      website: previewValues.senderWebsite,
+                      whatsapp: previewValues.senderWhatsapp,
+                      logoDataUrl: logoDataUrl || undefined
+                    },
+                    client: {
+                      name: previewValues.clientName,
+                      address: previewValues.clientAddress,
+                      phone: previewValues.clientPhone,
+                      email: previewValues.clientEmail
+                    },
+                    docNumber: previewValues.docNumber,
+                    emissionDate: previewValues.emissionDate,
+                    dueDateText: dueDateText(previewValues),
+                    fiscalRegime: previewValues.fiscalRegime,
+                    lines: previewValues.lines.map((l) => ({
+                      ...l,
+                      quantity: Number(l.quantity),
+                      unitPriceHT: Number(l.unitPriceHT),
+                      discountPct: Number(l.discountPct ?? 0)
+                    })),
+                    globalDiscountPct: Number(previewValues.globalDiscountPct ?? 0),
+                    vatRatePct: Number(previewValues.vatRatePct ?? 18),
+                    conditions: previewValues.conditions,
+                    footerNote: previewValues.footerNote
+                  }}
+                />
+              </div>
             </div>
           </div>
         </div>
