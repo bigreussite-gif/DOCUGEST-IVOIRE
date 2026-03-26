@@ -14,10 +14,27 @@ export async function GET(req: Request) {
 
   try {
     const snapshot = await store.adminAnalyticsSnapshot();
-    const insights = buildInsights(snapshot);
-    return NextResponse.json(insights);
+    try {
+      const insights = buildInsights(snapshot);
+      return NextResponse.json(insights);
+    } catch (e) {
+      console.error("[api/admin/analytics/insights] buildInsights fallback", e);
+      return NextResponse.json({
+        summary: "Les données principales sont disponibles. Le module d'analyse avancée est temporairement dégradé.",
+        recommendations: [
+          "Consultez la vue documents et utilisateurs pour piloter l'activité en attendant la restauration complète des insights."
+        ],
+        generatedAt: new Date().toISOString(),
+        model: "docugest-fallback-v1"
+      });
+    }
   } catch (e) {
     console.error(e);
-    return NextResponse.json({ message: "Erreur IA locale" }, { status: 500 });
+    return NextResponse.json({
+      summary: "Aucune synthèse avancée pour le moment.",
+      recommendations: ["Vérifiez la connexion base de données ou réessayez dans quelques instants."],
+      generatedAt: new Date().toISOString(),
+      model: "docugest-fallback-v1"
+    });
   }
 }

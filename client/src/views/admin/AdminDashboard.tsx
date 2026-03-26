@@ -32,15 +32,32 @@ export function AdminDashboard() {
     let c = false;
     const load = async () => {
       try {
-        const [o, i] = await Promise.all([
+        const [overviewRes, insightsRes] = await Promise.allSettled([
           adminFetch<Overview>("/analytics/overview"),
           adminFetch<Insights>("/analytics/insights")
         ]);
-        if (!c) {
-          setOverview(o);
-          setInsights(i);
-          setLastRefresh(new Date().toISOString());
+
+        if (c) return;
+
+        if (overviewRes.status === "fulfilled") {
+          setOverview(overviewRes.value);
+        } else {
+          const m = overviewRes.reason instanceof Error ? overviewRes.reason.message : "Erreur";
+          setErr(m);
+          return;
         }
+
+        if (insightsRes.status === "fulfilled") {
+          setInsights(insightsRes.value);
+        } else {
+          setInsights({
+            summary: "Le module d'analyse avancée est temporairement indisponible.",
+            recommendations: ["Les KPI principaux restent disponibles dans cette vue."],
+            generatedAt: new Date().toISOString(),
+            model: "client-fallback-v1"
+          });
+        }
+        setLastRefresh(new Date().toISOString());
       } catch (e) {
         if (!c) setErr(e instanceof Error ? e.message : "Erreur");
       }
