@@ -17,17 +17,36 @@ export function AdminAudit() {
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    adminFetch<{ items: Row[] }>("/audit?limit=150")
-      .then((r) => setItems(r.items))
-      .catch((e) => setErr(e instanceof Error ? e.message : "Erreur"));
+    let cancelled = false;
+    const load = () =>
+      adminFetch<{ items: Row[] }>("/audit?limit=150")
+        .then((r) => {
+          if (!cancelled) setItems(r.items);
+        })
+        .catch((e) => {
+          if (!cancelled) setErr(e instanceof Error ? e.message : "Erreur");
+        });
+    void load();
+    const t = setInterval(() => void load(), 30_000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
   }, []);
 
   if (err) return <div className="rounded-xl bg-rose-50 p-4 text-rose-800">{err}</div>;
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-text">Journal d’activité</h1>
-      <p className="mt-1 text-slate-600">Actions sensibles enregistrées côté serveur (création de compte, modifications, etc.).</p>
+    <div className="space-y-5">
+      <div>
+        <h1 className="text-2xl font-bold text-text">Confiance & traçabilité</h1>
+        <p className="mt-1 text-slate-600">
+          Journal des actions sensibles côté serveur. Rafraîchissement automatique toutes les 30 secondes.
+        </p>
+      </div>
+      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+        Signal confiance: chaque action admin est horodatée et attribuée, ce qui réduit le risque de fraude interne.
+      </div>
 
       <div className="mt-6 overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
         <table className="w-full min-w-[640px] text-left text-sm">

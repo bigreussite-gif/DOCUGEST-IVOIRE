@@ -62,15 +62,18 @@ export function AdminUsers() {
   if (err) return <div className="rounded-xl bg-rose-50 p-4 text-rose-800">{err}</div>;
 
   return (
-    <div>
+    <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-text">Utilisateurs & rôles</h1>
-          <p className="mt-1 text-slate-600">Créer, modifier et contrôler les niveaux d’accès.</p>
+          <h1 className="text-2xl font-bold text-text">Utilisateurs & gouvernance des accès</h1>
+          <p className="mt-1 text-slate-600">Vue de confiance interne: gestion des profils, rôles et permissions critiques.</p>
         </div>
         <Button type="button" onClick={() => setModal("create")}>
           + Nouvel utilisateur
         </Button>
+      </div>
+      <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm text-slate-700">
+        Signal partenaire: une gouvernance claire des accès réduit le risque opérationnel et renforce la confiance investisseur.
       </div>
 
       <div className="mt-6 overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
