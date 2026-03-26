@@ -12,6 +12,8 @@ export default function RegisterPage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [country, setCountry] = useState("Cote d'Ivoire");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -27,7 +29,13 @@ export default function RegisterPage() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), email: email.trim(), password })
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          whatsapp: whatsapp.trim(),
+          country: country.trim(),
+          password
+        })
       });
 
       const data = (await res.json().catch(() => ({}))) as { message?: string; token?: string; user?: unknown };
@@ -55,13 +63,27 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-surface px-4 py-10">
-      <div className="mx-auto max-w-md rounded-2xl bg-bg p-8 shadow-soft ring-1 ring-border/70">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-text">Créer un compte</h1>
-          <Link href="/" className="text-sm text-primary hover:underline">
-            Accueil
-          </Link>
+    <div className="min-h-screen bg-bg px-4 py-8">
+      <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-md flex-col justify-center">
+      <div className="mx-auto mb-5 flex w-full max-w-md items-center justify-between">
+        <div className="rounded-2xl bg-white px-3 py-2 shadow-lg ring-2 ring-slate-200/90">
+          <img src="/logo-docugest-ivoire.png" alt="DocuGest Ivoire" className="h-10 w-auto object-contain" />
+        </div>
+        <Link href="/" className="text-sm font-medium text-primary hover:underline">
+          Retour accueil
+        </Link>
+      </div>
+
+      <div className="mx-auto max-w-md rounded-3xl bg-gradient-to-br from-white to-surface p-8 shadow-soft ring-1 ring-border/70">
+        <div className="mb-6 text-center">
+          <p className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
+            Inscription
+          </p>
+          <h1 className="mt-3 text-2xl font-bold text-text">Créer un compte</h1>
+          <p className="mt-1 text-sm text-slate-600">Commencez gratuitement en quelques secondes.</p>
+          <p className="mt-2 text-xs text-slate-500">
+            Factures, devis et bulletins prets plus vite, sans complexite.
+          </p>
         </div>
 
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
@@ -95,6 +117,37 @@ export default function RegisterPage() {
               className="w-full rounded-xl border border-border bg-bg px-3 py-2 text-text outline-none ring-primary/30 focus:ring-2"
             />
           </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="whatsapp" className="mb-1 block text-sm font-medium text-text">
+                Numero WhatsApp
+              </label>
+              <input
+                id="whatsapp"
+                name="whatsapp"
+                type="tel"
+                autoComplete="tel"
+                placeholder="+2250700000000"
+                value={whatsapp}
+                onChange={(e) => setWhatsapp(e.target.value)}
+                className="w-full rounded-xl border border-border bg-bg px-3 py-2 text-text outline-none ring-primary/30 focus:ring-2"
+              />
+            </div>
+            <div>
+              <label htmlFor="country" className="mb-1 block text-sm font-medium text-text">
+                Pays
+              </label>
+              <input
+                id="country"
+                name="country"
+                type="text"
+                required
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                className="w-full rounded-xl border border-border bg-bg px-3 py-2 text-text outline-none ring-primary/30 focus:ring-2"
+              />
+            </div>
+          </div>
           <div>
             <label htmlFor="password" className="mb-1 block text-sm font-medium text-text">
               Mot de passe
@@ -125,17 +178,18 @@ export default function RegisterPage() {
             </p>
           ) : null}
 
-          <Button type="submit" variant="primary" disabled={loading}>
+          <Button type="submit" variant="primary" disabled={loading} className="shadow-lg shadow-primary/20">
             {loading ? "Création…" : "Créer mon compte"}
           </Button>
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-600">
           Déjà un compte ?{" "}
-          <a href="/login" className="font-medium text-primary hover:underline">
+          <Link href="/login" className="font-medium text-primary hover:underline">
             Me connecter
-          </a>
+          </Link>
         </p>
+      </div>
       </div>
     </div>
   );

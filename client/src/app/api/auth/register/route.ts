@@ -14,6 +14,8 @@ export const runtime = "nodejs";
 const bodySchema = z.object({
   name: z.string().min(2, "Le nom est requis"),
   email: z.string().email("Email invalide"),
+  whatsapp: z.string().trim().max(32, "WhatsApp invalide").optional().or(z.literal("")),
+  country: z.string().trim().max(80, "Pays invalide").optional().or(z.literal("")),
   password: z.string().min(8, "Mot de passe : min. 8 caractères")
 });
 
@@ -58,7 +60,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { name, email, password } = parsed.data;
+    const { name, email, password, whatsapp } = parsed.data;
     const cleanEmail = email.trim().toLowerCase();
     console.log("[api/auth/register] email candidat", cleanEmail);
     const pool = getPool();
@@ -72,6 +74,7 @@ export async function POST(req: Request) {
     const password_hash = await hashPassword(password);
     const full_name = name.trim();
     const placeholderPhone = buildPlaceholderPhone(cleanEmail);
+    const cleanWhatsapp = typeof whatsapp === "string" && whatsapp.trim() ? whatsapp.trim() : null;
 
     let row: UserRow;
     try {
@@ -80,7 +83,7 @@ export async function POST(req: Request) {
           full_name, phone, whatsapp, email, password_hash
         ) VALUES ($1, $2, $3, $4, $5)
         RETURNING *`,
-        [full_name, placeholderPhone, null, cleanEmail, password_hash]
+        [full_name, placeholderPhone, cleanWhatsapp, cleanEmail, password_hash]
       );
       row = ins.rows[0] as UserRow;
     } catch (e: unknown) {

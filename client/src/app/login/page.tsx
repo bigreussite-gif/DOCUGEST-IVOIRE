@@ -43,13 +43,25 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-surface px-4 py-10">
-      <div className="mx-auto max-w-md rounded-2xl bg-bg p-8 shadow-soft ring-1 ring-border/70">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-text">Connexion</h1>
-          <Link href="/" className="text-sm text-primary hover:underline">
-            Accueil
-          </Link>
+    <div className="min-h-screen bg-bg px-4 py-8">
+      <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-md flex-col justify-center">
+      <div className="mx-auto mb-5 flex w-full max-w-md items-center justify-between">
+        <div className="rounded-2xl bg-white px-3 py-2 shadow-lg ring-2 ring-slate-200/90">
+          <img src="/logo-docugest-ivoire.png" alt="DocuGest Ivoire" className="h-10 w-auto object-contain" />
+        </div>
+        <Link href="/" className="text-sm font-medium text-primary hover:underline">
+          Retour accueil
+        </Link>
+      </div>
+
+      <div className="mx-auto max-w-md rounded-3xl bg-gradient-to-br from-white to-surface p-8 shadow-soft ring-1 ring-border/70">
+        <div className="mb-6 text-center">
+          <p className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
+            Connexion
+          </p>
+          <h1 className="mt-3 text-2xl font-bold text-text">Bienvenue</h1>
+          <p className="mt-1 text-sm text-slate-600">Accedez a votre espace DocuGest.</p>
+          <p className="mt-2 text-xs text-slate-500">Votre espace pro, simple, rapide et pense pour l'Afrique francophone.</p>
         </div>
 
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
@@ -91,7 +103,7 @@ export default function LoginPage() {
             </p>
           ) : null}
 
-          <Button type="submit" variant="primary" disabled={loading}>
+          <Button type="submit" variant="primary" disabled={loading} className="shadow-lg shadow-primary/20">
             {loading ? "Connexion…" : "Me connecter"}
           </Button>
         </form>
@@ -102,6 +114,7 @@ export default function LoginPage() {
             Créer un compte
           </Link>
         </p>
+      </div>
       </div>
     </div>
   );
