@@ -18,6 +18,11 @@ export default function AdminApp() {
   useEffect(() => {
     let cancelled = false;
     const loadSession = async () => {
+      const token = localStorage.getItem("docugest_token");
+      if (!token) {
+        if (!cancelled) setSession(null);
+        return;
+      }
       try {
         const s = await adminFetch<AdminSession>("/session");
         if (!cancelled) setSession(s);
