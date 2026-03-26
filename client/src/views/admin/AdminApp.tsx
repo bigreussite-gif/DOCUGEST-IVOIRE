@@ -24,8 +24,15 @@ export default function AdminApp() {
         if (!cancelled) setSession(s);
       } catch (e) {
         if (!cancelled) {
-          if (e instanceof AdminApiError && e.status === 403) setSession("forbidden");
-          else setSession(null);
+          if (e instanceof AdminApiError && e.status === 403) {
+            setSession("forbidden");
+          } else {
+            if (e instanceof AdminApiError && e.status === 401) {
+              localStorage.removeItem("docugest_token");
+              localStorage.removeItem("docugest_user_cache");
+            }
+            setSession(null);
+          }
         }
       }
     };
@@ -155,6 +162,10 @@ function AdminLogin({
     } catch (e) {
       if (e instanceof AdminApiError && e.status === 403) {
         setError("Compte connecté, mais sans droits admin.");
+      } else if (e instanceof AdminApiError && e.status === 401) {
+        localStorage.removeItem("docugest_token");
+        localStorage.removeItem("docugest_user_cache");
+        setError("Session invalide. Reconnectez-vous.");
       } else if (e && typeof e === "object" && "message" in e) {
         setError(String((e as { message?: string }).message ?? "Connexion impossible"));
       } else {
