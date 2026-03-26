@@ -2,15 +2,74 @@
  * GET /api/auth/me — profil courant (Bearer JWT).
  */
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { requireSessionAuth } from "@/lib/serverAuth";
 import * as store from "@/lib/serverStore";
+import { getPool } from "@/lib/db";
 
 export const runtime = "nodejs";
+
+const patchSchema = z.object({
+  full_name: z.string().trim().min(2).max(120),
+  email: z.string().trim().email(),
+  whatsapp: z.string().trim().max(32).nullable().optional(),
+  country: z.string().trim().max(80).nullable().optional(),
+  photo_url: z.string().trim().url().max(500).nullable().optional()
+});
 
 export async function GET(req: Request) {
   console.log("[api/auth/me] GET");
   const auth = await requireSessionAuth(req);
   if (auth instanceof NextResponse) return auth;
+
+  const me = await store.getMe(auth.sub);
+  if (!me) return NextResponse.json({ message: "Utilisateur introuvable" }, { status: 404 });
+  return NextResponse.json(me);
+}
+
+export async function PATCH(req: Request) {
+  const auth = await requireSessionAuth(req);
+  if (auth instanceof NextResponse) return auth;
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ message: "Corps JSON invalide" }, { status: 400 });
+  }
+
+  const parsed = patchSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ message: "Champs invalides", details: parsed.error.flatten() }, { status: 400 });
+  }
+
+  const clean = {
+    full_name: parsed.data.full_name.trim(),
+    email: parsed.data.email.trim().toLowerCase(),
+    whatsapp: parsed.data.whatsapp?.trim() || null,
+    country: parsed.data.country?.trim() || null,
+    photo_url: parsed.data.photo_url?.trim() || null
+  };
+
+  const pool = getPool();
+  try {
+    await pool.query(
+      `UPDATE public.users SET
+        full_name = $2,
+        email = $3,
+        whatsapp = $4,
+        user_typology = $5,
+        company_logo_url = $6
+      WHERE id = $1`,
+      [auth.sub, clean.full_name, clean.email, clean.whatsapp, clean.country, clean.photo_url]
+    );
+  } catch (e: unknown) {
+    const err = e as { code?: string };
+    if (err.code === "23505") {
+      return NextResponse.json({ message: "Email déjà utilisé" }, { status: 409 });
+    }
+    throw e;
+  }
 
   const me = await store.getMe(auth.sub);
   if (!me) return NextResponse.json({ message: "Utilisateur introuvable" }, { status: 404 });

@@ -28,10 +28,10 @@ export default function Landing() {
     <div className="min-h-screen bg-bg">
       <MonetizationTopBar />
 
-      <div className="mx-auto max-w-6xl px-4 pb-8 pt-6">
+      <div className="mx-auto max-w-6xl px-4 pb-6 pt-4 sm:pt-5">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <div className="rounded-2xl bg-white px-4 py-3 shadow-lg ring-2 ring-slate-200/90">
+            <div className="rounded-2xl bg-white px-4 py-2.5 shadow-lg ring-2 ring-primary/20 transition-transform duration-200 hover:scale-[1.01]">
               <img
                 src="/logo-docugest-ivoire.png"
                 alt="DocuGest Ivoire"
@@ -42,7 +42,8 @@ export default function Landing() {
               />
             </div>
             <div className="hidden min-[420px]:block sm:block">
-              <div className="text-sm text-slate-600">L’outil pro des entrepreneurs africains</div>
+              <div className="text-sm font-medium text-slate-700">L’outil pro des entrepreneurs africains</div>
+              <div className="text-xs text-slate-500">Simple, rapide, local.</div>
             </div>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -55,8 +56,8 @@ export default function Landing() {
           </div>
         </header>
 
-        <main className="mt-8 sm:mt-14">
-          <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+        <main className="mt-6 sm:mt-8">
+          <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-center">
             <div>
               <p className="inline-block rounded-full bg-primary/10 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
                 100 % pensé pour l’entrepreneuriat en Afrique francophone
@@ -73,12 +74,12 @@ export default function Landing() {
                 mêmes armes que les grandes structures : factures nettes, devis crédibles, fiches de paie claires — tout en
                 FCFA, tout en local.
               </p>
-              <p className="mt-4 max-w-xl text-base text-slate-600">
+              <p className="mt-3 max-w-xl text-base text-slate-600">
                 On sait que chaque minute compte. Alors on a fait simple : tu remplis, tu prévisualises, tu exportes. Le reste,
                 c’est ta vision business.
               </p>
 
-              <div className="mt-8 flex flex-wrap gap-4">
+              <div className="mt-6 flex flex-wrap gap-3">
                 <Link href="/register">
                   <Button variant="primary" className="min-h-[48px] px-8 text-base shadow-lg shadow-primary/25">
                     Je commence maintenant
@@ -91,14 +92,14 @@ export default function Landing() {
                 </RouterLink>
               </div>
 
-              <p className="mt-6 text-sm text-slate-500">
+              <p className="mt-4 text-sm text-slate-500">
                 Gratuit, financé par la publicité — tu gardes le contrôle sur tes données et tes PDF.
               </p>
             </div>
 
             <div className="rounded-3xl bg-gradient-to-br from-surface to-white p-6 shadow-soft ring-1 ring-border/70 sm:p-8">
               <div className="text-sm font-bold uppercase tracking-wide text-primary">Pourquoi nous faire confiance</div>
-              <ul className="mt-6 grid gap-5">
+              <ul className="mt-5 grid gap-4">
                 {benefits.map((b) => (
                   <li key={b.title} className="flex gap-4 rounded-2xl bg-bg/80 p-4 ring-1 ring-border/60">
                     <span className="text-2xl" aria-hidden>
@@ -111,7 +112,7 @@ export default function Landing() {
                   </li>
                 ))}
               </ul>
-              <div className="mt-8 rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-4 text-center text-sm text-slate-700">
+              <div className="mt-6 rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-4 text-center text-sm text-slate-700">
                 <strong className="text-text">Prêt à facturer comme un pro ?</strong>
                 <br />
                 Rejoins les indépendants et PME qui structurent leurs docs sans cabinet comptable.
@@ -119,13 +120,13 @@ export default function Landing() {
             </div>
           </div>
 
-          <section className="mt-20 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-6 py-12 text-center text-white sm:px-12">
+          <section className="mt-12 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-6 py-10 text-center text-white sm:px-12">
             <h2 className="text-2xl font-bold sm:text-3xl">Ton activité mérite des documents à la hauteur</h2>
-            <p className="mx-auto mt-4 max-w-2xl text-slate-300">
+            <p className="mx-auto mt-3 max-w-2xl text-slate-300">
               Pas de jargon inutile : juste des outils qui te font gagner du temps, de la crédibilité et la sérénité pour
               encaisser et payer en toute clarté.
             </p>
-            <div className="mt-8">
+            <div className="mt-6">
               <Link
                 href="/register"
                 className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-white px-8 text-base font-semibold text-slate-900 shadow-lg shadow-black/20 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-white/60"
