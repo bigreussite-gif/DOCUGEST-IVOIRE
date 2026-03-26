@@ -135,65 +135,59 @@ export function AdminDashboard() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-2xl border border-primary/20 bg-gradient-to-r from-white to-primary/5 p-5 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+    <div className="space-y-5">
+      <section className="rounded-[28px] border border-teal-200/70 bg-gradient-to-br from-[#f4fffd] via-white to-[#eef8f7] p-5 shadow-[0_10px_30px_rgba(15,118,110,0.08)]">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-text">Vue stratégique partenaires & investisseurs</h1>
-            <p className="mt-1 text-sm text-slate-600">
-              Signaux temps réel sur la traction produit, la confiance opérationnelle et le potentiel monétisation.
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal-700">Admin performance cockpit</p>
+            <h1 className="mt-1 text-2xl font-extrabold text-slate-800">Dashboard exécutif DocuGest</h1>
+            <p className="text-sm text-slate-600">Pilotage temps réel : croissance, fiabilité, activité et monétisation.</p>
           </div>
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
-            Live refresh: toutes les 30s · Derniere synchro {liveText}
+          <div className="w-full max-w-xs">
+            <input
+              placeholder="Rechercher un indicateur..."
+              className="h-11 w-full rounded-full border border-teal-300/60 bg-white px-4 text-sm text-slate-700 outline-none ring-teal-300/30 focus:ring-2"
+            />
           </div>
         </div>
-      </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <KpiCard label="Utilisateurs" value={String(overview.userCount)} hint="base totale" accent="teal" />
+          <KpiCard label="Adoption 30j" value={`${adoptionRate}%`} hint={`${overview.monthlyActiveUsers} actifs`} accent="emerald" />
+          <KpiCard label="Documents" value={String(overview.documentsTotal)} hint="volume produit" accent="cyan" />
+          <KpiCard label="Revenue signal" value={`${adRevenueSignal.toLocaleString("fr-FR")} FCFA`} hint="proxy pub" accent="amber" />
+        </div>
+      </section>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Utilisateurs inscrits" value={String(overview.userCount)} hint="Base totale de comptes" />
-        <KpiCard label="Adoption active (30 j.)" value={`${adoptionRate}%`} hint={`${overview.monthlyActiveUsers} utilisateurs actifs`} />
-        <KpiCard label="Documents totaux" value={String(overview.documentsTotal)} hint="Volume métier produit" />
-        <KpiCard
-          label="CTR pub global"
-          value={`${overview.adSummary.ctrPct ?? 0} %`}
-          hint={`${overview.adSummary.views} vues / ${overview.adSummary.clicks} clics`}
-        />
-      </div>
-      <div className="grid gap-4 md:grid-cols-3">
-        <KpiCard label="Score confiance plateforme" value={`${trustedScore}/100`} hint="Disponibilité + usage + cohérence" />
-        <KpiCard label="Signal revenu pub (est.)" value={`${adRevenueSignal.toLocaleString("fr-FR")} FCFA`} hint="Proxy basé sur clics" />
-        <KpiCard
-          label="Documents / utilisateur"
-          value={`${(overview.documentsTotal / Math.max(1, overview.userCount)).toFixed(1)}`}
-          hint="Intensité d’usage produit"
-        />
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-text">Courbe documents (14 derniers jours)</h2>
+      <div className="grid gap-5 xl:grid-cols-[1.6fr_1fr]">
+        <section className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-semibold text-slate-800">Évolution documents (14 jours)</h2>
+            <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-medium text-teal-700">Sync {liveText}</span>
+          </div>
           {trend.length === 0 ? (
             <p className="mt-3 text-sm text-slate-500">Pas assez de données.</p>
           ) : (
             <div className="mt-4 overflow-x-auto">
-              <svg viewBox="0 0 560 170" className="h-[170px] w-full min-w-[560px]">
+              <svg viewBox="0 0 560 190" className="h-[190px] w-full min-w-[560px]">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <line key={i} x1="10" x2="550" y1={25 + i * 28} y2={25 + i * 28} stroke="#e5e7eb" strokeWidth="1" />
+                ))}
                 <polyline
                   fill="none"
-                  stroke="#0f766e"
-                  strokeWidth="3"
+                  stroke="#14b8a6"
+                  strokeWidth="4"
                   points={trend
                     .map((p, i) => {
                       const x = (i / Math.max(1, trend.length - 1)) * 540 + 10;
-                      const y = 150 - (Number(p.count || 0) / maxTrend) * 120;
+                      const y = 170 - (Number(p.count || 0) / maxTrend) * 130;
                       return `${x},${y}`;
                     })
                     .join(" ")}
                 />
                 {trend.map((p, i) => {
                   const x = (i / Math.max(1, trend.length - 1)) * 540 + 10;
-                  const y = 150 - (Number(p.count || 0) / maxTrend) * 120;
-                  return <circle key={p.day} cx={x} cy={y} r="3" fill="#0f766e" />;
+                  const y = 170 - (Number(p.count || 0) / maxTrend) * 130;
+                  return <circle key={p.day} cx={x} cy={y} r="4" fill="#0f766e" />;
                 })}
               </svg>
               <div className="mt-2 flex justify-between text-[10px] text-slate-500">
@@ -204,24 +198,50 @@ export function AdminDashboard() {
           )}
         </section>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-text">Pays les plus connectés</h2>
-          <div className="mt-3 space-y-2 text-sm">
-            {(overview.topCountriesByLogin ?? []).length === 0 ? (
-              <p className="text-slate-500">Aucune donnée disponible.</p>
-            ) : (
-              (overview.topCountriesByLogin ?? []).map((c) => (
-                <div key={c.country} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-                  <span>{c.country}</span>
-                  <span className="font-semibold">{c.count}</span>
+        <section className="space-y-5">
+          <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-base font-semibold text-slate-800">Activité / qualité</h2>
+            <div className="mt-4 flex items-center gap-4">
+              <div className="relative h-28 w-28 rounded-full bg-[conic-gradient(#0ea5e9_0_38%,#f59e0b_38%_62%,#e5e7eb_62%_100%)] p-3">
+                <div className="flex h-full w-full items-center justify-center rounded-full bg-white text-sm font-bold text-slate-700">
+                  {trustedScore}%
                 </div>
-              ))
-            )}
+              </div>
+              <div className="space-y-1 text-sm text-slate-600">
+                <p>
+                  <span className="font-semibold text-slate-800">Score confiance:</span> {trustedScore}/100
+                </p>
+                <p>
+                  <span className="font-semibold text-slate-800">CTR pub:</span> {overview.adSummary.ctrPct ?? 0}%
+                </p>
+                <p>
+                  <span className="font-semibold text-slate-800">Docs/utilisateur:</span>{" "}
+                  {(overview.documentsTotal / Math.max(1, overview.userCount)).toFixed(1)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-base font-semibold text-slate-800">Dernières activités</h2>
+            <ul className="mt-3 space-y-2">
+              {overview.recentLogins.slice(0, 4).map((u) => (
+                <li key={u.id} className="flex items-start justify-between gap-2 rounded-xl bg-slate-50 px-3 py-2 text-xs">
+                  <div>
+                    <p className="font-semibold text-slate-700">{u.full_name}</p>
+                    <p className="text-slate-500">{u.email}</p>
+                  </div>
+                  <span className="text-slate-400">{u.last_login ? new Date(u.last_login).toLocaleTimeString("fr-FR") : "—"}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
+      </div>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-text">Mix produit (documents par type)</h2>
+      <div className="grid gap-5 xl:grid-cols-3">
+        <section className="rounded-[22px] border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2">
+          <h2 className="text-base font-semibold text-slate-800">Mix produit (documents par type)</h2>
           <div className="mt-4 space-y-3">
             {typeEntries.length === 0 ? (
               <p className="text-sm text-slate-500">Aucune donnée.</p>
@@ -244,14 +264,31 @@ export function AdminDashboard() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-text">Rythme d’activité horaire (UTC)</h2>
-          <p className="text-xs text-slate-500">Permet d’aligner support, campagnes et slots publicitaires premium.</p>
+        <section className="rounded-[22px] border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-base font-semibold text-slate-800">Pays connectés</h2>
+          <div className="mt-3 space-y-2 text-sm">
+            {(overview.topCountriesByLogin ?? []).length === 0 ? (
+              <p className="text-slate-500">Aucune donnée disponible.</p>
+            ) : (
+              (overview.topCountriesByLogin ?? []).slice(0, 6).map((c) => (
+                <div key={c.country} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                  <span>{c.country}</span>
+                  <span className="font-semibold">{c.count}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-2">
+        <section className="rounded-[22px] border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-base font-semibold text-slate-800">Rythme horaire (UTC)</h2>
           <div className="mt-4 flex h-36 items-end gap-0.5">
             {hourEntries.map(([h, n]) => (
               <div key={h} className="flex flex-1 flex-col items-center justify-end">
                 <div
-                  className="w-full max-w-[10px] rounded-t bg-secondary/80"
+                  className="w-full max-w-[10px] rounded-t bg-gradient-to-t from-teal-600 to-cyan-400"
                   style={{ height: `${Math.max(4, (n / maxHour) * 100)}%` }}
                   title={`${h}h : ${n}`}
                 />
@@ -264,22 +301,37 @@ export function AdminDashboard() {
             <span>23h</span>
           </div>
         </section>
+
+        <section className="rounded-[22px] border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-base font-semibold text-slate-800">Saisonnalité hebdomadaire</h2>
+          <div className="mt-4 flex flex-wrap gap-3">
+            {days.map((d, i) => {
+              const n = overview.documentsByWeekday[i] ?? overview.documentsByWeekday[String(i)] ?? 0;
+              const maxD = Math.max(1, ...Object.values(overview.documentsByWeekday).map(Number));
+              return (
+                <div key={d} className="flex flex-col items-center">
+                  <div
+                    className="flex w-10 items-end justify-center rounded-t bg-gradient-to-t from-teal-700 to-emerald-400"
+                    style={{ height: `${Math.max(8, (n / maxD) * 80)}px` }}
+                  />
+                  <span className="mt-1 text-xs text-slate-600">{d}</span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
       </div>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold text-text">Créer un compte équipe rapidement</h2>
-        <p className="text-xs text-slate-500">Ajoutez vos collaborateurs avec rôle et niveau de permission.</p>
+      <section className="rounded-[22px] border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 className="text-base font-semibold text-slate-800">Créer un compte équipe rapidement</h2>
+        <p className="text-xs text-slate-500">Ajoutez vos collaborateurs avec rôle et permissions.</p>
         <div className="mt-4 grid gap-3 md:grid-cols-3">
           <Input label="Nom complet" value={memberName} onChange={(e) => setMemberName(e.target.value)} />
           <Input label="Email" type="email" value={memberEmail} onChange={(e) => setMemberEmail(e.target.value)} />
           <Input label="Téléphone" value={memberPhone} onChange={(e) => setMemberPhone(e.target.value)} />
           <label className="block">
             <span className="mb-1 block text-sm font-medium text-text">Rôle</span>
-            <select
-              className="w-full rounded-xl border border-border px-3 py-2 text-sm"
-              value={memberRole}
-              onChange={(e) => setMemberRole(e.target.value)}
-            >
+            <select className="w-full rounded-xl border border-border px-3 py-2 text-sm" value={memberRole} onChange={(e) => setMemberRole(e.target.value)}>
               <option value="operator">Opérateur</option>
               <option value="manager">Manager</option>
               <option value="admin">Admin</option>
@@ -287,11 +339,7 @@ export function AdminDashboard() {
           </label>
           <label className="block">
             <span className="mb-1 block text-sm font-medium text-text">Permission</span>
-            <select
-              className="w-full rounded-xl border border-border px-3 py-2 text-sm"
-              value={memberPerm}
-              onChange={(e) => setMemberPerm(e.target.value)}
-            >
+            <select className="w-full rounded-xl border border-border px-3 py-2 text-sm" value={memberPerm} onChange={(e) => setMemberPerm(e.target.value)}>
               <option value="read">Lecture</option>
               <option value="write">Écriture</option>
               <option value="admin">Admin</option>
@@ -307,32 +355,13 @@ export function AdminDashboard() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold text-text">Saisonnalité hebdomadaire</h2>
-        <div className="mt-4 flex flex-wrap gap-3">
-          {days.map((d, i) => {
-            const n = overview.documentsByWeekday[i] ?? overview.documentsByWeekday[String(i)] ?? 0;
-            const maxD = Math.max(1, ...Object.values(overview.documentsByWeekday).map(Number));
-            return (
-              <div key={d} className="flex flex-col items-center">
-                <div
-                  className="flex w-10 items-end justify-center rounded-t bg-primary/70"
-                  style={{ height: `${Math.max(8, (n / maxD) * 80)}px` }}
-                />
-                <span className="mt-1 text-xs text-slate-600">{d}</span>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-text">Audience qualifiée</h2>
+      <div className="grid gap-5 xl:grid-cols-2">
+        <section className="rounded-[22px] border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-base font-semibold text-slate-800">Audience qualifiée</h2>
           <div className="mt-3 space-y-2 text-sm">
             <div className="font-medium text-slate-700">Genre</div>
             {Object.keys(overview.demographics.gender).length === 0 ? (
-              <p className="text-slate-500">Pas encore de données — champ optionnel côté utilisateur.</p>
+              <p className="text-slate-500">Pas encore de données.</p>
             ) : (
               Object.entries(overview.demographics.gender).map(([k, v]) => (
                 <div key={k} className="flex justify-between">
@@ -355,11 +384,11 @@ export function AdminDashboard() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-text">Performance pub par zone</h2>
+        <section className="rounded-[22px] border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-base font-semibold text-slate-800">Performance pub par zone</h2>
           <div className="mt-3 space-y-2 text-sm">
             {Object.keys(overview.adSummary.byZone || {}).length === 0 ? (
-              <p className="text-slate-500">Aucun événement enregistré — intégrez le tracking dans les emplacements promo.</p>
+              <p className="text-slate-500">Aucun événement enregistré.</p>
             ) : (
               Object.entries(overview.adSummary.byZone).map(([zone, z]) => (
                 <div key={zone} className="flex flex-wrap justify-between gap-2 border-b border-slate-100 py-2">
@@ -374,8 +403,8 @@ export function AdminDashboard() {
         </section>
       </div>
 
-      <section className="rounded-2xl border border-amber-200 bg-amber-50/50 p-5 shadow-sm">
-        <h2 className="text-lg font-semibold text-text">Assistant décisionnel</h2>
+      <section className="rounded-[22px] border border-amber-200 bg-amber-50/50 p-5 shadow-sm">
+        <h2 className="text-base font-semibold text-slate-800">Assistant décisionnel</h2>
         <p className="text-xs text-slate-500">Synthèses heuristiques — remplaçable par un modèle LLM connecté.</p>
         {insights ? (
           <div className="mt-4 space-y-4">
@@ -393,31 +422,33 @@ export function AdminDashboard() {
           <p className="mt-2 text-slate-600">Chargement…</p>
         )}
       </section>
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold text-text">Traçabilité récente des sessions</h2>
-        <ul className="mt-3 divide-y divide-slate-100">
-          {overview.recentLogins.slice(0, 12).map((u) => (
-            <li key={u.id} className="flex flex-wrap justify-between gap-2 py-2 text-sm">
-              <span className="font-medium">{u.full_name}</span>
-              <span className="text-slate-500">{u.email}</span>
-              <span className="text-xs text-slate-400">
-                {u.last_login ? new Date(u.last_login).toLocaleString("fr-FR") : "—"}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
     </div>
   );
 }
 
-function KpiCard({ label, value, hint }: { label: string; value: string; hint: string }) {
+function KpiCard({
+  label,
+  value,
+  hint,
+  accent
+}: {
+  label: string;
+  value: string;
+  hint: string;
+  accent: "teal" | "emerald" | "cyan" | "amber";
+}) {
+  const accentMap: Record<string, string> = {
+    teal: "from-teal-50 to-teal-100 text-teal-800",
+    emerald: "from-emerald-50 to-emerald-100 text-emerald-800",
+    cyan: "from-cyan-50 to-cyan-100 text-cyan-800",
+    amber: "from-amber-50 to-amber-100 text-amber-800"
+  };
+
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</div>
-      <div className="mt-1 text-2xl font-bold text-text">{value}</div>
-      <div className="mt-1 text-xs text-slate-500">{hint}</div>
+    <div className={`rounded-2xl border border-slate-200 bg-gradient-to-br p-4 shadow-sm ${accentMap[accent]}`}>
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{label}</div>
+      <div className="mt-1 text-2xl font-extrabold">{value}</div>
+      <div className="mt-1 text-xs text-slate-600">{hint}</div>
     </div>
   );
 }
