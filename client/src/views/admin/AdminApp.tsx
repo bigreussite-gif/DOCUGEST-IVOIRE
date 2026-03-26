@@ -102,6 +102,7 @@ export default function AdminApp() {
     return (
       <Routes>
         <Route path="login" element={<AdminLogin onLoggedIn={(s) => setSession(s)} />} />
+        <Route path="session" element={<Navigate to="/admin/login" replace />} />
         <Route path="*" element={<Navigate to="/admin/login" replace />} />
       </Routes>
     );
@@ -110,6 +111,7 @@ export default function AdminApp() {
   return (
     <Routes>
       <Route path="login" element={<Navigate to="/admin" replace />} />
+      <Route path="session" element={<Navigate to="/admin" replace />} />
       <Route element={<AdminLayout session={session} />}>
         <Route index element={<AdminDashboard />} />
         <Route path="documents" element={<AdminDocuments />} />
@@ -134,12 +136,31 @@ function AdminLogin({
   const [loading, setLoading] = useState(false);
   const [activating, setActivating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cachedIdentity, setCachedIdentity] = useState<{ email: string; role: string } | null>(null);
 
   useEffect(() => {
     if (!forceFreshLogin) return;
     localStorage.removeItem("docugest_token");
     localStorage.removeItem("docugest_user_cache");
   }, [forceFreshLogin]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("docugest_user_cache");
+      if (!raw) {
+        setCachedIdentity(null);
+        return;
+      }
+      const u = JSON.parse(raw) as { email?: string; role?: string };
+      if (u?.email) {
+        setCachedIdentity({ email: String(u.email), role: String(u.role ?? "user") });
+      } else {
+        setCachedIdentity(null);
+      }
+    } catch {
+      setCachedIdentity(null);
+    }
+  }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -233,6 +254,25 @@ function AdminLogin({
               <h2 className="text-xl font-bold text-text">Connexion administrateur</h2>
               <p className="mt-1 text-sm text-slate-600">Accès au tableau de bord admin DocuGest.</p>
             </div>
+            {cachedIdentity ? (
+              <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                <div>
+                  Session locale détectée: <span className="font-semibold">{cachedIdentity.email}</span> · rôle{" "}
+                  <span className="font-semibold">{cachedIdentity.role}</span>
+                </div>
+                <button
+                  type="button"
+                  className="mt-1 underline"
+                  onClick={() => {
+                    localStorage.removeItem("docugest_token");
+                    localStorage.removeItem("docugest_user_cache");
+                    setCachedIdentity(null);
+                  }}
+                >
+                  Changer de compte
+                </button>
+              </div>
+            ) : null}
             <form onSubmit={onSubmit} className="space-y-3">
               <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
               <Input
