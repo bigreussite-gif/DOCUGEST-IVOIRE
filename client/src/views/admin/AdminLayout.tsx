@@ -89,7 +89,7 @@ export function AdminLayout({ session }: { session: AdminSession }) {
           </div>
         </header>
 
-        <main className="px-[15px] py-6 md:px-8">
+        <main className="mx-auto w-full max-w-6xl px-[15px] py-6 md:px-8">
           <Outlet context={{ session }} />
         </main>
 

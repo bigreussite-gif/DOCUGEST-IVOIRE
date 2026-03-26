@@ -12,7 +12,9 @@ const schema = z.object({
   title: z.string().max(120),
   body: z.string().max(300),
   ctaLabel: z.string().max(60),
-  ctaUrl: z.string().max(500),
+  ctaUrl: z.string().max(500).optional().default(""),
+  /** data:image/webp;base64,... — compressé côté client */
+  imageDataUrl: z.string().max(900_000).optional().default(""),
   active: z.boolean()
 });
 

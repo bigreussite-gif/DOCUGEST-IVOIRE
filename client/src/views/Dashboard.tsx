@@ -16,6 +16,7 @@ import Profile from "./Profile";
 import { isBackofficeRole, roleLabelFr } from "../lib/roles";
 
 const InvoiceEditor = lazy(() => import("./invoice/InvoiceEditor"));
+const QuickInvoiceEditor = lazy(() => import("./invoice/QuickInvoiceEditor"));
 const PayslipEditor = lazy(() => import("./payslip/PayslipEditor"));
 
 function EditorFallback() {
@@ -204,7 +205,7 @@ function DashboardHome() {
                     Pour les ventes en ligne: ouvrez un modele simplifie puis editez en 1 minute.
                   </div>
                 </div>
-                <Link to="/dashboard/invoice/new?type=invoice&quick=1">
+                <Link to="/dashboard/invoice/express">
                   <Button variant="primary" className="h-10 text-sm">
                     Nouvelle facture rapide
                   </Button>
@@ -287,12 +288,13 @@ export default function Dashboard() {
   const dashboardRoutes = (
     <Suspense fallback={<EditorFallback />}>
       <Routes>
-        <Route path="/" element={<DashboardHome />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/invoice/new" element={<InvoiceEditor />} />
-        <Route path="/invoice/:id" element={<InvoiceEditor />} />
-        <Route path="/payslip/new" element={<PayslipEditor />} />
-        <Route path="/payslip/:id" element={<PayslipEditor />} />
+        <Route index element={<DashboardHome />} />
+        <Route path="profile" element={<Profile />} />
+        <Route path="invoice/express" element={<QuickInvoiceEditor />} />
+        <Route path="invoice/new" element={<InvoiceEditor />} />
+        <Route path="invoice/:id" element={<InvoiceEditor />} />
+        <Route path="payslip/new" element={<PayslipEditor />} />
+        <Route path="payslip/:id" element={<PayslipEditor />} />
       </Routes>
     </Suspense>
   );

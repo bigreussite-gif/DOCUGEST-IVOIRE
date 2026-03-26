@@ -135,8 +135,8 @@ export function AdminDashboard() {
   }
 
   return (
-    <div className="space-y-5">
-      <section className="rounded-[28px] border border-teal-200/70 bg-gradient-to-br from-[#f4fffd] via-white to-[#eef8f7] p-5 shadow-[0_10px_30px_rgba(15,118,110,0.08)]">
+    <div className="space-y-6">
+      <section className="rounded-[28px] border border-teal-200/70 bg-gradient-to-br from-[#f4fffd] via-white to-[#eef8f7] p-5 shadow-[0_10px_30px_rgba(15,118,110,0.08)] sm:p-7">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal-700">Admin performance cockpit</p>

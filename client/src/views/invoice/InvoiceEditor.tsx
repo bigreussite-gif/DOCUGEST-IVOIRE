@@ -91,6 +91,13 @@ function docPrefix(docType: DocType) {
   return "DEV";
 }
 
+/** Évite de charger `/api/documents/new` quand la route dynamique capture `new` ou un segment invalide. */
+function isPersistedDocumentId(id: string | undefined): id is string {
+  if (!id) return false;
+  if (id === "new" || id === "express") return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+}
+
 export default function InvoiceEditor() {
   const navigate = useNavigate();
   const params = useParams();
@@ -191,7 +198,7 @@ export default function InvoiceEditor() {
   }, [params.id, navigate]);
 
   useEffect(() => {
-    if (!auth.user || params.id) return;
+    if (!auth.user || isPersistedDocumentId(params.id)) return;
     const v = form.getValues();
     if (!v.senderCompanyName) form.setValue("senderCompanyName", auth.user.company_name || "");
     if (!v.senderAddress) form.setValue("senderAddress", auth.user.company_address || "");
@@ -226,7 +233,7 @@ export default function InvoiceEditor() {
   }, [auth.user, params.id, form, countryPolicy]);
 
   useEffect(() => {
-    if (params.id) return;
+    if (isPersistedDocumentId(params.id)) return;
     const v = form.getValues();
     if (!v.footerNote || /Cadre administratif|Merci pour votre confiance/i.test(v.footerNote)) {
       form.setValue(
@@ -251,7 +258,7 @@ export default function InvoiceEditor() {
   ]);
 
   useEffect(() => {
-    if (!params.id) return;
+    if (!isPersistedDocumentId(params.id)) return;
     let cancelled = false;
     (async () => {
       try {
@@ -439,7 +446,7 @@ export default function InvoiceEditor() {
         doc_data
       };
 
-      if (params.id) {
+      if (isPersistedDocumentId(params.id)) {
         await apiFetch(`/api/documents/${params.id}`, {
           method: "PUT",
           json: payload

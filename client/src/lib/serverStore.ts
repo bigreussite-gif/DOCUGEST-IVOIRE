@@ -561,6 +561,8 @@ type AdSlotConfig = {
   body: string;
   ctaLabel: string;
   ctaUrl: string;
+  /** Image WebP (data URL) compressée côté client */
+  imageDataUrl: string;
   active: boolean;
   updated_at: string | null;
 };
@@ -574,6 +576,7 @@ export async function upsertAdSlotConfig({
   body,
   ctaLabel,
   ctaUrl,
+  imageDataUrl,
   active
 }: {
   actorId: string;
@@ -584,6 +587,7 @@ export async function upsertAdSlotConfig({
   body: string;
   ctaLabel: string;
   ctaUrl: string;
+  imageDataUrl?: string;
   active: boolean;
 }) {
   await appendAuditLog({
@@ -591,7 +595,7 @@ export async function upsertAdSlotConfig({
     action: "ads.config.upsert",
     targetType: "ad_slot",
     targetId: slot,
-    metadata: { slot, page, category, title, body, ctaLabel, ctaUrl, active },
+    metadata: { slot, page, category, title, body, ctaLabel, ctaUrl, imageDataUrl: imageDataUrl ?? "", active },
     ip: null
   });
 }
@@ -620,6 +624,7 @@ export async function listAdSlotsConfig(): Promise<AdSlotConfig[]> {
       body: String(m.body ?? ""),
       ctaLabel: String(m.ctaLabel ?? ""),
       ctaUrl: String(m.ctaUrl ?? ""),
+      imageDataUrl: String(m.imageDataUrl ?? ""),
       active: Boolean(m.active ?? true),
       updated_at: iso(row.created_at)
     });
