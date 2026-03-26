@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, lazy, Suspense } from "react";
 import { Link, useNavigate, useLocation, Routes, Route } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 import { Button } from "../components/ui/Button";
@@ -8,9 +8,18 @@ import { MonetizationTopBar } from "../components/promo/MonetizationTopBar";
 import { MonetizationBottomBar } from "../components/promo/MonetizationBottomBar";
 import { InlineAdStrip } from "../components/promo/InlineAdStrip";
 import { SorobossFooter } from "../components/promo/SorobossFooter";
+import { ConnectionBanner } from "../components/ConnectionBanner";
 
-import InvoiceEditor from "./invoice/InvoiceEditor";
-import PayslipEditor from "./payslip/PayslipEditor";
+const InvoiceEditor = lazy(() => import("./invoice/InvoiceEditor"));
+const PayslipEditor = lazy(() => import("./payslip/PayslipEditor"));
+
+function EditorFallback() {
+  return (
+    <div className="flex min-h-[320px] items-center justify-center p-6 text-slate-600">
+      Chargement de l’éditeur…
+    </div>
+  );
+}
 
 type DocRow = {
   id: string;
@@ -21,6 +30,7 @@ type DocRow = {
   currency: string;
   status: string;
   created_at: string;
+  _offlinePending?: boolean;
 };
 
 function typeLabel(t: string) {
@@ -70,8 +80,8 @@ function DashboardHome() {
   const firstName = auth.user?.full_name?.split(" ")[0] ?? "—";
 
   return (
-    <div className="p-6">
-      <div className="rounded-2xl bg-bg p-5 shadow-soft ring-1 ring-border/70">
+    <div className="p-4 sm:p-6">
+      <div className="rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70 sm:p-5">
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="text-sm text-slate-600">Bonjour,</div>
@@ -143,6 +153,11 @@ function DashboardHome() {
                   <span className="ml-2 rounded-full bg-surface px-2 py-0.5 text-xs text-slate-600">
                     {typeLabel(d.type)}
                   </span>
+                  {d._offlinePending ? (
+                    <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
+                      Synchro en attente
+                    </span>
+                  ) : null}
                   <div className="text-sm text-slate-700">{d.client_name}</div>
                   <div className="text-xs text-slate-500">
                     {new Date(d.created_at).toLocaleString("fr-FR")}
@@ -178,12 +193,13 @@ function DashboardHome() {
 
 export default function Dashboard() {
   const auth = useAuthStore();
+  const loadMe = useAuthStore((s) => s.loadMe);
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    auth.loadMe().catch(() => {});
-  }, []);
+    loadMe().catch(() => {});
+  }, [loadMe]);
 
   useEffect(() => {
     if (!auth.user && location.pathname !== "/login") {
@@ -193,18 +209,21 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-surface">
+      <ConnectionBanner />
       <MonetizationTopBar />
-      <div className="mx-auto grid max-w-7xl grid-cols-1 md:grid-cols-[260px_1fr]">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 md:grid-cols-[minmax(0,280px)_1fr]">
         <aside className="border-b bg-bg md:border-b-0 md:border-r md:min-h-screen">
-          <div className="p-5">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-lg ring-1 ring-primary/30">
-                📄
-              </div>
-              <div>
-                <div className="text-sm font-bold text-text">DocuGest Ivoire</div>
-                <div className="text-xs text-slate-600">Ton cockpit documents</div>
-              </div>
+          <div className="p-4 sm:p-5">
+            <div className="space-y-2">
+              <img
+                src="/logo-docugest-ivoire.png"
+                alt="DocuGest Ivoire"
+                className="h-11 w-full max-w-[220px] object-contain object-left"
+                width={220}
+                height={44}
+                loading="lazy"
+              />
+              <div className="text-xs text-slate-600">Ton cockpit documents</div>
             </div>
 
             <div className="mt-5 rounded-xl bg-surface p-4 ring-1 ring-border/70">
@@ -218,29 +237,32 @@ export default function Dashboard() {
             <nav className="mt-5 grid gap-1 text-sm">
               <Link
                 to="/dashboard"
-                className="rounded-xl bg-surface px-3 py-2 font-semibold text-text ring-1 ring-border/70"
+                className="min-h-[44px] rounded-xl bg-surface px-3 py-2.5 font-semibold text-text ring-1 ring-border/70"
               >
                 Tableau de bord
               </Link>
               <Link
                 to="/dashboard/invoice/new?type=invoice"
-                className="rounded-xl px-3 py-2 text-slate-700 hover:bg-bg hover:ring-1 hover:ring-border/70"
+                className="min-h-[44px] rounded-xl px-3 py-2.5 text-slate-700 hover:bg-bg hover:ring-1 hover:ring-border/70"
               >
                 Factures
               </Link>
               <Link
                 to="/dashboard/invoice/new?type=proforma"
-                className="rounded-xl px-3 py-2 text-slate-700 hover:bg-bg hover:ring-1 hover:ring-border/70"
+                className="min-h-[44px] rounded-xl px-3 py-2.5 text-slate-700 hover:bg-bg hover:ring-1 hover:ring-border/70"
               >
                 Proformas / Devis
               </Link>
               <Link
                 to="/dashboard/payslip/new"
-                className="rounded-xl px-3 py-2 text-slate-700 hover:bg-bg hover:ring-1 hover:ring-border/70"
+                className="min-h-[44px] rounded-xl px-3 py-2.5 text-slate-700 hover:bg-bg hover:ring-1 hover:ring-border/70"
               >
                 Bulletins de salaire
               </Link>
-              <Link to="/dashboard" className="rounded-xl px-3 py-2 text-slate-700 hover:bg-bg hover:ring-1 hover:ring-border/70">
+              <Link
+                to="/dashboard"
+                className="min-h-[44px] rounded-xl px-3 py-2.5 text-slate-700 hover:bg-bg hover:ring-1 hover:ring-border/70"
+              >
                 Mes documents
               </Link>
             </nav>
@@ -252,14 +274,16 @@ export default function Dashboard() {
           </div>
         </aside>
 
-        <main className="md:min-h-screen">
-          <Routes>
-            <Route path="/" element={<DashboardHome />} />
-            <Route path="/invoice/new" element={<InvoiceEditor />} />
-            <Route path="/invoice/:id" element={<InvoiceEditor />} />
-            <Route path="/payslip/new" element={<PayslipEditor />} />
-            <Route path="/payslip/:id" element={<PayslipEditor />} />
-          </Routes>
+        <main className="min-w-0 md:min-h-screen">
+          <Suspense fallback={<EditorFallback />}>
+            <Routes>
+              <Route path="/" element={<DashboardHome />} />
+              <Route path="/invoice/new" element={<InvoiceEditor />} />
+              <Route path="/invoice/:id" element={<InvoiceEditor />} />
+              <Route path="/payslip/new" element={<PayslipEditor />} />
+              <Route path="/payslip/:id" element={<PayslipEditor />} />
+            </Routes>
+          </Suspense>
         </main>
       </div>
       <MonetizationBottomBar />

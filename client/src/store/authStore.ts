@@ -1,5 +1,9 @@
 import { create } from "zustand";
 import { apiFetch, type ApiError } from "../lib/api";
+import { networkFetch, isNetworkFailure } from "../lib/apiNetwork";
+import { flushSyncQueue } from "../lib/offline/sync";
+
+const USER_CACHE_KEY = "docugest_user_cache";
 
 function apiErrorMessage(e: unknown): string {
   if (e && typeof e === "object" && "message" in e) {
@@ -8,7 +12,7 @@ function apiErrorMessage(e: unknown): string {
   }
   if (e instanceof TypeError) {
     if (e.message === "Failed to fetch") {
-      return "Impossible de joindre le serveur. Vérifiez que l’API est démarrée (port 4000).";
+      return "Pas de connexion ou serveur injoignable. Les documents restent disponibles hors ligne si vous étiez connecté.";
     }
     if (e.message.includes("body stream already read") || e.message.includes("already read")) {
       return "Erreur réseau. Rechargez la page et réessayez.";
@@ -77,10 +81,24 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
     set({ loading: true, error: null });
     try {
-      const me = await apiFetch<AuthUser>("/api/auth/me", { method: "GET" });
+      const me = await networkFetch<AuthUser>("/api/auth/me", { method: "GET" });
+      localStorage.setItem(USER_CACHE_KEY, JSON.stringify(me));
       set({ user: me, loading: false });
     } catch (e) {
+      if (isNetworkFailure(e)) {
+        const raw = localStorage.getItem(USER_CACHE_KEY);
+        if (raw) {
+          try {
+            const me = JSON.parse(raw) as AuthUser;
+            set({ user: me, loading: false });
+            return;
+          } catch {
+            /* vide */
+          }
+        }
+      }
       localStorage.removeItem("docugest_token");
+      localStorage.removeItem(USER_CACHE_KEY);
       set({ user: null, loading: false });
     }
   },
@@ -93,7 +111,9 @@ export const useAuthStore = create<AuthState>((set) => ({
         json: { email, password, rememberMe }
       });
       localStorage.setItem("docugest_token", res.token);
+      localStorage.setItem(USER_CACHE_KEY, JSON.stringify(res.user));
       set({ user: res.user, loading: false });
+      void flushSyncQueue();
       return true;
     } catch (e) {
       set({ loading: false, error: apiErrorMessage(e) });
@@ -109,7 +129,9 @@ export const useAuthStore = create<AuthState>((set) => ({
         json: { full_name, phone, whatsapp, email, password }
       });
       localStorage.setItem("docugest_token", res.token);
+      localStorage.setItem(USER_CACHE_KEY, JSON.stringify(res.user));
       set({ user: res.user, loading: false });
+      void flushSyncQueue();
       return true;
     } catch (e) {
       set({ loading: false, error: apiErrorMessage(e) });
@@ -119,6 +141,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: () => {
     localStorage.removeItem("docugest_token");
+    localStorage.removeItem(USER_CACHE_KEY);
     set({ user: null });
   },
 

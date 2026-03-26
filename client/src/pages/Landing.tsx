@@ -1,8 +1,6 @@
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
 import { Button } from "../components/ui/Button";
 import { MonetizationTopBar } from "../components/promo/MonetizationTopBar";
-import { MonetizationBottomBar } from "../components/promo/MonetizationBottomBar";
 import { BottomAdZone } from "../components/promo/BottomAdZone";
 import { SorobossFooter } from "../components/promo/SorobossFooter";
 
@@ -32,12 +30,16 @@ export default function Landing() {
       <div className="mx-auto max-w-6xl px-4 pb-8 pt-6">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-emerald-600 text-xl shadow-lg shadow-primary/25 ring-2 ring-white">
-              📄
-            </div>
-            <div>
-              <div className="text-xl font-bold tracking-tight text-text">DocuGest Ivoire</div>
-              <div className="text-sm text-slate-600">L’outil doc qui suit le rythme des boss</div>
+            <img
+              src="/logo-docugest-ivoire.png"
+              alt="DocuGest Ivoire"
+              className="h-14 w-auto max-w-[min(100%,280px)] object-contain object-left"
+              width={280}
+              height={56}
+              loading="eager"
+            />
+            <div className="hidden min-[420px]:block sm:block">
+              <div className="text-sm text-slate-600">L’outil pro des entrepreneurs africains</div>
             </div>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -50,16 +52,12 @@ export default function Landing() {
           </div>
         </header>
 
-        <main className="mt-14">
+        <main className="mt-8 sm:mt-14">
           <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
             <div>
-              <motion.p
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="inline-block rounded-full bg-primary/10 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-primary"
-              >
+              <p className="inline-block rounded-full bg-primary/10 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
                 100 % pensé pour l’entrepreneuriat en Afrique francophone
-              </motion.p>
+              </p>
               <h1 className="mt-4 text-4xl font-extrabold leading-tight tracking-tight text-text sm:text-5xl">
                 Tes documents pro,{" "}
                 <span className="bg-gradient-to-r from-primary to-emerald-600 bg-clip-text text-transparent">
@@ -95,12 +93,7 @@ export default function Landing() {
               </p>
             </div>
 
-            <motion.div
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.1 }}
-              className="rounded-3xl bg-gradient-to-br from-surface to-white p-8 shadow-soft ring-1 ring-border/70"
-            >
+            <div className="rounded-3xl bg-gradient-to-br from-surface to-white p-6 shadow-soft ring-1 ring-border/70 sm:p-8">
               <div className="text-sm font-bold uppercase tracking-wide text-primary">Pourquoi nous faire confiance</div>
               <ul className="mt-6 grid gap-5">
                 {benefits.map((b) => (
@@ -120,7 +113,7 @@ export default function Landing() {
                 <br />
                 Rejoins les indépendants et PME qui structurent leurs docs sans cabinet comptable.
               </div>
-            </motion.div>
+            </div>
           </div>
 
           <section className="mt-20 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-6 py-12 text-center text-white sm:px-12">
@@ -130,10 +123,11 @@ export default function Landing() {
               encaisser et payer en toute clarté.
             </p>
             <div className="mt-8">
-              <Link to="/register">
-                <Button variant="primary" className="bg-white text-slate-900 hover:bg-slate-100">
-                  Créer mon compte gratuit
-                </Button>
+              <Link
+                to="/register"
+                className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-white px-8 text-base font-semibold text-slate-900 shadow-lg shadow-black/20 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-white/60"
+              >
+                Créer mon compte gratuit
               </Link>
             </div>
           </section>
@@ -141,8 +135,6 @@ export default function Landing() {
       </div>
 
       <BottomAdZone />
-
-      <MonetizationBottomBar />
 
       <div className="border-t border-slate-100 bg-bg px-4 py-8">
         <SorobossFooter />

@@ -73,7 +73,6 @@ export default function InvoicePreview({ docTypeLabel, themeColor, data }: Invoi
           <div className="w-1/2">
             <div className="flex items-start gap-3">
               {data.sender.logoDataUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={data.sender.logoDataUrl}
                   alt="Logo"

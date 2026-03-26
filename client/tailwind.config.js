@@ -17,9 +17,20 @@ module.exports = {
         soft: "0 10px 30px rgba(0,0,0,0.08)"
       },
       fontFamily: {
-        sans: ["Poppins", "Inter", "ui-sans-serif", "system-ui"],
-        body: ["Inter", "ui-sans-serif", "system-ui"],
-        mono: ["Roboto Mono", "ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "monospace"]
+        /* Polices système uniquement : bundle léger, rendu immédiat (mobile / réseau faible). */
+        sans: [
+          "ui-sans-serif",
+          "system-ui",
+          "Segoe UI",
+          "Roboto",
+          "Helvetica Neue",
+          "Arial",
+          "sans-serif",
+          "Apple Color Emoji",
+          "Segoe UI Emoji"
+        ],
+        body: ["ui-sans-serif", "system-ui", "Segoe UI", "Roboto", "sans-serif"],
+        mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "monospace"]
       }
     }
   },

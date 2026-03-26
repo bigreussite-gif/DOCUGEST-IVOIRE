@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useParams } from "react-router-dom";
@@ -69,13 +69,24 @@ export default function PayslipEditor() {
   );
 
   const form = useForm<Values>({
-    resolver: zodResolver(schema) as any,
+    resolver: zodResolver(schema) as Resolver<Values>,
     defaultValues,
     mode: "onChange"
   });
 
   const watched = form.watch();
   const netPay = useMemo(() => computeNet(watched), [watched]);
+
+  useEffect(() => {
+    const onIdSynced = (e: Event) => {
+      const d = (e as CustomEvent<{ oldId: string; newId: string }>).detail;
+      if (d && params.id === d.oldId) {
+        navigate(`/dashboard/payslip/${d.newId}`, { replace: true });
+      }
+    };
+    window.addEventListener("docugest:doc-id-synced", onIdSynced);
+    return () => window.removeEventListener("docugest:doc-id-synced", onIdSynced);
+  }, [params.id, navigate]);
 
   useEffect(() => {
     if (!params.id) return;
@@ -186,7 +197,6 @@ export default function PayslipEditor() {
         navigate(`/dashboard/payslip/${created.id}`);
       }
     } catch (e) {
-      // eslint-disable-next-line no-console
       console.error(e);
       alert("Erreur lors de la sauvegarde.");
     } finally {
@@ -195,7 +205,7 @@ export default function PayslipEditor() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <div className="mb-4">
         <InlineAdStrip variant="compact" />
       </div>
