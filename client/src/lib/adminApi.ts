@@ -16,11 +16,14 @@ export class AdminApiError extends Error {
 
 export async function adminFetch<T>(path: string, init: RequestInit & { json?: unknown } = {}): Promise<T> {
   const { json, ...rest } = init;
+  const token = getToken();
   const headers: HeadersInit = {
     ...(json !== undefined ? { "Content-Type": "application/json" } : {}),
-    Authorization: `Bearer ${getToken()}`,
     ...(rest.headers as Record<string, string>)
   };
+  if (token) {
+    (headers as Record<string, string>).Authorization = `Bearer ${token}`;
+  }
   const url = `${config.apiBaseUrl}/api/admin${path.startsWith("/") ? path : `/${path}`}`;
   const res = await fetch(url, {
     ...rest,
