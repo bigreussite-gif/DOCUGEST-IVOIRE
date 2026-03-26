@@ -49,15 +49,20 @@ export async function getUserByLoginIdentifier(identifier: string): Promise<User
   const clean = identifier.trim();
   if (!clean) return null;
   const digits = digitsOnly(clean);
-  const { rows } = await pool.query(
-    `SELECT * FROM public.users
-     WHERE lower(email) = lower($1)
-        OR regexp_replace(coalesce(phone::text, ''), '[^0-9]', '', 'g') = $2
-        OR regexp_replace(coalesce(whatsapp::text, ''), '[^0-9]', '', 'g') = $2
-     LIMIT 1`,
-    [clean, digits]
-  );
-  return (rows[0] as UserRow) ?? null;
+  try {
+    const { rows } = await pool.query(
+      `SELECT * FROM public.users
+       WHERE lower(email) = lower($1)
+          OR regexp_replace(coalesce(phone::text, ''), '[^0-9]', '', 'g') = $2
+          OR regexp_replace(coalesce(whatsapp::text, ''), '[^0-9]', '', 'g') = $2
+       LIMIT 1`,
+      [clean, digits]
+    );
+    return (rows[0] as UserRow) ?? null;
+  } catch (e) {
+    console.warn("[serverStore] fallback getUserByEmail sur getUserByLoginIdentifier", e);
+    return getUserByEmail(clean);
+  }
 }
 
 export async function getUserById(id: string): Promise<UserRow | null> {
