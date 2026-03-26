@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { adminFetch } from "../../lib/adminApi";
-import { Input } from "../../components/ui/Input";
-import { Button } from "../../components/ui/Button";
 
 type Overview = {
   documentsTotal: number;
@@ -31,14 +30,6 @@ export function AdminDashboard() {
   const [insights, setInsights] = useState<Insights | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<string | null>(null);
-  const [teamBusy, setTeamBusy] = useState(false);
-  const [teamMsg, setTeamMsg] = useState<string | null>(null);
-  const [memberName, setMemberName] = useState("");
-  const [memberEmail, setMemberEmail] = useState("");
-  const [memberPhone, setMemberPhone] = useState("");
-  const [memberRole, setMemberRole] = useState("operator");
-  const [memberPerm, setMemberPerm] = useState("write");
-  const [memberPwd, setMemberPwd] = useState("");
 
   useEffect(() => {
     let c = false;
@@ -105,52 +96,19 @@ export function AdminDashboard() {
   const trend = overview.documentsTrendLast14Days ?? [];
   const maxTrend = Math.max(1, ...trend.map((d) => Number(d.count || 0)));
 
-  async function createTeamMember() {
-    setTeamBusy(true);
-    setTeamMsg(null);
-    try {
-      await adminFetch("/users", {
-        method: "POST",
-        json: {
-          full_name: memberName,
-          email: memberEmail,
-          phone: memberPhone,
-          password: memberPwd,
-          role: memberRole,
-          permission_level: memberPerm,
-          gender: null,
-          user_typology: "team"
-        }
-      });
-      setTeamMsg("Membre équipe créé.");
-      setMemberName("");
-      setMemberEmail("");
-      setMemberPhone("");
-      setMemberPwd("");
-    } catch (e) {
-      setTeamMsg(e instanceof Error ? e.message : "Erreur création membre");
-    } finally {
-      setTeamBusy(false);
-    }
-  }
-
   return (
-    <div className="space-y-6">
-      <section className="rounded-[28px] border border-teal-200/70 bg-gradient-to-br from-[#f4fffd] via-white to-[#eef8f7] p-5 shadow-[0_10px_30px_rgba(15,118,110,0.08)] sm:p-7">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal-700">Admin performance cockpit</p>
-            <h1 className="mt-1 text-2xl font-extrabold text-slate-800">Dashboard exécutif DocuGest</h1>
-            <p className="text-sm text-slate-600">Pilotage temps réel : croissance, fiabilité, activité et monétisation.</p>
-          </div>
-          <div className="w-full max-w-xs">
-            <input
-              placeholder="Rechercher un indicateur..."
-              className="h-11 w-full rounded-full border border-teal-300/60 bg-white px-4 text-sm text-slate-700 outline-none ring-teal-300/30 focus:ring-2"
-            />
-          </div>
+    <div className="space-y-8">
+      <section className="rounded-[28px] border border-teal-200/70 bg-gradient-to-br from-[#f4fffd] via-white to-[#eef8f7] p-6 shadow-[0_10px_30px_rgba(15,118,110,0.08)] sm:p-8">
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal-700">Vue investisseur</p>
+          <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">Synthèse exécutive DocuGest</h1>
+          <p className="mt-2 text-sm leading-relaxed text-slate-600 sm:text-base">
+            Indicateurs clés pour le board : base utilisateurs, production documentaire, signal monétisation et qualité
+            perçue.
+          </p>
+          <p className="mt-3 text-xs text-slate-500">Dernière mise à jour · {liveText}</p>
         </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <KpiCard label="Utilisateurs" value={String(overview.userCount)} hint="base totale" accent="teal" />
           <KpiCard label="Adoption 30j" value={`${adoptionRate}%`} hint={`${overview.monthlyActiveUsers} actifs`} accent="emerald" />
           <KpiCard label="Documents" value={String(overview.documentsTotal)} hint="volume produit" accent="cyan" />
@@ -158,11 +116,28 @@ export function AdminDashboard() {
         </div>
       </section>
 
+      {insights ? (
+        <section className="mx-auto max-w-3xl rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50/90 to-white p-5 shadow-sm sm:p-6">
+          <h2 className="text-center text-sm font-semibold text-slate-800">Lecture stratégique</h2>
+          <p className="mt-3 text-center text-sm leading-relaxed text-slate-700">{insights.summary}</p>
+          <ul className="mt-4 space-y-2 text-sm text-slate-700">
+            {insights.recommendations.slice(0, 4).map((r, i) => (
+              <li key={i} className="flex gap-2 border-l-2 border-amber-300/80 pl-3">
+                {r}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-4 text-center text-[10px] text-slate-400">
+            {new Date(insights.generatedAt).toLocaleString("fr-FR")} · {insights.model}
+          </p>
+        </section>
+      ) : null}
+
       <div className="grid gap-5 xl:grid-cols-[1.6fr_1fr]">
         <section className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <h2 className="text-base font-semibold text-slate-800">Évolution documents (14 jours)</h2>
-            <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-medium text-teal-700">Sync {liveText}</span>
+            <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-medium text-slate-600">Live</span>
           </div>
           {trend.length === 0 ? (
             <p className="mt-3 text-sm text-slate-500">Pas assez de données.</p>
@@ -322,36 +297,20 @@ export function AdminDashboard() {
         </section>
       </div>
 
-      <section className="rounded-[22px] border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-base font-semibold text-slate-800">Créer un compte équipe rapidement</h2>
-        <p className="text-xs text-slate-500">Ajoutez vos collaborateurs avec rôle et permissions.</p>
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
-          <Input label="Nom complet" value={memberName} onChange={(e) => setMemberName(e.target.value)} />
-          <Input label="Email" type="email" value={memberEmail} onChange={(e) => setMemberEmail(e.target.value)} />
-          <Input label="Téléphone" value={memberPhone} onChange={(e) => setMemberPhone(e.target.value)} />
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium text-text">Rôle</span>
-            <select className="w-full rounded-xl border border-border px-3 py-2 text-sm" value={memberRole} onChange={(e) => setMemberRole(e.target.value)}>
-              <option value="operator">Opérateur</option>
-              <option value="manager">Manager</option>
-              <option value="admin">Admin</option>
-            </select>
-          </label>
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium text-text">Permission</span>
-            <select className="w-full rounded-xl border border-border px-3 py-2 text-sm" value={memberPerm} onChange={(e) => setMemberPerm(e.target.value)}>
-              <option value="read">Lecture</option>
-              <option value="write">Écriture</option>
-              <option value="admin">Admin</option>
-            </select>
-          </label>
-          <Input label="Mot de passe initial" type="password" value={memberPwd} onChange={(e) => setMemberPwd(e.target.value)} />
-        </div>
-        <div className="mt-4 flex items-center gap-3">
-          <Button type="button" onClick={() => void createTeamMember()} disabled={teamBusy}>
-            {teamBusy ? "Création..." : "Créer le membre"}
-          </Button>
-          {teamMsg ? <span className="text-sm text-slate-600">{teamMsg}</span> : null}
+      <section className="rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/5 to-teal-50/50 p-5 sm:p-6">
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+          <div>
+            <h2 className="text-base font-semibold text-slate-900">Équipe & gouvernance</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Création de comptes, rôles et permissions — centralisé pour éviter d’alourdir cette vue.
+            </p>
+          </div>
+          <Link
+            to="/admin/users"
+            className="inline-flex shrink-0 items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:brightness-95"
+          >
+            Ouvrir Utilisateurs
+          </Link>
         </div>
       </section>
 
@@ -403,25 +362,6 @@ export function AdminDashboard() {
         </section>
       </div>
 
-      <section className="rounded-[22px] border border-amber-200 bg-amber-50/50 p-5 shadow-sm">
-        <h2 className="text-base font-semibold text-slate-800">Assistant décisionnel</h2>
-        <p className="text-xs text-slate-500">Synthèses heuristiques — remplaçable par un modèle LLM connecté.</p>
-        {insights ? (
-          <div className="mt-4 space-y-4">
-            <p className="text-sm leading-relaxed text-slate-800">{insights.summary}</p>
-            <ul className="list-inside list-disc space-y-2 text-sm text-slate-700">
-              {insights.recommendations.map((r, i) => (
-                <li key={i}>{r}</li>
-              ))}
-            </ul>
-            <div className="text-[10px] text-slate-400">
-              Généré {new Date(insights.generatedAt).toLocaleString("fr-FR")} · {insights.model}
-            </div>
-          </div>
-        ) : (
-          <p className="mt-2 text-slate-600">Chargement…</p>
-        )}
-      </section>
     </div>
   );
 }

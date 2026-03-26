@@ -47,6 +47,18 @@ export function AdminLayout({ session }: { session: AdminSession }) {
           >
             Confiance & traçabilité
           </NavLink>
+          <NavLink
+            to="/admin/reports"
+            className={({ isActive }) => `rounded-xl px-3 py-2.5 text-sm ${isActive ? active : inactive}`}
+          >
+            Rapports & exports
+          </NavLink>
+          <NavLink
+            to="/admin/growth"
+            className={({ isActive }) => `rounded-xl px-3 py-2.5 text-sm ${isActive ? active : inactive}`}
+          >
+            Croissance & partenariats
+          </NavLink>
           <a href="/dashboard" className={`mt-4 rounded-xl px-3 py-2.5 text-sm ${inactive}`}>
             ← Application
           </a>
@@ -85,6 +97,12 @@ export function AdminLayout({ session }: { session: AdminSession }) {
               <NavLink to="/admin/audit" className="rounded-lg bg-slate-100 px-3 py-2 text-sm">
                 Journal
               </NavLink>
+              <NavLink to="/admin/reports" className="rounded-lg bg-slate-100 px-3 py-2 text-sm">
+                Rapports
+              </NavLink>
+              <NavLink to="/admin/growth" className="rounded-lg bg-slate-100 px-3 py-2 text-sm">
+                Croissance
+              </NavLink>
             </div>
           </div>
         </header>
@@ -93,8 +111,8 @@ export function AdminLayout({ session }: { session: AdminSession }) {
           <Outlet context={{ session }} />
         </main>
 
-        <footer className="border-t border-slate-200 px-4 py-6 text-center text-xs text-slate-400 md:px-8">
-          DocuGest Ivoire — administration — <span className="font-medium text-slate-500">by Soroboss</span>
+        <footer className="border-t border-slate-200/80 px-4 py-4 text-center text-[11px] text-slate-400 md:px-8">
+          DocuGest Ivoire · Administration
         </footer>
       </div>
     </div>

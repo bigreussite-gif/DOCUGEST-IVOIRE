@@ -36,7 +36,6 @@ export function AdminUsers() {
   const [modal, setModal] = useState<"create" | "edit" | null>(null);
   const [editing, setEditing] = useState<UserRow | null>(null);
   const [busy, setBusy] = useState(false);
-  const [pwdOpenFor, setPwdOpenFor] = useState<UserRow | null>(null);
 
   const load = () =>
     adminFetch<{ items: UserRow[] }>("/users")
@@ -67,7 +66,10 @@ export function AdminUsers() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-text">Utilisateurs & gouvernance des accès</h1>
-          <p className="mt-1 text-slate-600">Vue de confiance interne: gestion des profils, rôles et permissions critiques.</p>
+          <p className="mt-1 text-slate-600">
+            Profils, rôles et permissions. Le changement de mot de passe des comptes existants se fait par l’utilisateur
+            (réinitialisation / profil), pas depuis cet écran.
+          </p>
         </div>
         <Button type="button" onClick={() => setModal("create")}>
           + Nouvel utilisateur
@@ -87,7 +89,7 @@ export function AdminUsers() {
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-3 text-sm">
           <div className="font-semibold text-text">Admin / Super admin</div>
-          <div className="mt-1 text-slate-600">Gestion accès, mots de passe, gouvernance.</div>
+          <div className="mt-1 text-slate-600">Gouvernance des accès et des rôles (niveau plateforme).</div>
         </div>
       </div>
 
@@ -116,9 +118,6 @@ export function AdminUsers() {
                 <td className="space-x-2 px-4 py-2 text-right">
                   <button type="button" className="text-primary underline" onClick={() => { setEditing(u); setModal("edit"); }}>
                     Modifier
-                  </button>
-                  <button type="button" className="text-indigo-700 underline" onClick={() => setPwdOpenFor(u)}>
-                    Mot de passe
                   </button>
                   <button type="button" className="text-rose-600 underline" disabled={busy} onClick={() => onDelete(u.id)}>
                     Supprimer
@@ -177,26 +176,6 @@ export function AdminUsers() {
         />
       ) : null}
 
-      {pwdOpenFor ? (
-        <PasswordModal
-          user={pwdOpenFor}
-          onClose={() => setPwdOpenFor(null)}
-          onSave={async (password) => {
-            setBusy(true);
-            try {
-              await adminFetch(`/users/${pwdOpenFor.id}/password`, {
-                method: "PATCH",
-                json: { password }
-              });
-              setPwdOpenFor(null);
-            } catch (e) {
-              alert(e instanceof AdminApiError ? e.message : "Erreur");
-            } finally {
-              setBusy(false);
-            }
-          }}
-        />
-      ) : null}
     </div>
   );
 }
@@ -321,49 +300,3 @@ function UserFormModal({
   );
 }
 
-function PasswordModal({
-  user,
-  onClose,
-  onSave
-}: {
-  user: UserRow;
-  onClose: () => void;
-  onSave: (password: string) => Promise<void>;
-}) {
-  const [password, setPassword] = useState("");
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog">
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-        <h2 className="text-lg font-bold text-text">Nouveau mot de passe</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Définir un nouveau mot de passe pour <span className="font-medium">{user.email}</span>.
-        </p>
-        <div className="mt-4">
-          <Input
-            label="Mot de passe (min 8 caractères)"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-        <div className="mt-5 flex justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={onClose}>
-            Annuler
-          </Button>
-          <Button
-            type="button"
-            onClick={() => {
-              if (password.length < 8) {
-                alert("Mot de passe ≥ 8 caractères");
-                return;
-              }
-              void onSave(password);
-            }}
-          >
-            Enregistrer
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}

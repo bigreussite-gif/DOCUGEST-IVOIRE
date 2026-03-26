@@ -15,6 +15,8 @@ const schema = z.object({
   ctaUrl: z.string().max(500).optional().default(""),
   /** data:image/webp;base64,... — compressé côté client */
   imageDataUrl: z.string().max(900_000).optional().default(""),
+  imageFit: z.enum(["cover", "contain"]).optional().default("cover"),
+  imageFrame: z.enum(["banner", "photo", "square"]).optional().default("photo"),
   active: z.boolean()
 });
 

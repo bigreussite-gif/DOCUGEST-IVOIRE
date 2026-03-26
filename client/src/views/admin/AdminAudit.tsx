@@ -37,43 +37,55 @@ export function AdminAudit() {
   if (err) return <div className="rounded-xl bg-rose-50 p-4 text-rose-800">{err}</div>;
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold text-text">Confiance & traçabilité</h1>
-        <p className="mt-1 text-slate-600">
-          Journal des actions sensibles côté serveur. Rafraîchissement automatique toutes les 30 secondes.
+    <div className="space-y-6">
+      <div className="rounded-[24px] border border-slate-200/90 bg-gradient-to-br from-emerald-50/50 p-6 sm:p-7">
+        <p className="text-xs font-semibold uppercase tracking-wider text-emerald-800">Confiance</p>
+        <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">Traçabilité des actions</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
+          Journal des opérations sensibles côté serveur. Rafraîchissement automatique toutes les 30 secondes. Dès que les
+          premières actions seront enregistrées, elles apparaîtront ici.
         </p>
       </div>
-      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
-        Signal confiance: chaque action admin est horodatée et attribuée, ce qui réduit le risque de fraude interne.
-      </div>
 
-      <div className="mt-6 overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
-            <tr>
-              <th className="px-4 py-3">Date</th>
-              <th className="px-4 py-3">Action</th>
-              <th className="px-4 py-3">Acteur</th>
-              <th className="px-4 py-3">Cible</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {items.map((r) => (
-              <tr key={r.id} className="hover:bg-slate-50/80">
-                <td className="whitespace-nowrap px-4 py-2 text-slate-600">
-                  {new Date(r.created_at).toLocaleString("fr-FR")}
-                </td>
-                <td className="px-4 py-2 font-mono text-xs">{r.action}</td>
-                <td className="px-4 py-2">{r.actor_name || r.actor_email || "—"}</td>
-                <td className="px-4 py-2 text-slate-600">
-                  {r.target_type} {r.target_id ? `· ${r.target_id.slice(0, 8)}…` : ""}
-                </td>
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="max-h-[min(70vh,640px)] overflow-auto">
+          <table className="w-full min-w-[640px] text-left text-sm">
+            <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50/95 text-xs uppercase tracking-wide text-slate-500 backdrop-blur-sm">
+              <tr>
+                <th className="px-4 py-3">Date</th>
+                <th className="px-4 py-3">Action</th>
+                <th className="px-4 py-3">Acteur</th>
+                <th className="px-4 py-3">Cible</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-        {items.length === 0 ? <div className="p-6 text-center text-slate-500">Aucune entrée pour l’instant.</div> : null}
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {items.map((r, i) => (
+                <tr key={r.id} className={i % 2 === 0 ? "bg-white" : "bg-slate-50/50"}>
+                  <td className="whitespace-nowrap px-4 py-2.5 text-slate-600">
+                    {new Date(r.created_at).toLocaleString("fr-FR")}
+                  </td>
+                  <td className="px-4 py-2.5 font-mono text-xs text-slate-800">{r.action}</td>
+                  <td className="px-4 py-2.5 font-medium text-slate-800">{r.actor_name || r.actor_email || "—"}</td>
+                  <td className="px-4 py-2.5 text-slate-600">
+                    {r.target_type} {r.target_id ? `· ${r.target_id.slice(0, 8)}…` : ""}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {items.length === 0 ? (
+          <div className="border-t border-slate-100 bg-gradient-to-b from-slate-50/80 to-white px-6 py-14 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100/80 text-2xl text-emerald-700">
+              ◎
+            </div>
+            <p className="mt-4 text-base font-semibold text-slate-800">Aucune entrée pour l’instant</p>
+            <p className="mx-auto mt-2 max-w-md text-sm text-slate-600">
+              Le journal se remplira automatiquement lors des actions admin (configuration, utilisateurs, publicités,
+              etc.). C’est normal en phase de démarrage.
+            </p>
+          </div>
+        ) : null}
       </div>
     </div>
   );

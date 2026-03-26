@@ -7,6 +7,7 @@ import { AdminUsers } from "./AdminUsers";
 import { AdminAudit } from "./AdminAudit";
 import { AdminDocuments } from "./AdminDocuments";
 import { AdminAds } from "./AdminAds";
+import { AdminComingSoon } from "./AdminComingSoon";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 
@@ -122,6 +123,26 @@ export default function AdminApp() {
         <Route path="ads" element={<AdminAds />} />
         <Route path="users" element={<AdminUsers />} />
         <Route path="audit" element={<AdminAudit />} />
+        <Route
+          path="reports"
+          element={
+            <AdminComingSoon
+              title="Rapports & exports"
+              description="Exports PDF/Excel, tableaux de bord partagés et snapshots pour investisseurs — en cours de conception."
+              highlights={["Exports planifiés", "Filtres multi-tenant", "Partage sécurisé (lien à durée limitée)"]}
+            />
+          }
+        />
+        <Route
+          path="growth"
+          element={
+            <AdminComingSoon
+              title="Croissance & partenariats"
+              description="Vue pipeline partenaires, campagnes et co-marketing pour accélérer l’acquisition sur les marchés cibles."
+              highlights={["Suivi des leads B2B", "Intégrations annonceurs", "Objectifs trimestriels"]}
+            />
+          }
+        />
       </Route>
     </Routes>
   );

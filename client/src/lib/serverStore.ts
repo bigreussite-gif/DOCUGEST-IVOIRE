@@ -563,6 +563,10 @@ type AdSlotConfig = {
   ctaUrl: string;
   /** Image WebP (data URL) compressée côté client */
   imageDataUrl: string;
+  /** Remplissage du cadre : cover = sans bandes vides, contain = image entière */
+  imageFit: "cover" | "contain";
+  /** Proportions du cadre affiché sur le site */
+  imageFrame: "banner" | "photo" | "square";
   active: boolean;
   updated_at: string | null;
 };
@@ -577,6 +581,8 @@ export async function upsertAdSlotConfig({
   ctaLabel,
   ctaUrl,
   imageDataUrl,
+  imageFit,
+  imageFrame,
   active
 }: {
   actorId: string;
@@ -588,6 +594,8 @@ export async function upsertAdSlotConfig({
   ctaLabel: string;
   ctaUrl: string;
   imageDataUrl?: string;
+  imageFit?: "cover" | "contain";
+  imageFrame?: "banner" | "photo" | "square";
   active: boolean;
 }) {
   await appendAuditLog({
@@ -595,7 +603,19 @@ export async function upsertAdSlotConfig({
     action: "ads.config.upsert",
     targetType: "ad_slot",
     targetId: slot,
-    metadata: { slot, page, category, title, body, ctaLabel, ctaUrl, imageDataUrl: imageDataUrl ?? "", active },
+    metadata: {
+      slot,
+      page,
+      category,
+      title,
+      body,
+      ctaLabel,
+      ctaUrl,
+      imageDataUrl: imageDataUrl ?? "",
+      imageFit: imageFit ?? "cover",
+      imageFrame: imageFrame ?? "photo",
+      active
+    },
     ip: null
   });
 }
@@ -625,6 +645,9 @@ export async function listAdSlotsConfig(): Promise<AdSlotConfig[]> {
       ctaLabel: String(m.ctaLabel ?? ""),
       ctaUrl: String(m.ctaUrl ?? ""),
       imageDataUrl: String(m.imageDataUrl ?? ""),
+      imageFit: m.imageFit === "contain" ? "contain" : "cover",
+      imageFrame:
+        m.imageFrame === "banner" || m.imageFrame === "square" ? (m.imageFrame as "banner" | "square") : "photo",
       active: Boolean(m.active ?? true),
       updated_at: iso(row.created_at)
     });
