@@ -86,17 +86,25 @@ export async function getUserByLoginIdentifier(identifier: string): Promise<User
   const clean = identifier.trim();
   if (!clean) return null;
   const digits = digitsOnly(clean);
-  const digitCandidates = buildLoginDigitCandidates(digits);
   try {
-    const { rows } = await pool.query(
-      `SELECT * FROM public.users
-       WHERE lower(email) = lower($1)
-         OR regexp_replace(coalesce(phone::text, ''), '[^0-9]', '', 'g') = ANY($2::text[])
-         OR regexp_replace(coalesce(whatsapp::text, ''), '[^0-9]', '', 'g') = ANY($2::text[])
-       LIMIT 1`,
-      [clean, digitCandidates]
-    );
-    return (rows[0] as UserRow) ?? null;
+    // 1) Email prioritaire (chemin le plus fiable).
+    const byEmail = await getUserByEmail(clean);
+    if (byEmail) return byEmail;
+
+    // 2) Fallback par numéro (téléphone/WhatsApp) avec variantes locales/internationales.
+    const digitCandidates = buildLoginDigitCandidates(digits);
+    for (const candidate of digitCandidates) {
+      const { rows } = await pool.query(
+        `SELECT * FROM public.users
+         WHERE regexp_replace(coalesce(phone::text, ''), '[^0-9]', '', 'g') = $1
+            OR regexp_replace(coalesce(whatsapp::text, ''), '[^0-9]', '', 'g') = $1
+         LIMIT 1`,
+        [candidate]
+      );
+      if (rows[0]) return rows[0] as UserRow;
+    }
+
+    return null;
   } catch (e) {
     console.warn("[serverStore] fallback getUserByEmail sur getUserByLoginIdentifier", e);
     return getUserByEmail(clean);
