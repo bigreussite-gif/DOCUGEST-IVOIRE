@@ -30,14 +30,16 @@ export default function Landing() {
       <div className="mx-auto max-w-6xl px-4 pb-8 pt-6">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <img
-              src="/logo-docugest-ivoire.png"
-              alt="DocuGest Ivoire"
-              className="h-14 w-auto max-w-[min(100%,280px)] object-contain object-left"
-              width={280}
-              height={56}
-              loading="eager"
-            />
+            <div className="rounded-2xl bg-white px-4 py-3 shadow-lg ring-2 ring-slate-200/90">
+              <img
+                src="/logo-docugest-ivoire.png"
+                alt="DocuGest Ivoire"
+                className="h-16 w-auto max-w-[min(100%,320px)] object-contain object-left drop-shadow sm:h-20 sm:max-w-[360px]"
+                width={360}
+                height={80}
+                loading="eager"
+              />
+            </div>
             <div className="hidden min-[420px]:block sm:block">
               <div className="text-sm text-slate-600">L’outil pro des entrepreneurs africains</div>
             </div>

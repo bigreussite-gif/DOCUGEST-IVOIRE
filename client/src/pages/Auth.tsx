@@ -97,14 +97,16 @@ export default function Auth({ initialTab }: Props) {
       <div className="mx-auto max-w-3xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img
-              src="/logo-docugest-ivoire.png"
-              alt="DocuGest Ivoire"
-              className="h-11 w-auto max-w-[min(100%,260px)] object-contain object-left"
-              width={260}
-              height={44}
-              loading="eager"
-            />
+            <div className="rounded-2xl bg-white px-3 py-2.5 shadow-lg ring-2 ring-slate-200/90">
+              <img
+                src="/logo-docugest-ivoire.png"
+                alt="DocuGest Ivoire"
+                className="h-14 w-auto max-w-[min(100%,300px)] object-contain object-left drop-shadow sm:h-16"
+                width={300}
+                height={64}
+                loading="eager"
+              />
+            </div>
             <div className="hidden min-[380px]:block">
               <div className="text-sm text-slate-600">Gratuit et simple</div>
             </div>
