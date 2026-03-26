@@ -1,14 +1,7 @@
-import { useEffect } from "react";
 import { AdPlaceholder } from "./AdPlaceholder";
-import { trackAdEvent } from "../../lib/adTracking";
 
 /** Fine barre en bas de page : partenaires (gauche) + AdSense (droite). */
 export function MonetizationBottomBar() {
-  useEffect(() => {
-    trackAdEvent("view", "bottom-bar-partners");
-    trackAdEvent("view", "bottom-bar-adsense");
-  }, []);
-
   return (
     <div className="border-t border-slate-200/80 bg-gradient-to-r from-slate-50 via-white to-slate-50">
       <div className="mx-auto grid max-w-6xl grid-cols-1 gap-2 px-3 py-2 sm:grid-cols-2 sm:items-stretch">

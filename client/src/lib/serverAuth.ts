@@ -13,6 +13,18 @@ export function getBearerToken(req: Request): string | null {
 
 export type SessionAuth = { sub: string; role: string };
 
+function decodeSessionToken(token: string): SessionAuth | null {
+  try {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) return null;
+    const payload = jwt.verify(token, secret) as jwt.JwtPayload & { sub?: string; role?: string };
+    if (!payload.sub) return null;
+    return { sub: payload.sub, role: String(payload.role ?? "user") };
+  } catch {
+    return null;
+  }
+}
+
 export async function requireSessionAuth(req: Request): Promise<SessionAuth | NextResponse> {
   const token = getBearerToken(req);
   if (!token) {
@@ -20,17 +32,20 @@ export async function requireSessionAuth(req: Request): Promise<SessionAuth | Ne
     return NextResponse.json({ message: "Non authentifié" }, { status: 401 });
   }
   try {
-    const secret = process.env.JWT_SECRET;
-    if (!secret) throw new Error("JWT_SECRET manquant");
-    const payload = jwt.verify(token, secret) as jwt.JwtPayload & { sub?: string; role?: string };
-    if (!payload.sub) {
-      return NextResponse.json({ message: "Token invalide" }, { status: 401 });
-    }
-    return { sub: payload.sub, role: String(payload.role ?? "user") };
+    const auth = decodeSessionToken(token);
+    if (!auth) return NextResponse.json({ message: "Token invalide" }, { status: 401 });
+    return auth;
   } catch (e) {
     console.log("[serverAuth] JWT invalide", e);
     return NextResponse.json({ message: "Token invalide ou expiré" }, { status: 401 });
   }
+}
+
+/** Retourne la session si le token est valide, sinon null (sans erreur 401). */
+export function optionalSessionAuth(req: Request): SessionAuth | null {
+  const token = getBearerToken(req);
+  if (!token) return null;
+  return decodeSessionToken(token);
 }
 
 export function roleRank(role: string): number {

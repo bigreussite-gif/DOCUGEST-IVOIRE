@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireBackoffice, requireSessionAuth } from "@/lib/serverAuth";
+import { optionalSessionAuth } from "@/lib/serverAuth";
 import * as store from "@/lib/serverStore";
 
 export const runtime = "nodejs";
@@ -13,10 +13,7 @@ const adEventSchema = z.object({
 
 export async function POST(req: Request) {
   console.log("[api/admin/analytics/ad-event] POST");
-  const auth = await requireSessionAuth(req);
-  if (auth instanceof NextResponse) return auth;
-  const denied = requireBackoffice(auth);
-  if (denied) return denied;
+  const auth = optionalSessionAuth(req);
 
   const parsed = adEventSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
@@ -26,7 +23,7 @@ export async function POST(req: Request) {
     await store.insertAdEvent({
       event_type: parsed.data.event_type,
       zone: parsed.data.zone,
-      user_id: auth.sub,
+      user_id: auth?.sub ?? null,
       session_id: parsed.data.session_id ?? null,
       metadata: {}
     });
