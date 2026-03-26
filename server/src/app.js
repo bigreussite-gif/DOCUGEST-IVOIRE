@@ -12,17 +12,14 @@ const rateLimit = require("express-rate-limit");
 const { authRouter } = require("./routes/auth");
 const { documentsRouter } = require("./routes/documents");
 const { adminRouter } = require("./routes/admin");
+const { getCorsOrigins } = require("./lib/runtimeEnv");
 
 const app = express();
 /** Vercel / proxy : nécessaire pour rate-limit et IP */
 app.set("trust proxy", 1);
 
 const port = Number(process.env.PORT || 4000);
-const clientOrigin = process.env.CLIENT_ORIGIN || "http://localhost:5173";
-const corsOrigins = clientOrigin
-  .split(",")
-  .map((s) => s.trim())
-  .filter(Boolean);
+const corsOrigins = getCorsOrigins();
 
 app.use(
   cors({
@@ -44,8 +41,8 @@ const authLimiter = rateLimit({
   legacyHeaders: false
 });
 
-app.get("/health", (_req, res) => res.json({ ok: true }));
-app.get("/api/health", (_req, res) => res.json({ ok: true }));
+app.get("/health", (_req, res) => res.json({ ok: true, database: usePg }));
+app.get("/api/health", (_req, res) => res.json({ ok: true, database: usePg }));
 
 app.use("/api/auth", authLimiter, authRouter);
 app.use("/auth", authLimiter, authRouter);

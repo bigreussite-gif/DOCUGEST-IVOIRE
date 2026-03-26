@@ -5,6 +5,7 @@ const { z } = require("zod");
 
 const { requireAuth } = require("../middleware/auth");
 const { sendMail } = require("../lib/mailer");
+const { getPublicAppUrl } = require("../lib/runtimeEnv");
 const store = require("../lib/store");
 
 const router = express.Router();
@@ -125,7 +126,7 @@ router.post("/password-reset-request", async (req, res) => {
   // Ne pas révéler si l'email existe
   if (sel) {
     const resetToken = createResetToken({ userId: sel.id });
-    const link = `${process.env.APP_URL || "http://localhost:5173"}/reset-password?token=${encodeURIComponent(resetToken)}`;
+    const link = `${getPublicAppUrl()}/reset-password?token=${encodeURIComponent(resetToken)}`;
 
     try {
       await sendMail({
