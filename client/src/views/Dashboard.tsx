@@ -180,7 +180,12 @@ function DashboardHome() {
                   <span className="text-sm font-semibold text-text">{formatFCFA(Number(d.total_amount))}</span>
                   <Link to={openDoc(d)}>
                     <Button variant="secondary" className="h-10 text-sm">
-                      Ouvrir
+                      Modifier
+                    </Button>
+                  </Link>
+                  <Link to={`${openDoc(d)}?action=print`}>
+                    <Button variant="ghost" className="h-10 text-sm">
+                      Imprimer
                     </Button>
                   </Link>
                   <Button variant="danger" className="h-10 text-sm" type="button" onClick={() => removeDoc(d.id)}>

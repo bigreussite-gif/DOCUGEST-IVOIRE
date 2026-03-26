@@ -10,12 +10,14 @@ import { Button } from "@/components/ui/Button";
 import { InlineAdStrip } from "@/components/promo/InlineAdStrip";
 import { SorobossFooter } from "@/components/promo/SorobossFooter";
 
+const COUNTRY_OPTIONS = [{ code: "CI", label: "Cote d'Ivoire", flag: "🇨🇮", dial: "+225" }] as const;
+
 export default function RegisterPage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
-  const [country, setCountry] = useState("Cote d'Ivoire");
+  const [countryCode, setCountryCode] = useState<(typeof COUNTRY_OPTIONS)[number]["code"]>("CI");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -27,6 +29,10 @@ export default function RegisterPage() {
     setSuccess(false);
     setLoading(true);
     try {
+      const selectedCountry = COUNTRY_OPTIONS.find((c) => c.code === countryCode) ?? COUNTRY_OPTIONS[0];
+      const localPhone = whatsapp.replace(/\D/g, "").replace(/^0+/, "");
+      const whatsappFull = localPhone ? `${selectedCountry.dial}${localPhone}` : "";
+
       console.log("[register] envoi POST /api/auth/register");
       const res = await fetch("/api/auth/register", {
         method: "POST",
@@ -34,8 +40,8 @@ export default function RegisterPage() {
         body: JSON.stringify({
           name: name.trim(),
           email: email.trim(),
-          whatsapp: whatsapp.trim(),
-          country: country.trim(),
+          whatsapp: whatsappFull,
+          country: selectedCountry.label,
           password
         })
       });
@@ -124,30 +130,40 @@ export default function RegisterPage() {
               <label htmlFor="whatsapp" className="mb-1 block text-sm font-medium text-text">
                 Numero WhatsApp
               </label>
-              <input
-                id="whatsapp"
-                name="whatsapp"
-                type="tel"
-                autoComplete="tel"
-                placeholder="+2250700000000"
-                value={whatsapp}
-                onChange={(e) => setWhatsapp(e.target.value)}
-                className="w-full rounded-xl border border-border bg-bg px-3 py-2 text-text outline-none ring-primary/30 focus:ring-2"
-              />
+              <div className="flex overflow-hidden rounded-xl border border-border bg-bg ring-primary/30 focus-within:ring-2">
+                <span className="inline-flex items-center gap-1 border-r border-border px-3 text-sm text-slate-700">
+                  {COUNTRY_OPTIONS.find((c) => c.code === countryCode)?.flag} {COUNTRY_OPTIONS.find((c) => c.code === countryCode)?.dial}
+                </span>
+                <input
+                  id="whatsapp"
+                  name="whatsapp"
+                  type="tel"
+                  autoComplete="tel"
+                  placeholder="0700000000"
+                  value={whatsapp}
+                  onChange={(e) => setWhatsapp(e.target.value)}
+                  className="w-full px-3 py-2 text-text outline-none"
+                />
+              </div>
             </div>
             <div>
               <label htmlFor="country" className="mb-1 block text-sm font-medium text-text">
                 Pays
               </label>
-              <input
+              <select
                 id="country"
                 name="country"
-                type="text"
                 required
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value as (typeof COUNTRY_OPTIONS)[number]["code"])}
                 className="w-full rounded-xl border border-border bg-bg px-3 py-2 text-text outline-none ring-primary/30 focus:ring-2"
-              />
+              >
+                {COUNTRY_OPTIONS.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.flag} {c.label}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
           <div>

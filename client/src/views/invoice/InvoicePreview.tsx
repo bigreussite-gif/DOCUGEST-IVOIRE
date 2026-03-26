@@ -108,14 +108,28 @@ export default function InvoicePreview({ docTypeLabel, themeColor, customAccentH
         <div className="mt-4 h-3 w-full rounded bg-black/10" />
         <div className="mt-2 h-7 w-full rounded" style={{ backgroundColor: bar }} />
 
-        <div className="mt-5">
-          <div className="font-bold">FACTURER À :</div>
-          <div className="mt-1">
-            <div className="font-semibold">{data.client.name}</div>
-            <div>{data.client.address}</div>
-            <div>{data.client.phone}</div>
-            <div>{data.client.email}</div>
-            {data.client.ncc ? <div>NCC: {data.client.ncc}</div> : null}
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <div>
+            <div className="mb-1 font-bold">Informations émetteur</div>
+            <table className="w-full border-collapse text-[10.2px]">
+              <tbody>
+                <tr><td className="border-b px-1 py-1.5 text-slate-600">Entreprise</td><td className="border-b px-1 py-1.5 text-right font-semibold">{data.sender.companyName || "—"}</td></tr>
+                <tr><td className="border-b px-1 py-1.5 text-slate-600">Téléphone</td><td className="border-b px-1 py-1.5 text-right">{data.sender.phone || "—"}</td></tr>
+                <tr><td className="border-b px-1 py-1.5 text-slate-600">Email</td><td className="border-b px-1 py-1.5 text-right">{data.sender.email || "—"}</td></tr>
+                <tr><td className="border-b px-1 py-1.5 text-slate-600">Adresse</td><td className="border-b px-1 py-1.5 text-right">{data.sender.address || "—"}</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div>
+            <div className="mb-1 font-bold">FACTURER À</div>
+            <table className="w-full border-collapse text-[10.2px]">
+              <tbody>
+                <tr><td className="border-b px-1 py-1.5 text-slate-600">Client</td><td className="border-b px-1 py-1.5 text-right font-semibold">{data.client.name || "—"}</td></tr>
+                <tr><td className="border-b px-1 py-1.5 text-slate-600">Téléphone</td><td className="border-b px-1 py-1.5 text-right">{data.client.phone || "—"}</td></tr>
+                <tr><td className="border-b px-1 py-1.5 text-slate-600">Email</td><td className="border-b px-1 py-1.5 text-right">{data.client.email || "—"}</td></tr>
+                <tr><td className="border-b px-1 py-1.5 text-slate-600">Adresse</td><td className="border-b px-1 py-1.5 text-right">{data.client.address || "—"}</td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -153,39 +167,25 @@ export default function InvoicePreview({ docTypeLabel, themeColor, customAccentH
         </table>
 
         <div className="mt-3 flex justify-end">
-          <div className="w-[55%]">
-            <div className="flex justify-between text-[10.5px]">
-              <div>Sous-total HT</div>
-              <div className="font-semibold">{formatFCFA(totals.subtotalHT)}</div>
-            </div>
-            {data.fiscalRegime === "formal" ? (
-              <>
-                <div className="mt-1 flex justify-between text-[10.5px]">
-                  <div>Remise globale ({data.globalDiscountPct || 0}%)</div>
-                  <div className="font-semibold">
-                    {formatFCFA(Math.max(0, totals.subtotalHT - totals.baseTaxableHT))}
-                  </div>
-                </div>
-                <div className="mt-1 flex justify-between text-[10.5px]">
-                  <div>Base TVA</div>
-                  <div className="font-semibold">{formatFCFA(totals.baseTaxableHT)}</div>
-                </div>
-                <div className="mt-1 flex justify-between text-[10.5px]">
-                  <div>TVA ({data.vatRatePct}%)</div>
-                  <div className="font-semibold">{formatFCFA(totals.vatAmount)}</div>
-                </div>
-              </>
-            ) : null}
-
-            <div className="mt-2 rounded bg-surface p-2 ring-1 ring-border/70">
-              <div className="flex justify-between">
-                <div className="font-bold">Total TTC</div>
-                <div className="text-[12px] font-bold" style={{ color: bar }}>
-                  {formatFCFA(totals.totalTTC)}
-                </div>
-              </div>
-            </div>
-
+          <div className="w-[58%]">
+            <table className="w-full border-collapse text-[10.4px]">
+              <tbody>
+                <tr><td className="border-b px-1 py-1.5">Sous-total HT</td><td className="border-b px-1 py-1.5 text-right font-semibold">{formatFCFA(totals.subtotalHT)}</td></tr>
+                {data.fiscalRegime === "formal" ? (
+                  <>
+                    <tr><td className="border-b px-1 py-1.5">Remise globale ({data.globalDiscountPct || 0}%)</td><td className="border-b px-1 py-1.5 text-right font-semibold">{formatFCFA(Math.max(0, totals.subtotalHT - totals.baseTaxableHT))}</td></tr>
+                    <tr><td className="border-b px-1 py-1.5">Base TVA</td><td className="border-b px-1 py-1.5 text-right font-semibold">{formatFCFA(totals.baseTaxableHT)}</td></tr>
+                    <tr><td className="border-b px-1 py-1.5">TVA ({data.vatRatePct}%)</td><td className="border-b px-1 py-1.5 text-right font-semibold">{formatFCFA(totals.vatAmount)}</td></tr>
+                  </>
+                ) : null}
+                <tr>
+                  <td className="px-1 py-2 font-bold">Total TTC</td>
+                  <td className="px-1 py-2 text-right text-[12px] font-bold" style={{ color: bar }}>
+                    {formatFCFA(totals.totalTTC)}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
             <div className="mt-2 text-[10px] text-black/80">
               Montant en lettres : <span className="font-semibold">{amountToWordsFCFA(totals.totalTTC)}</span>
             </div>

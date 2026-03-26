@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { InlineAdStrip } from "@/components/promo/InlineAdStrip";
+import { SorobossFooter } from "@/components/promo/SorobossFooter";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -46,8 +48,8 @@ export default function LoginPage() {
     <div className="min-h-screen bg-bg px-4 py-8">
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-md flex-col justify-center">
       <div className="mx-auto mb-5 flex w-full max-w-md items-center justify-between">
-        <div className="rounded-2xl bg-white px-3 py-2 shadow-lg ring-2 ring-slate-200/90">
-          <img src="/logo-docugest-ivoire.png" alt="DocuGest Ivoire" className="h-10 w-auto object-contain" />
+        <div className="rounded-2xl bg-white px-3 py-2 shadow-lg ring-2 ring-primary/20">
+          <img src="/logo-docugest-ivoire.png" alt="DocuGest Ivoire" className="h-10 w-auto object-contain drop-shadow" />
         </div>
         <Link href="/" className="text-sm font-medium text-primary hover:underline">
           Retour accueil
@@ -62,6 +64,13 @@ export default function LoginPage() {
           <h1 className="mt-3 text-2xl font-bold text-text">Bienvenue</h1>
           <p className="mt-1 text-sm text-slate-600">Accedez a votre espace DocuGest.</p>
           <p className="mt-2 text-xs text-slate-500">Votre espace pro, simple, rapide et pense pour l'Afrique francophone.</p>
+        </div>
+
+        <div className="mb-5 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-center">
+          <p className="text-xs font-semibold uppercase tracking-wide text-primary">Boost productivité</p>
+          <p className="mt-1 text-xs text-slate-700">
+            Connectez-vous et générez vos documents pro en quelques minutes, avec un rendu prêt à envoyer.
+          </p>
         </div>
 
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
@@ -114,6 +123,12 @@ export default function LoginPage() {
             Créer un compte
           </Link>
         </p>
+      </div>
+      <div className="mx-auto mt-4 w-full max-w-md">
+        <InlineAdStrip variant="compact" />
+      </div>
+      <div className="mx-auto mt-4 w-full max-w-md border-t border-slate-200/70 pt-4">
+        <SorobossFooter />
       </div>
       </div>
     </div>

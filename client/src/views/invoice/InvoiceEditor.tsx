@@ -102,6 +102,7 @@ export default function InvoiceEditor() {
   const [brandPrimaryHex, setBrandPrimaryHex] = useState<string | null>(null);
   const previewWrapRef = useRef<HTMLDivElement | null>(null);
   const printWrapRef = useRef<HTMLDivElement | null>(null);
+  const autoPrintDoneRef = useRef(false);
 
   const defaultValues: EditorValues = useMemo(() => {
     const year = new Date().getFullYear();
@@ -319,6 +320,17 @@ export default function InvoiceEditor() {
       setPdfDownloading(false);
     }
   }
+
+  useEffect(() => {
+    if (autoPrintDoneRef.current) return;
+    if (searchParams.get("action") !== "print") return;
+    autoPrintDoneRef.current = true;
+    const t = setTimeout(() => {
+      void downloadPdf();
+    }, 700);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, params.id]);
 
   async function onSave() {
     const values = form.getValues();
