@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Link as RouterLink } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 import { MonetizationTopBar } from "../components/promo/MonetizationTopBar";
 import { BottomAdZone } from "../components/promo/BottomAdZone";
@@ -50,9 +49,9 @@ export default function Landing() {
             </div>
           </div>
           <div className="flex flex-wrap gap-3">
-            <RouterLink to="/login">
+            <Link href="/login">
               <Button variant="secondary">Me connecter</Button>
-            </RouterLink>
+            </Link>
             <Link href="/register">
               <Button variant="primary">Créer mon compte — gratuit</Button>
             </Link>
@@ -118,11 +117,11 @@ export default function Landing() {
                     Je commence maintenant
                   </Button>
                 </Link>
-                <RouterLink to="/login">
+                <Link href="/login">
                   <Button variant="ghost" className="min-h-[48px] text-base">
                     J’ai déjà un compte
                   </Button>
-                </RouterLink>
+                </Link>
               </div>
 
               <p className="mt-4 text-sm text-slate-500">
