@@ -19,6 +19,9 @@ export async function GET(req: Request) {
     return NextResponse.json({ items });
   } catch (e) {
     console.error(e);
-    return NextResponse.json({ message: "Erreur journal" }, { status: 500 });
+    return NextResponse.json({
+      items: [],
+      degraded: true
+    });
   }
 }

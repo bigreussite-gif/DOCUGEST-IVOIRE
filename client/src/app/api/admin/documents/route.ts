@@ -29,6 +29,12 @@ export async function GET(req: Request) {
     return NextResponse.json({ items, total, page, limit });
   } catch (e) {
     console.error("[api/admin/documents] GET", e);
-    return NextResponse.json({ message: "Erreur liste documents admin" }, { status: 500 });
+    return NextResponse.json({
+      items: [],
+      total: 0,
+      page,
+      limit,
+      degraded: true
+    });
   }
 }

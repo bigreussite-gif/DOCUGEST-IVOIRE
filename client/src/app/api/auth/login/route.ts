@@ -42,7 +42,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Compte incomplet: mot de passe indisponible, contactez l'administrateur." }, { status: 401 });
     }
 
-    const ok = await bcrypt.compare(password, userRow.password_hash);
+    let ok = false;
+    try {
+      ok = await bcrypt.compare(password, userRow.password_hash);
+    } catch (e) {
+      console.log("[api/auth/login] hash mot de passe invalide", e);
+      return NextResponse.json({ message: "Identifiant ou mot de passe incorrect" }, { status: 401 });
+    }
     if (!ok) {
       console.log("[api/auth/login] mot de passe incorrect");
       return NextResponse.json({ message: "Identifiant ou mot de passe incorrect" }, { status: 401 });
@@ -63,6 +69,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ token, user: me });
   } catch (e) {
     console.error("[api/auth/login]", e);
-    return NextResponse.json({ message: "Erreur serveur" }, { status: 500 });
+    return NextResponse.json({ message: "Service d'authentification temporairement indisponible" }, { status: 503 });
   }
 }

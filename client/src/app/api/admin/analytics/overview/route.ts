@@ -16,6 +16,17 @@ export async function GET(req: Request) {
     return NextResponse.json(snapshot);
   } catch (e) {
     console.error(e);
-    return NextResponse.json({ message: "Erreur analytics" }, { status: 500 });
+    return NextResponse.json({
+      documentsTotal: 0,
+      documentsByType: {},
+      documentsByHour: {},
+      documentsByWeekday: {},
+      userCount: 0,
+      monthlyActiveUsers: 0,
+      recentLogins: [],
+      demographics: { gender: {}, user_typology: {} },
+      adSummary: { views: 0, clicks: 0, ctrPct: 0, byZone: {} },
+      degraded: true
+    });
   }
 }
