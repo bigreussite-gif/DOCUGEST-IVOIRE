@@ -135,8 +135,10 @@ export async function getUserByLoginIdentifier(identifier: string): Promise<User
 }
 
 export async function getUserById(id: string): Promise<UserRow | null> {
-  const pool = getPool();
-  const { rows } = await pool.query(`SELECT * FROM public.users WHERE id = $1 LIMIT 1`, [id]);
+  const { rows } = await withPgRetry(async () => {
+    const pool = getPool();
+    return pool.query(`SELECT * FROM public.users WHERE id = $1 LIMIT 1`, [id]);
+  });
   return (rows[0] as UserRow) ?? null;
 }
 
