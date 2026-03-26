@@ -16,10 +16,15 @@ const app = express();
 
 const port = Number(process.env.PORT || 4000);
 const clientOrigin = process.env.CLIENT_ORIGIN || "http://localhost:5173";
+/** Plusieurs origines (ex. localhost + Vercel) : CLIENT_ORIGIN=https://app.vercel.app,http://localhost:5173 */
+const corsOrigins = clientOrigin
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
 
 app.use(
   cors({
-    origin: clientOrigin,
+    origin: corsOrigins.length === 1 ? corsOrigins[0] : corsOrigins,
     credentials: true
   })
 );
