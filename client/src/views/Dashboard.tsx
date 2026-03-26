@@ -256,16 +256,27 @@ export default function Dashboard() {
   const location = useLocation();
   const { mode, setMode } = useNavLayout();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
-    loadMe().catch(() => {});
+    let cancelled = false;
+    loadMe()
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setAuthReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [loadMe]);
 
   useEffect(() => {
+    // Evite la redirection prématurée pendant l'initialisation de session.
+    if (!authReady || auth.loading) return;
     if (!auth.user && location.pathname !== "/login") {
       navigate("/login", { replace: true });
     }
-  }, [auth.user, navigate, location.pathname]);
+  }, [authReady, auth.loading, auth.user, navigate, location.pathname]);
 
   useEffect(() => {
     setMobileOpen(false);
