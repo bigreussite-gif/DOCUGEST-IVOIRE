@@ -19,7 +19,7 @@ export const Input = forwardRef<HTMLInputElement, Props>(function Input(
         ref={ref}
         id={inputId}
         className={[
-          "min-h-[48px] w-full rounded-xl border px-4 py-3 text-base leading-relaxed outline-none transition placeholder:text-slate-400",
+          "min-h-[48px] w-full rounded-xl border bg-white px-4 py-3 text-base leading-relaxed text-slate-900 outline-none transition placeholder:text-slate-400",
           error ? "border-error focus:ring-2 focus:ring-error/30" : "border-border focus:ring-2 focus:ring-primary/30",
           className ?? ""
         ].join(" ")}
