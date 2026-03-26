@@ -3,6 +3,10 @@ function normalizeOrigin(url: string): string {
   return url.trim().replace(/\/+$/, "");
 }
 
+function isLocalOrigin(origin: string): boolean {
+  return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
+}
+
 /**
  * Next.js : variables publiques préfixées NEXT_PUBLIC_ (voir .env / Vercel).
  * Par défaut : même origine que le front → `/api/*` servi par les Route Handlers Next (Vercel + dev).
@@ -11,7 +15,13 @@ function normalizeOrigin(url: string): string {
 function resolveApiBase(): string {
   const fromEnv = process.env.NEXT_PUBLIC_API_BASE_URL;
   if (typeof fromEnv === "string" && fromEnv.trim() !== "") {
-    return normalizeOrigin(fromEnv);
+    const normalized = normalizeOrigin(fromEnv);
+    const allowExternal = process.env.NEXT_PUBLIC_ALLOW_EXTERNAL_API_BASE === "1";
+    if (process.env.NODE_ENV === "production" && !allowExternal && !isLocalOrigin(normalized)) {
+      // Garde-fou: évite les 404 sur des domaines externes qui n'exposent pas /api/auth/register.
+      return "";
+    }
+    return normalized;
   }
   return "";
 }
