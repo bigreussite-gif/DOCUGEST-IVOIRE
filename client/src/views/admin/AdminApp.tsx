@@ -9,7 +9,6 @@ import { AdminDocuments } from "./AdminDocuments";
 import { AdminAds } from "./AdminAds";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
-import { apiFetch } from "../../lib/api";
 
 export default function AdminApp() {
   const location = useLocation();
@@ -167,10 +166,21 @@ function AdminLogin({
     setLoading(true);
     setError(null);
     try {
-      const data = await apiFetch<{ token?: string; user?: unknown; message?: string }>("/api/auth/login", {
+      // Force l'auth sur la route Next même origine (évite toute base externe mal configurée).
+      const res = await fetch("/api/auth/login", {
         method: "POST",
-        json: { email: email.trim(), password, rememberMe: true }
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password, rememberMe: true })
       });
+      const data = (await res.json().catch(() => ({}))) as { token?: string; user?: unknown; message?: string };
+      if (!res.ok) {
+        setError(typeof data.message === "string" ? data.message : "Connexion impossible");
+        return;
+      }
+      if (!data?.token) {
+        setError("Connexion réussie mais token absent. Vérifiez la configuration serveur.");
+        return;
+      }
       if (data?.token) {
         localStorage.setItem("docugest_token", data.token);
       }

@@ -43,20 +43,58 @@ function digitsOnly(v: string): string {
   return v.replace(/\D/g, "");
 }
 
+function buildLoginDigitCandidates(rawDigits: string): string[] {
+  const out = new Set<string>();
+  const d = rawDigits.trim();
+  if (!d) return [];
+
+  out.add(d);
+
+  // Variante internationale souvent saisie en 00...
+  if (d.startsWith("00") && d.length > 2) {
+    out.add(d.slice(2));
+  }
+
+  // Cas Cote d'Ivoire: +225XXXXXXXXXX / 0XXXXXXXXX / XXXXXXXXX
+  if (d.startsWith("225") && d.length > 3) {
+    const local = d.slice(3);
+    out.add(local);
+    out.add(`0${local}`);
+  }
+  if (d.startsWith("0") && d.length > 1) {
+    const localNoZero = d.slice(1);
+    out.add(localNoZero);
+    out.add(`225${localNoZero}`);
+  }
+
+  // Si l'utilisateur saisit un numéro local sans indicatif.
+  if (d.length === 10) {
+    out.add(`225${d}`);
+    if (d.startsWith("0")) out.add(`225${d.slice(1)}`);
+  }
+  if (d.length === 9) {
+    out.add(`225${d}`);
+    out.add(`0${d}`);
+  }
+
+  return Array.from(out).filter(Boolean);
+}
+
 /** Recherche login par email, téléphone ou WhatsApp. */
 export async function getUserByLoginIdentifier(identifier: string): Promise<UserRow | null> {
   const pool = getPool();
   const clean = identifier.trim();
   if (!clean) return null;
   const digits = digitsOnly(clean);
+  const digitCandidates = buildLoginDigitCandidates(digits);
   try {
     const { rows } = await pool.query(
       `SELECT * FROM public.users
        WHERE lower(email) = lower($1)
-          OR regexp_replace(coalesce(phone::text, ''), '[^0-9]', '', 'g') = $2
-          OR regexp_replace(coalesce(whatsapp::text, ''), '[^0-9]', '', 'g') = $2
+         OR regexp_replace(coalesce(phone::text, ''), '[^0-9]', '', 'g') = ANY($2::text[])
+         OR regexp_replace(coalesce(whatsapp::text, ''), '[^0-9]', '', 'g') = ANY($2::text[])
        LIMIT 1`,
-      [clean, digits]
+      [clean, digitCandidates]
     );
     return (rows[0] as UserRow) ?? null;
   } catch (e) {
