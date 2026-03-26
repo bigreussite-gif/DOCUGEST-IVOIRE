@@ -1,12 +1,24 @@
 /**
  * URL canonique du site (SEO, Open Graph, JSON-LD, sitemap).
- * Définir NEXT_PUBLIC_APP_URL en prod (ex. https://www.docugest-ivoire.com).
- * Sur Vercel, https://VERCEL_URL est utilisé si la variable publique est absente.
+ * Production : définir NEXT_PUBLIC_APP_URL sur l’alias officiel https://docugest-ivoire.vercel.app
+ * (éviter les URLs de prévisualisation ou autres domaines).
+ * Si absent : repli sur VERCEL_URL (ex. déploiement *.vercel.app).
  */
+function normalizeOriginUrl(raw: string): string {
+  const t = raw.trim().replace(/\/+$/, "");
+  if (t.startsWith("http://") || t.startsWith("https://")) return t;
+  return `https://${t}`;
+}
+
 export function getSiteUrl(): string {
   const explicit = process.env.NEXT_PUBLIC_APP_URL;
   if (typeof explicit === "string" && explicit.trim() !== "") {
     return explicit.trim().replace(/\/+$/, "");
+  }
+  /** Sur Vercel, domaine prod officiel (ex. docugest-ivoire.vercel.app), pas l’URL technique du déploiement. */
+  const prod = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  if (process.env.VERCEL_ENV === "production" && typeof prod === "string" && prod.trim() !== "") {
+    return normalizeOriginUrl(prod);
   }
   const vercel = process.env.VERCEL_URL;
   if (typeof vercel === "string" && vercel.trim() !== "") {
