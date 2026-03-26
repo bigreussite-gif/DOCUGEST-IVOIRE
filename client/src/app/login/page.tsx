@@ -76,14 +76,15 @@ export default function LoginPage() {
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <div>
             <label htmlFor="email" className="mb-1 block text-sm font-medium text-text">
-              Email
+              Email ou numero (tel/WhatsApp)
             </label>
             <input
               id="email"
               name="email"
-              type="email"
-              autoComplete="email"
+              type="text"
+              autoComplete="username"
               required
+              placeholder="ex: princekacou.digital@gmail.com ou +225777640050"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded-xl border border-border bg-bg px-3 py-2 text-text outline-none ring-primary/30 focus:ring-2"

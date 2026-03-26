@@ -39,6 +39,27 @@ export async function getUserByEmail(email: string): Promise<UserRow | null> {
   return (rows[0] as UserRow) ?? null;
 }
 
+function digitsOnly(v: string): string {
+  return v.replace(/\D/g, "");
+}
+
+/** Recherche login par email, téléphone ou WhatsApp. */
+export async function getUserByLoginIdentifier(identifier: string): Promise<UserRow | null> {
+  const pool = getPool();
+  const clean = identifier.trim();
+  if (!clean) return null;
+  const digits = digitsOnly(clean);
+  const { rows } = await pool.query(
+    `SELECT * FROM public.users
+     WHERE lower(email) = lower($1)
+        OR regexp_replace(coalesce(phone, ''), '[^0-9]', '', 'g') = $2
+        OR regexp_replace(coalesce(whatsapp, ''), '[^0-9]', '', 'g') = $2
+     LIMIT 1`,
+    [clean, digits]
+  );
+  return (rows[0] as UserRow) ?? null;
+}
+
 export async function getUserById(id: string): Promise<UserRow | null> {
   const pool = getPool();
   const { rows } = await pool.query(`SELECT * FROM public.users WHERE id = $1 LIMIT 1`, [id]);

@@ -9,7 +9,7 @@ import * as store from "@/lib/serverStore";
 export const runtime = "nodejs";
 
 const schema = z.object({
-  email: z.string().email(),
+  email: z.string().min(3),
   password: z.string().min(1),
   rememberMe: z.boolean()
 });
@@ -29,11 +29,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Champs invalides", details: parsed.error.flatten() }, { status: 400 });
     }
     const { email, password, rememberMe } = parsed.data;
+    const identifier = email.trim();
 
-    const userRow = await store.getUserByEmail(email);
+    const userRow = await store.getUserByLoginIdentifier(identifier);
     if (!userRow) {
-      console.log("[api/auth/login] email inconnu");
-      return NextResponse.json({ message: "Email ou mot de passe incorrect" }, { status: 401 });
+      console.log("[api/auth/login] identifiant inconnu");
+      return NextResponse.json({ message: "Identifiant ou mot de passe incorrect" }, { status: 401 });
     }
 
     if (!userRow.password_hash || typeof userRow.password_hash !== "string") {
@@ -44,7 +45,7 @@ export async function POST(req: Request) {
     const ok = await bcrypt.compare(password, userRow.password_hash);
     if (!ok) {
       console.log("[api/auth/login] mot de passe incorrect");
-      return NextResponse.json({ message: "Email ou mot de passe incorrect" }, { status: 401 });
+      return NextResponse.json({ message: "Identifiant ou mot de passe incorrect" }, { status: 401 });
     }
 
     await store.touchLastLogin(userRow.id);
