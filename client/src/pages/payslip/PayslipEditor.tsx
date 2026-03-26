@@ -14,6 +14,7 @@ import { apiFetch } from "../../lib/api";
 import { formatFCFA, clampMoney } from "../../utils/formatters";
 import PayslipPreview from "./PayslipPreview";
 import { InlineAdStrip } from "../../components/promo/InlineAdStrip";
+import { extractBrandColorsFromFile, fileToDataUrl, readableOnWhite } from "../../lib/brandColors";
 
 const schema = z.object({
   employeeName: z.string().min(2, "Nom requis"),
@@ -49,6 +50,8 @@ export default function PayslipEditor() {
   const auth = useAuthStore();
   const [saving, setSaving] = useState(false);
   const [pdfDownloading, setPdfDownloading] = useState(false);
+  const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
+  const [brandPrimaryHex, setBrandPrimaryHex] = useState<string | null>(null);
   const previewRef = useRef<HTMLDivElement | null>(null);
 
   const defaultValues: Values = useMemo(
@@ -98,7 +101,12 @@ export default function PayslipEditor() {
           doc_number: string;
         }>(`/api/documents/${params.id}`);
         if (cancelled || !doc?.doc_data) return;
-        const d = doc.doc_data as Partial<Values>;
+        const d = doc.doc_data as Partial<Values> & {
+          logoDataUrl?: string | null;
+          brandPrimaryHex?: string | null;
+        };
+        setLogoDataUrl(typeof d.logoDataUrl === "string" ? d.logoDataUrl : null);
+        setBrandPrimaryHex(typeof d.brandPrimaryHex === "string" ? d.brandPrimaryHex : null);
         form.reset({
           ...defaultValues,
           ...d,
@@ -117,6 +125,8 @@ export default function PayslipEditor() {
   const employerAddress = auth.user?.company_address || "";
   const employerPhone = auth.user?.phone || "";
 
+  const accentPreview = brandPrimaryHex ? readableOnWhite(brandPrimaryHex) : null;
+
   const previewPayload = useMemo(
     () => ({
       employerName,
@@ -133,9 +143,11 @@ export default function PayslipEditor() {
       cnpsEmployee: Number(watched.cnpsEmployee),
       otherDeductions: Number(watched.otherDeductions),
       netPay,
-      notes: watched.notes
+      notes: watched.notes,
+      logoDataUrl,
+      accentHex: accentPreview
     }),
-    [employerName, employerAddress, employerPhone, watched, netPay]
+    [employerName, employerAddress, employerPhone, watched, netPay, logoDataUrl, accentPreview]
   );
 
   async function downloadPdf() {
@@ -162,7 +174,9 @@ export default function PayslipEditor() {
       const doc_data = {
         ...values,
         netPay: net,
-        employerSnapshot: { employerName, employerAddress, employerPhone }
+        employerSnapshot: { employerName, employerAddress, employerPhone },
+        logoDataUrl: logoDataUrl || undefined,
+        brandPrimaryHex: brandPrimaryHex || undefined
       };
 
       if (params.id) {
@@ -227,49 +241,89 @@ export default function PayslipEditor() {
         </div>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_1.05fr]">
-        <form className="space-y-4 rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70" onSubmit={(e) => e.preventDefault()}>
-          <div className="rounded-xl bg-surface p-4 ring-1 ring-border/70">
-            <div className="text-sm font-semibold text-text">Salarié</div>
-            <div className="mt-3 grid gap-3 md:grid-cols-2">
+      <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_minmax(0,520px)]">
+        <form className="space-y-6 rounded-2xl bg-bg p-5 shadow-soft ring-1 ring-border/70" onSubmit={(e) => e.preventDefault()}>
+          <div className="rounded-xl bg-surface p-5 ring-1 ring-border/70">
+            <div className="text-base font-semibold text-text">Identité employeur</div>
+            <p className="mt-1 text-sm leading-relaxed text-slate-600">
+              Logo affiché en haut du bulletin — couleurs détectées automatiquement (local).
+            </p>
+            <div className="mt-4 flex flex-wrap items-end gap-4">
+              <label className="block min-w-[200px]">
+                <span className="mb-2 block text-sm font-medium text-text">Logo entreprise</span>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  className="w-full max-w-xs text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-primary/15 file:px-3 file:py-2 file:text-sm file:font-medium file:text-text"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    try {
+                      const url = await fileToDataUrl(file);
+                      setLogoDataUrl(url);
+                      const { primary } = await extractBrandColorsFromFile(file);
+                      setBrandPrimaryHex(primary);
+                    } catch {
+                      alert("Impossible de lire l’image.");
+                    }
+                  }}
+                />
+              </label>
+              {logoDataUrl ? (
+                <div className="flex items-center gap-3">
+                  <img src={logoDataUrl} alt="" className="h-16 w-16 rounded-lg border border-border object-contain p-1" />
+                  {brandPrimaryHex ? (
+                    <span className="font-mono text-[11px] text-slate-600">{brandPrimaryHex}</span>
+                  ) : null}
+                  <Button type="button" variant="ghost" onClick={() => { setLogoDataUrl(null); setBrandPrimaryHex(null); }}>
+                    Retirer
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="rounded-xl bg-surface p-5 ring-1 ring-border/70">
+            <div className="text-base font-semibold text-text">Salarié & période</div>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
               <Input label="Nom & prénom" {...form.register("employeeName")} error={form.formState.errors.employeeName?.message} />
               <Input label="Poste / fonction" {...form.register("employeeRole")} />
             </div>
-            <div className="mt-3 grid gap-3 md:grid-cols-2">
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
               <Input label="Période (ex. Janvier 2026)" {...form.register("periodLabel")} error={form.formState.errors.periodLabel?.message} />
               <Input label="Date d’émission" type="date" {...form.register("emissionDate")} />
             </div>
           </div>
 
-          <div className="rounded-xl bg-surface p-4 ring-1 ring-border/70">
-            <div className="text-sm font-semibold text-text">Montants</div>
-            <div className="mt-3 grid gap-3 md:grid-cols-2">
+          <div className="rounded-xl bg-surface p-5 ring-1 ring-border/70">
+            <div className="text-base font-semibold text-text">Montants (FCFA)</div>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
               <Input label="Salaire de base" type="number" {...form.register("baseSalary", { valueAsNumber: true })} />
               <Input label="Primes" type="number" {...form.register("bonuses", { valueAsNumber: true })} />
             </div>
-            <div className="mt-3 grid gap-3 md:grid-cols-2">
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
               <Input label="Transport" type="number" {...form.register("transportAllowance", { valueAsNumber: true })} />
               <Input label="Autres indemnités" type="number" {...form.register("otherAllowances", { valueAsNumber: true })} />
             </div>
-            <div className="mt-3 grid gap-3 md:grid-cols-2">
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
               <Input label="CNPS / retenues sociales" type="number" {...form.register("cnpsEmployee", { valueAsNumber: true })} />
               <Input label="Autres déductions" type="number" {...form.register("otherDeductions", { valueAsNumber: true })} />
             </div>
-            <div className="mt-4 rounded-xl bg-primary/10 px-4 py-3 text-sm ring-1 ring-primary/20">
+            <div className="mt-5 rounded-xl bg-primary/10 px-4 py-4 text-base ring-1 ring-primary/20">
               <span className="text-slate-700">Net à payer : </span>
               <span className="font-bold text-primary">{formatFCFA(netPay)}</span>
             </div>
           </div>
 
-          <div className="rounded-xl bg-surface p-4 ring-1 ring-border/70">
-            <Textarea label="Notes internes" rows={3} {...form.register("notes")} />
+          <div className="rounded-xl bg-surface p-5 ring-1 ring-border/70">
+            <Textarea label="Notes internes" rows={4} {...form.register("notes")} />
           </div>
         </form>
 
-        <div className="rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70">
-          <div className="sticky top-4">
-            <div className="mb-3 text-sm font-semibold text-text">Aperçu</div>
-            <div ref={previewRef}>
+        <div className="rounded-2xl bg-bg p-5 shadow-soft ring-1 ring-border/70">
+          <div className="sticky top-20 md:top-4">
+            <div className="mb-3 text-sm font-semibold text-text">Aperçu en temps réel</div>
+            <div ref={previewRef} className="max-h-[78vh] overflow-auto rounded-xl bg-slate-100/80 p-2 ring-1 ring-border/50">
               <PayslipPreview data={previewPayload} />
             </div>
           </div>

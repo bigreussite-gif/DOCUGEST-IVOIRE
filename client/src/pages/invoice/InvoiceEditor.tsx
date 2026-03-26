@@ -16,6 +16,7 @@ import { formatDateCI, formatFCFA, clampMoney } from "../../utils/formatters";
 import InvoicePreview from "./InvoicePreview";
 import { apiFetch } from "../../lib/api";
 import { InlineAdStrip } from "../../components/promo/InlineAdStrip";
+import { extractBrandColorsFromFile, fileToDataUrl, readableOnWhite } from "../../lib/brandColors";
 
 type DocType = "invoice" | "proforma" | "devis";
 
@@ -89,6 +90,8 @@ export default function InvoiceEditor() {
   const [saving, setSaving] = useState(false);
   const [pdfDownloading, setPdfDownloading] = useState(false);
   const [themeColor] = useState<"emerald">("emerald");
+  const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
+  const [brandPrimaryHex, setBrandPrimaryHex] = useState<string | null>(null);
   const previewWrapRef = useRef<HTMLDivElement | null>(null);
 
   const defaultValues: EditorValues = useMemo(() => {
@@ -184,7 +187,14 @@ export default function InvoiceEditor() {
         }>(`/api/documents/${params.id}`);
         if (cancelled || !doc?.doc_data) return;
         const d = doc.doc_data as {
-          sender?: { companyName?: string; address?: string; phone?: string; email?: string };
+          sender?: {
+            companyName?: string;
+            address?: string;
+            phone?: string;
+            email?: string;
+            logoDataUrl?: string | null;
+          };
+          brandPrimaryHex?: string | null;
           client?: { name?: string; address?: string; phone?: string; email?: string };
           docNumber?: string;
           emissionDate?: string;
@@ -197,6 +207,8 @@ export default function InvoiceEditor() {
           conditions?: string;
           footerNote?: string;
         };
+        setLogoDataUrl(typeof d.sender?.logoDataUrl === "string" ? d.sender.logoDataUrl : null);
+        setBrandPrimaryHex(typeof d.brandPrimaryHex === "string" ? d.brandPrimaryHex : null);
         const dt: DocType =
           doc.type === "devis" ? "devis" : doc.type === "proforma" ? "proforma" : "invoice";
         form.reset({
@@ -245,7 +257,11 @@ export default function InvoiceEditor() {
 
   const onReset = () => {
     form.reset(defaultValues);
+    setLogoDataUrl(null);
+    setBrandPrimaryHex(null);
   };
+
+  const accentForPreview = brandPrimaryHex ? readableOnWhite(brandPrimaryHex) : null;
 
   async function downloadPdf() {
     if (!previewWrapRef.current) return;
@@ -279,8 +295,10 @@ export default function InvoiceEditor() {
           companyName: values.senderCompanyName,
           address: values.senderAddress,
           phone: values.senderPhone,
-          email: values.senderEmail
+          email: values.senderEmail,
+          logoDataUrl: logoDataUrl || undefined
         },
+        brandPrimaryHex: brandPrimaryHex || undefined,
         client: {
           name: values.clientName,
           address: values.clientAddress,
@@ -382,18 +400,79 @@ export default function InvoiceEditor() {
         </div>
       </div>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-[1fr_1.05fr]">
-        <div className="rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70">
-          <form className="max-h-[78vh] overflow-auto pr-2" onSubmit={(e) => e.preventDefault()}>
-            <div className="grid gap-4">
-              <div className="rounded-xl bg-surface p-4 ring-1 ring-border/70">
-                <div className="text-sm font-semibold text-text">En-tête émetteur</div>
-                <div className="mt-3 grid gap-4 md:grid-cols-2">
+      <div className="mt-6 grid gap-4 xl:grid-cols-[1fr_minmax(0,520px)]">
+        <div className="rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70 sm:p-5">
+          <form className="max-h-[85vh] overflow-auto pr-2" onSubmit={(e) => e.preventDefault()}>
+            <div className="grid gap-5">
+              <div className="rounded-xl bg-surface p-5 ring-1 ring-border/70">
+                <div className="text-base font-semibold text-text">Identité visuelle</div>
+                <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
+                  Importez le logo de votre entreprise : les couleurs dominantes sont détectées automatiquement
+                  (traitement local, sans envoi serveur). Option avancée : branchement futur vers une API d’analyse
+                  IA pour des propositions de mise en page.
+                </p>
+                <div className="mt-4 flex flex-wrap items-end gap-4">
+                  <label className="block min-w-[200px]">
+                    <span className="mb-2 block text-sm font-medium text-text">Logo entreprise</span>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                      className="w-full max-w-xs text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-primary/15 file:px-3 file:py-2 file:text-sm file:font-medium file:text-text"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        try {
+                          const url = await fileToDataUrl(file);
+                          setLogoDataUrl(url);
+                          const { primary } = await extractBrandColorsFromFile(file);
+                          setBrandPrimaryHex(primary);
+                        } catch {
+                          alert("Impossible de lire l’image.");
+                        }
+                      }}
+                    />
+                  </label>
+                  {logoDataUrl ? (
+                    <div className="flex items-center gap-3">
+                      <img src={logoDataUrl} alt="" className="h-16 w-16 rounded-lg border border-border object-contain p-1" />
+                      {brandPrimaryHex ? (
+                        <div className="flex flex-col gap-1 text-xs text-slate-600">
+                          <span>Couleur principale</span>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="h-9 w-9 rounded-lg ring-2 ring-border"
+                              style={{ backgroundColor: brandPrimaryHex }}
+                              title={brandPrimaryHex}
+                            />
+                            <span className="font-mono text-[11px]">{brandPrimaryHex}</span>
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {logoDataUrl ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => {
+                        setLogoDataUrl(null);
+                        setBrandPrimaryHex(null);
+                      }}
+                    >
+                      Retirer le logo
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="rounded-xl bg-surface p-5 ring-1 ring-border/70">
+                <div className="text-base font-semibold text-text">En-tête émetteur</div>
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
                   <Input label="Nom entreprise" {...form.register("senderCompanyName")} error={form.formState.errors.senderCompanyName?.message} />
                   <Input label="Téléphone" {...form.register("senderPhone")} error={undefined} />
                 </div>
-                <div className="mt-3">
-                  <Textarea label="Adresse complète" rows={3} {...form.register("senderAddress")} />
+                <div className="mt-4">
+                  <Textarea label="Adresse complète" rows={4} {...form.register("senderAddress")} />
                 </div>
                 <div className="mt-3">
                   <Input label="Email" type="email" {...form.register("senderEmail")} />
@@ -610,31 +689,36 @@ export default function InvoiceEditor() {
           </form>
         </div>
 
-        <div className="rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70">
-          <div className="sticky top-4">
+        <div className="rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70 sm:p-5">
+          <div className="sticky top-20 md:top-4">
             <div className="flex items-center justify-between gap-3 pb-3">
               <div>
                 <div className="text-sm font-semibold text-text">{docTypeLabel(previewValues.docType)}</div>
-                <div className="text-xs text-slate-600">Aperçu live (A4)</div>
+                <div className="text-xs text-slate-600">Aperçu en temps réel (A4)</div>
               </div>
               <div className="text-right">
                 <div className="text-xs text-slate-600">Total</div>
-                <div className="text-lg font-bold" style={{ color: "#00A86B" }}>
+                <div
+                  className="text-lg font-bold"
+                  style={{ color: accentForPreview ?? "#00A86B" }}
+                >
                   {formatFCFA(computedTotals.totalTTC)}
                 </div>
               </div>
             </div>
 
-            <div ref={previewWrapRef}>
+            <div ref={previewWrapRef} className="max-h-[78vh] overflow-auto rounded-xl bg-slate-100/80 p-2 ring-1 ring-border/50">
               <InvoicePreview
                 themeColor={themeColor}
+                customAccentHex={accentForPreview}
                 docTypeLabel={docTypeLabel(previewValues.docType)}
                 data={{
                   sender: {
                     companyName: previewValues.senderCompanyName,
                     address: previewValues.senderAddress,
                     phone: previewValues.senderPhone,
-                    email: previewValues.senderEmail
+                    email: previewValues.senderEmail,
+                    logoDataUrl: logoDataUrl || undefined
                   },
                   client: {
                     name: previewValues.clientName,

@@ -35,6 +35,11 @@ export type AuthUser = {
   company_rccm?: string | null;
   company_dfe?: string | null;
   company_regime?: string | null;
+  /** Rôle applicatif (back-office si ≠ user) */
+  role?: "super_admin" | "admin" | "manager" | "operator" | "user" | string;
+  permission_level?: "read" | "write" | "admin" | string;
+  gender?: string | null;
+  user_typology?: string | null;
 };
 
 type LoginPayload = {

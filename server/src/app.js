@@ -11,6 +11,7 @@ const rateLimit = require("express-rate-limit");
 
 const { authRouter } = require("./routes/auth");
 const { documentsRouter } = require("./routes/documents");
+const { adminRouter } = require("./routes/admin");
 
 const app = express();
 /** Vercel / proxy : nécessaire pour rate-limit et IP */
@@ -50,5 +51,8 @@ app.use("/auth", authLimiter, authRouter);
 
 app.use("/api/documents", documentsRouter);
 app.use("/documents", documentsRouter);
+
+app.use("/api/admin", adminRouter);
+app.use("/admin", adminRouter);
 
 module.exports = { app, usePg, port };

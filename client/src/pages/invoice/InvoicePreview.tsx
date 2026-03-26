@@ -12,6 +12,8 @@ type Line = {
 export type InvoicePreviewProps = {
   docTypeLabel: string;
   themeColor: "emerald" | "navy" | "orange" | "bordeaux" | "anthracite" | "violet";
+  /** Si défini (ex. couleur extraite du logo), remplace la barre de thème */
+  customAccentHex?: string | null;
   data: {
     sender: {
       companyName: string;
@@ -56,7 +58,7 @@ function themeBar(themeColor: InvoicePreviewProps["themeColor"]) {
   return map[themeColor];
 }
 
-export default function InvoicePreview({ docTypeLabel, themeColor, data }: InvoicePreviewProps) {
+export default function InvoicePreview({ docTypeLabel, themeColor, customAccentHex, data }: InvoicePreviewProps) {
   const totals = computeInvoiceTotals({
     lines: data.lines,
     fiscalRegime: data.fiscalRegime,
@@ -64,7 +66,7 @@ export default function InvoicePreview({ docTypeLabel, themeColor, data }: Invoi
     vatRatePct: data.vatRatePct
   });
 
-  const bar = themeBar(themeColor);
+  const bar = customAccentHex && customAccentHex.trim() !== "" ? customAccentHex : themeBar(themeColor);
 
   return (
     <div className="bg-bg p-2">

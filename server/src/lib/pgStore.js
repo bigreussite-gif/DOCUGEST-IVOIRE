@@ -35,7 +35,11 @@ function pickUser(row) {
     company_ncc: row.company_ncc ?? null,
     company_rccm: row.company_rccm ?? null,
     company_dfe: row.company_dfe ?? null,
-    company_regime: row.company_regime ?? null
+    company_regime: row.company_regime ?? null,
+    role: row.role ?? "user",
+    permission_level: row.permission_level ?? "write",
+    gender: row.gender ?? null,
+    user_typology: row.user_typology ?? null
   };
 }
 
@@ -96,6 +100,241 @@ async function touchLastLogin(userId) {
 async function getMe(userId) {
   const user = await getUserById(userId);
   return user ? pickUser(user) : null;
+}
+
+async function ensureBootstrapAdmin(userId) {
+  const email = process.env.ADMIN_BOOTSTRAP_EMAIL;
+  if (!email) return;
+  try {
+    const u = await getUserById(userId);
+    if (!u || String(u.email).toLowerCase() !== email.toLowerCase()) return;
+    if (u.role === "super_admin") return;
+    await pool.query(`UPDATE public.users SET role = 'super_admin' WHERE id = $1`, [userId]);
+  } catch {
+    /* migration non appliquée */
+  }
+}
+
+async function listUsersAdmin() {
+  const { rows } = await pool.query(
+    `SELECT id, full_name, email, phone, whatsapp, role, permission_level, gender, user_typology,
+            company_name, created_at, last_login
+     FROM public.users ORDER BY created_at DESC`
+  );
+  return rows.map((r) => ({
+    ...r,
+    created_at: iso(r.created_at),
+    last_login: iso(r.last_login)
+  }));
+}
+
+async function createUserAdmin({
+  full_name,
+  phone,
+  whatsapp,
+  email,
+  password_hash,
+  role,
+  permission_level,
+  gender,
+  user_typology
+}) {
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO public.users (
+        full_name, phone, whatsapp, email, password_hash, role, permission_level, gender, user_typology
+      ) VALUES ($1, $2, $3, $4, $5, COALESCE($6::varchar, 'user'), COALESCE($7::varchar, 'write'), $8, $9)
+      RETURNING id, full_name, email, phone, role, permission_level, gender, user_typology, created_at`,
+      [
+        full_name,
+        phone,
+        whatsapp ?? null,
+        email,
+        password_hash,
+        role ?? "user",
+        permission_level ?? "write",
+        gender ?? null,
+        user_typology ?? null
+      ]
+    );
+    return { ok: true, user: rows[0] };
+  } catch (e) {
+    if (e.code === "23505") return { ok: false, reason: "Email déjà utilisé" };
+    throw e;
+  }
+}
+
+async function updateUserAdmin({
+  id,
+  full_name,
+  phone,
+  whatsapp,
+  email,
+  role,
+  permission_level,
+  gender,
+  user_typology
+}) {
+  const { rows } = await pool.query(
+    `UPDATE public.users SET
+      full_name = $2,
+      phone = $3,
+      whatsapp = $4,
+      email = $5,
+      role = $6,
+      permission_level = $7,
+      gender = $8,
+      user_typology = $9
+    WHERE id = $1
+    RETURNING id, full_name, email, phone, whatsapp, role, permission_level, gender, user_typology, last_login, created_at`,
+    [id, full_name, phone, whatsapp, email, role, permission_level, gender, user_typology]
+  );
+  return rows[0] ?? null;
+}
+
+async function updateUserPasswordAdmin(userId, password_hash) {
+  return updatePassword(userId, password_hash);
+}
+
+async function deleteUserAdmin(userId) {
+  const { rowCount } = await pool.query(`DELETE FROM public.users WHERE id = $1`, [userId]);
+  return rowCount > 0;
+}
+
+async function appendAuditLog({ actorId, action, targetType, targetId, metadata, ip }) {
+  await pool.query(
+    `INSERT INTO public.admin_audit_logs (actor_id, action, target_type, target_id, metadata, ip)
+     VALUES ($1, $2, $3, $4, $5::jsonb, $6)`,
+    [actorId, action, targetType ?? null, targetId ?? null, JSON.stringify(metadata ?? {}), ip ?? null]
+  );
+}
+
+async function listAuditLogs({ limit = 100 }) {
+  const { rows } = await pool.query(
+    `SELECT l.*, u.email AS actor_email, u.full_name AS actor_name
+     FROM public.admin_audit_logs l
+     LEFT JOIN public.users u ON u.id = l.actor_id
+     ORDER BY l.created_at DESC
+     LIMIT $1`,
+    [Math.min(500, Math.max(1, limit))]
+  );
+  return rows.map((r) => ({
+    ...r,
+    created_at: iso(r.created_at),
+    metadata: r.metadata
+  }));
+}
+
+async function insertAdEvent({ event_type, zone, user_id, session_id, metadata }) {
+  await pool.query(
+    `INSERT INTO public.ad_analytics_events (event_type, zone, user_id, session_id, metadata)
+     VALUES ($1, $2, $3, $4, $5::jsonb)`,
+    [event_type, zone, user_id ?? null, session_id ?? null, JSON.stringify(metadata ?? {})]
+  );
+}
+
+async function adminAnalyticsSnapshot() {
+  const { rows: typeRows } = await pool.query(
+    `SELECT type, COUNT(*)::int AS c FROM public.documents GROUP BY type`
+  );
+  const documentsByType = {};
+  for (const r of typeRows) documentsByType[r.type] = r.c;
+
+  const { rows: hourRows } = await pool.query(
+    `SELECT EXTRACT(HOUR FROM created_at)::int AS h, COUNT(*)::int AS c
+     FROM public.documents GROUP BY 1 ORDER BY 1`
+  );
+  const documentsByHour = {};
+  for (const r of hourRows) documentsByHour[r.h] = r.c;
+
+  const { rows: dowRows } = await pool.query(
+    `SELECT EXTRACT(DOW FROM created_at)::int AS d, COUNT(*)::int AS c
+     FROM public.documents GROUP BY 1 ORDER BY 1`
+  );
+  const documentsByWeekday = {};
+  for (const r of dowRows) documentsByWeekday[r.d] = r.c;
+
+  const { rows: uc } = await pool.query(`SELECT COUNT(*)::int AS c FROM public.users`);
+  const userCount = uc[0]?.c ?? 0;
+
+  const { rows: mau } = await pool.query(
+    `SELECT COUNT(DISTINCT user_id)::int AS c FROM public.documents
+     WHERE created_at > NOW() - INTERVAL '30 days'`
+  );
+  const monthlyActiveUsers = mau[0]?.c ?? 0;
+
+  const { rows: recent } = await pool.query(
+    `SELECT id, full_name, email, last_login FROM public.users ORDER BY last_login DESC NULLS LAST LIMIT 20`
+  );
+  const recentLogins = recent.map((r) => ({
+    id: r.id,
+    full_name: r.full_name,
+    email: r.email,
+    last_login: iso(r.last_login)
+  }));
+
+  const { rows: demoRows } = await pool.query(
+    `SELECT gender, COUNT(*)::int AS c FROM public.users GROUP BY gender`
+  );
+  const demographics = { gender: {}, user_typology: {} };
+  for (const r of demoRows) {
+    if (r.gender) demographics.gender[r.gender] = r.c;
+  }
+  const { rows: typRows } = await pool.query(
+    `SELECT user_typology, COUNT(*)::int AS c FROM public.users WHERE user_typology IS NOT NULL GROUP BY user_typology`
+  );
+  for (const r of typRows) {
+    if (r.user_typology) demographics.user_typology[r.user_typology] = r.c;
+  }
+
+  let adSummary = { views: 0, clicks: 0, ctrPct: 0, byZone: {} };
+  try {
+    const { rows: adViews } = await pool.query(
+      `SELECT zone, COUNT(*)::int AS c FROM public.ad_analytics_events WHERE event_type = 'view' GROUP BY zone`
+    );
+    const { rows: adClicks } = await pool.query(
+      `SELECT zone, COUNT(*)::int AS c FROM public.ad_analytics_events WHERE event_type = 'click' GROUP BY zone`
+    );
+    let views = 0;
+    let clicks = 0;
+    const byZone = {};
+    for (const r of adViews) {
+      views += r.c;
+      byZone[r.zone] = { ...(byZone[r.zone] || {}), views: r.c };
+    }
+    for (const r of adClicks) {
+      clicks += r.c;
+      byZone[r.zone] = { ...(byZone[r.zone] || {}), clicks: r.c };
+    }
+    for (const z of Object.keys(byZone)) {
+      const v = byZone[z].views || 0;
+      const cl = byZone[z].clicks || 0;
+      byZone[z].ctrPct = v > 0 ? Math.round((cl / v) * 10000) / 100 : 0;
+    }
+    adSummary = {
+      views,
+      clicks,
+      ctrPct: views > 0 ? Math.round((clicks / views) * 10000) / 100 : 0,
+      byZone
+    };
+  } catch {
+    /* table absente */
+  }
+
+  const { rows: docTotal } = await pool.query(`SELECT COUNT(*)::int AS c FROM public.documents`);
+  const documentsTotal = docTotal[0]?.c ?? 0;
+
+  return {
+    documentsTotal,
+    documentsByType,
+    documentsByHour,
+    documentsByWeekday,
+    userCount,
+    monthlyActiveUsers,
+    recentLogins,
+    demographics,
+    adSummary
+  };
 }
 
 function mapDoc(row) {
@@ -198,7 +437,9 @@ module.exports = {
   pool,
   createUser,
   getUserByEmail,
+  getUserById,
   getMe,
+  ensureBootstrapAdmin,
   updatePassword,
   touchLastLogin,
   createDocument,
@@ -207,5 +448,14 @@ module.exports = {
   getDocumentById,
   deleteDocumentById,
   verifyPasswordByEmail,
-  isEmailTaken
+  isEmailTaken,
+  listUsersAdmin,
+  createUserAdmin,
+  updateUserAdmin,
+  updateUserPasswordAdmin,
+  deleteUserAdmin,
+  appendAuditLog,
+  listAuditLogs,
+  insertAdEvent,
+  adminAnalyticsSnapshot
 };

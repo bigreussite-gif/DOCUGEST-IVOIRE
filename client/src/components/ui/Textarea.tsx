@@ -19,7 +19,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, Props>(function Textarea
         ref={ref}
         id={inputId}
         className={[
-          "w-full rounded-lg border px-3 py-2 text-base outline-none transition sm:text-sm",
+          "w-full min-h-[120px] rounded-xl border px-4 py-3 text-base leading-relaxed outline-none transition placeholder:text-slate-400",
           error ? "border-error focus:ring-2 focus:ring-error/30" : "border-border focus:ring-2 focus:ring-primary/30",
           className ?? ""
         ].join(" ")}

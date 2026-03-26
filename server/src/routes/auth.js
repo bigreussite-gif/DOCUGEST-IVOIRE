@@ -26,9 +26,9 @@ const userSelect = `
   company_regime
 `;
 
-function createToken({ userId, rememberMe }) {
+function createToken({ userId, rememberMe, role }) {
   const exp = rememberMe ? "30d" : "1d";
-  return jwt.sign({ sub: userId }, process.env.JWT_SECRET, { expiresIn: exp });
+  return jwt.sign({ sub: userId, role: role ?? "user" }, process.env.JWT_SECRET, { expiresIn: exp });
 }
 
 function createResetToken({ userId }) {
@@ -71,8 +71,9 @@ router.post("/register", async (req, res) => {
     // On ne bloque pas l'accès si l'email échoue.
   }
 
-  const token = createToken({ userId: user.id, rememberMe: true });
+  await store.ensureBootstrapAdmin(user.id);
   const me = await store.getMe(user.id);
+  const token = createToken({ userId: user.id, rememberMe: true, role: me?.role });
   return res.json({ token, user: me });
 });
 
@@ -97,9 +98,10 @@ router.post("/login", async (req, res) => {
   const ok = await bcrypt.compare(password, userRow.password_hash);
   if (!ok) return res.status(401).json({ message: "Email ou mot de passe incorrect" });
 
-  const token = createToken({ userId: userRow.id, rememberMe });
   await store.touchLastLogin(userRow.id);
+  await store.ensureBootstrapAdmin(userRow.id);
   const me = await store.getMe(userRow.id);
+  const token = createToken({ userId: userRow.id, rememberMe, role: me?.role });
   return res.json({ token, user: me });
 });
 
