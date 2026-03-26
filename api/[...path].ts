@@ -1,20 +1,21 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+import type { VercelRequest, VercelResponse, VercelRequestQuery } from "@vercel/node";
 
 /**
  * Proxy Vercel → API Express déployée ailleurs.
- * Variables Vercel : BACKEND_URL = https://ton-api.onrender.com (sans slash final, sans /api)
+ * BACKEND_URL = https://ton-api.onrender.com (sans slash final, sans /api)
  *
- * Note : avec `api/[...path].ts`, Vercel peut passer `req.url` comme `/auth/register`
- * au lieu de `/api/auth/register`. Sans correction, Express renvoie « Cannot POST … ».
+ * Vercel `api/[...path].ts` : `req.url` peut être `/auth/login` ou vide ;
+ * les segments sont souvent dans `req.query.path` (tableau).
+ * Sans reconstruction → Express renvoie « Cannot POST /api/auth/login ».
  */
-function normalizeProxyPath(reqUrl: string | undefined): string {
-  const raw = reqUrl || "/";
+function normalizeProxyPath(pathOnly: string): string {
+  const raw = pathOnly || "/";
   if (raw.startsWith("http://") || raw.startsWith("https://")) {
     try {
       const u = new URL(raw);
       return u.pathname + u.search;
     } catch {
-      /* fall through */
+      /* continue */
     }
   }
   const q = raw.indexOf("?");
@@ -22,11 +23,34 @@ function normalizeProxyPath(reqUrl: string | undefined): string {
   const search = q >= 0 ? raw.slice(q) : "";
   let p = pathname || "/";
   if (!p.startsWith("/")) p = `/${p}`;
-  // Réinjecter le préfixe /api manquant (comportement catch-all Vercel)
   if (!p.startsWith("/api")) {
     p = `/api${p}`;
   }
   return p + search;
+}
+
+/** Construit le chemin à partir de la catch-all Vercel ou de req.url. */
+function resolveProxyPath(req: VercelRequest): string {
+  const rawUrl = req.url;
+
+  if (rawUrl && rawUrl.length > 1 && rawUrl.startsWith("/api/")) {
+    return normalizeProxyPath(rawUrl);
+  }
+
+  const q = req.query as VercelRequestQuery;
+  const pathParam = q.path;
+  if (pathParam !== undefined && pathParam !== null && String(pathParam).length > 0) {
+    const parts = Array.isArray(pathParam) ? pathParam : [pathParam];
+    const joined = parts
+      .filter((p) => p !== undefined && p !== "")
+      .map((p) => decodeURIComponent(String(p)))
+      .join("/");
+    if (joined) {
+      return normalizeProxyPath(`/${joined}`);
+    }
+  }
+
+  return normalizeProxyPath(rawUrl ?? "/");
 }
 
 function jsonBody(body: unknown): string | undefined {
@@ -34,6 +58,31 @@ function jsonBody(body: unknown): string | undefined {
   if (typeof body === "string") return body;
   if (Buffer.isBuffer(body)) return body.toString("utf8");
   return JSON.stringify(body);
+}
+
+/** En-têtes utiles pour CORS + auth (le backend Express vérifie Origin via CLIENT_ORIGIN). */
+function buildForwardHeaders(req: VercelRequest): Record<string, string> {
+  const h = req.headers;
+  const out: Record<string, string> = {};
+  const keys = [
+    "content-type",
+    "authorization",
+    "cookie",
+    "origin",
+    "referer",
+    "access-control-request-method",
+    "access-control-request-headers",
+    "x-requested-with",
+    "accept",
+    "accept-language",
+    "user-agent"
+  ];
+  for (const key of keys) {
+    const v = h[key];
+    if (v === undefined) continue;
+    out[key] = Array.isArray(v) ? v.join(",") : v;
+  }
+  return out;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -49,14 +98,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const path = normalizeProxyPath(req.url);
+  const path = resolveProxyPath(req);
   const target = `${backend}${path}`;
 
-  const headers: Record<string, string> = {};
-  const h = req.headers;
-  if (h["content-type"]) headers["Content-Type"] = h["content-type"] as string;
-  if (h["authorization"]) headers["Authorization"] = h["authorization"] as string;
-  if (h["cookie"]) headers["Cookie"] = h["cookie"] as string;
+  const headers = buildForwardHeaders(req);
 
   const init: RequestInit = {
     method: req.method,
@@ -67,8 +112,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const bodyStr = jsonBody(req.body);
     if (bodyStr !== undefined) {
       init.body = bodyStr;
-      if (!headers["Content-Type"] && bodyStr.trim().startsWith("{")) {
-        headers["Content-Type"] = "application/json";
+      if (!headers["content-type"] && bodyStr.trim().startsWith("{")) {
+        headers["content-type"] = "application/json";
       }
     }
   }
@@ -77,8 +122,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const r = await fetch(target, init);
     const text = await r.text();
     res.status(r.status);
-    const ct = r.headers.get("content-type");
-    if (ct) res.setHeader("Content-Type", ct);
+    r.headers.forEach((value, key) => {
+      const lk = key.toLowerCase();
+      if (lk === "content-type") res.setHeader("Content-Type", value);
+      if (lk.startsWith("access-control-")) res.setHeader(key, value);
+    });
     res.end(text);
   } catch (e) {
     res.status(502).setHeader("Content-Type", "application/json; charset=utf-8");
