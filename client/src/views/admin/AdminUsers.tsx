@@ -36,6 +36,7 @@ export function AdminUsers() {
   const [modal, setModal] = useState<"create" | "edit" | null>(null);
   const [editing, setEditing] = useState<UserRow | null>(null);
   const [busy, setBusy] = useState(false);
+  const [pwdOpenFor, setPwdOpenFor] = useState<UserRow | null>(null);
 
   const load = () =>
     adminFetch<{ items: UserRow[] }>("/users")
@@ -75,6 +76,20 @@ export function AdminUsers() {
       <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm text-slate-700">
         Signal partenaire: une gouvernance claire des accès réduit le risque opérationnel et renforce la confiance investisseur.
       </div>
+      <div className="grid gap-3 md:grid-cols-3">
+        <div className="rounded-xl border border-slate-200 bg-white p-3 text-sm">
+          <div className="font-semibold text-text">Operateur</div>
+          <div className="mt-1 text-slate-600">Saisie et édition des documents.</div>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-3 text-sm">
+          <div className="font-semibold text-text">Manager</div>
+          <div className="mt-1 text-slate-600">Pilotage équipe + suivi activité.</div>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-3 text-sm">
+          <div className="font-semibold text-text">Admin / Super admin</div>
+          <div className="mt-1 text-slate-600">Gestion accès, mots de passe, gouvernance.</div>
+        </div>
+      </div>
 
       <div className="mt-6 overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
         <table className="w-full min-w-[800px] text-left text-sm">
@@ -101,6 +116,9 @@ export function AdminUsers() {
                 <td className="space-x-2 px-4 py-2 text-right">
                   <button type="button" className="text-primary underline" onClick={() => { setEditing(u); setModal("edit"); }}>
                     Modifier
+                  </button>
+                  <button type="button" className="text-indigo-700 underline" onClick={() => setPwdOpenFor(u)}>
+                    Mot de passe
                   </button>
                   <button type="button" className="text-rose-600 underline" disabled={busy} onClick={() => onDelete(u.id)}>
                     Supprimer
@@ -150,6 +168,27 @@ export function AdminUsers() {
               setModal(null);
               setEditing(null);
               await load();
+            } catch (e) {
+              alert(e instanceof AdminApiError ? e.message : "Erreur");
+            } finally {
+              setBusy(false);
+            }
+          }}
+        />
+      ) : null}
+
+      {pwdOpenFor ? (
+        <PasswordModal
+          user={pwdOpenFor}
+          onClose={() => setPwdOpenFor(null)}
+          onSave={async (password) => {
+            setBusy(true);
+            try {
+              await adminFetch(`/users/${pwdOpenFor.id}/password`, {
+                method: "PATCH",
+                json: { password }
+              });
+              setPwdOpenFor(null);
             } catch (e) {
               alert(e instanceof AdminApiError ? e.message : "Erreur");
             } finally {
@@ -272,6 +311,53 @@ function UserFormModal({
                 }
                 void onSave(payload, password);
               } else void onSave(payload);
+            }}
+          >
+            Enregistrer
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PasswordModal({
+  user,
+  onClose,
+  onSave
+}: {
+  user: UserRow;
+  onClose: () => void;
+  onSave: (password: string) => Promise<void>;
+}) {
+  const [password, setPassword] = useState("");
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog">
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+        <h2 className="text-lg font-bold text-text">Nouveau mot de passe</h2>
+        <p className="mt-1 text-sm text-slate-600">
+          Définir un nouveau mot de passe pour <span className="font-medium">{user.email}</span>.
+        </p>
+        <div className="mt-4">
+          <Input
+            label="Mot de passe (min 8 caractères)"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
+        <div className="mt-5 flex justify-end gap-2">
+          <Button type="button" variant="ghost" onClick={onClose}>
+            Annuler
+          </Button>
+          <Button
+            type="button"
+            onClick={() => {
+              if (password.length < 8) {
+                alert("Mot de passe ≥ 8 caractères");
+                return;
+              }
+              void onSave(password);
             }}
           >
             Enregistrer

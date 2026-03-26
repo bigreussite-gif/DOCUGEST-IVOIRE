@@ -17,13 +17,25 @@ export async function POST(req: Request) {
   if (me.role === "super_admin") return NextResponse.json({ ok: true, elevated: false, reason: "already_super_admin" });
 
   const bootstrapEmail = process.env.ADMIN_BOOTSTRAP_EMAIL?.toLowerCase() || null;
-  const superAdminCount = await store.countSuperAdmins();
-  const matchesBootstrapEmail = bootstrapEmail && String(me.email).toLowerCase() === bootstrapEmail;
-  const canElevate = superAdminCount === 0 || Boolean(matchesBootstrapEmail);
-
-  if (!canElevate) {
+  if (!bootstrapEmail) {
     return NextResponse.json(
-      { message: "Un super administrateur existe déjà. Contactez-le pour vous promouvoir." },
+      { message: "Activation verrouillée: ADMIN_BOOTSTRAP_EMAIL doit être configuré." },
+      { status: 403 }
+    );
+  }
+
+  const matchesBootstrapEmail = String(me.email).toLowerCase() === bootstrapEmail;
+  if (!matchesBootstrapEmail) {
+    return NextResponse.json(
+      { message: "Ce compte n'est pas autorisé à activer le super administrateur." },
+      { status: 403 }
+    );
+  }
+
+  const superAdminCount = await store.countSuperAdmins();
+  if (superAdminCount > 0) {
+    return NextResponse.json(
+      { message: "Un super administrateur existe déjà. Utilisez le module équipe pour gérer les accès." },
       { status: 403 }
     );
   }

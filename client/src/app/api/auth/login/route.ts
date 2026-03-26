@@ -36,6 +36,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Email ou mot de passe incorrect" }, { status: 401 });
     }
 
+    if (!userRow.password_hash || typeof userRow.password_hash !== "string") {
+      console.log("[api/auth/login] password_hash absent pour", userRow.id);
+      return NextResponse.json({ message: "Compte incomplet: mot de passe indisponible, contactez l'administrateur." }, { status: 401 });
+    }
+
     const ok = await bcrypt.compare(password, userRow.password_hash);
     if (!ok) {
       console.log("[api/auth/login] mot de passe incorrect");
