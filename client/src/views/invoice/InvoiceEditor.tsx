@@ -17,6 +17,7 @@ import InvoicePreview from "./InvoicePreview";
 import { apiFetch } from "../../lib/api";
 import { InlineAdStrip } from "../../components/promo/InlineAdStrip";
 import { extractBrandColorsFromFile, fileToDataUrl, readableOnWhite } from "../../lib/brandColors";
+import { inferCountryPolicy, buildAdministrativeClause, buildFiscalPaymentTerms } from "../../lib/francophonePolicy";
 
 type DocType = "invoice" | "proforma" | "devis";
 
@@ -104,6 +105,8 @@ export default function InvoiceEditor() {
   const printWrapRef = useRef<HTMLDivElement | null>(null);
   const autoPrintDoneRef = useRef(false);
 
+  const countryPolicy = useMemo(() => inferCountryPolicy(auth.user?.user_typology), [auth.user?.user_typology]);
+
   const defaultValues: EditorValues = useMemo(() => {
     const year = new Date().getFullYear();
     const t = searchParams.get("type");
@@ -120,15 +123,15 @@ export default function InvoiceEditor() {
       clientAddress: "",
       clientPhone: "",
       clientEmail: "",
-      fiscalRegime: "informal",
+      fiscalRegime: countryPolicy.defaultFiscalRegime,
       globalDiscountPct: 0,
-      vatRatePct: DEFAULT_VAT_RATE_PCT,
+      vatRatePct: countryPolicy.defaultFiscalRegime === "formal" ? countryPolicy.vatRatePct : DEFAULT_VAT_RATE_PCT,
       senderCompanyName: auth.user?.company_name ?? "",
       senderAddress: auth.user?.company_address ?? "",
       senderPhone: auth.user?.phone ?? "",
       senderEmail: auth.user?.email ?? "",
       senderHeadOffice: auth.user?.company_address ?? "",
-      senderLegalForm: "",
+      senderLegalForm: countryPolicy.defaultLegalForm,
       senderRib: "",
       senderNcc: auth.user?.company_ncc ?? "",
       senderRccm: auth.user?.company_rccm ?? "",
@@ -138,10 +141,13 @@ export default function InvoiceEditor() {
       lines: [
         { description: "", quantity: 1, unit: "Forfait", unitPriceHT: 0, discountPct: 0 }
       ],
-      conditions: "Paiement à 30 jours",
-      footerNote: "Merci pour votre confiance."
+      conditions: buildFiscalPaymentTerms(
+        countryPolicy,
+        countryPolicy.defaultFiscalRegime === "formal" ? countryPolicy.vatRatePct : DEFAULT_VAT_RATE_PCT
+      ),
+      footerNote: buildAdministrativeClause(countryPolicy, docType, { legalForm: countryPolicy.defaultLegalForm })
     };
-  }, [auth.user, searchParams]);
+  }, [auth.user, searchParams, countryPolicy]);
 
   const form = useForm<EditorValues>({
     resolver: zodResolver(editorSchema) as Resolver<EditorValues>,
@@ -196,7 +202,53 @@ export default function InvoiceEditor() {
     if (!v.senderRccm) form.setValue("senderRccm", auth.user.company_rccm || "");
     if (!v.senderDfe) form.setValue("senderDfe", auth.user.company_dfe || "");
     if (!v.senderWhatsapp) form.setValue("senderWhatsapp", auth.user.whatsapp || "");
-  }, [auth.user, params.id, form]);
+    if (!v.senderLegalForm) form.setValue("senderLegalForm", countryPolicy.defaultLegalForm);
+    if (!v.conditions || /Regime fiscal|Paiement a 30 jours|Paiement à 30 jours/i.test(v.conditions)) {
+      form.setValue("conditions", buildFiscalPaymentTerms(countryPolicy, Number(v.vatRatePct || countryPolicy.vatRatePct)));
+    }
+    if (!v.footerNote || /Cadre administratif|Merci pour votre confiance/i.test(v.footerNote)) {
+      form.setValue(
+        "footerNote",
+        buildAdministrativeClause(countryPolicy, v.docType, {
+          legalForm: v.senderLegalForm,
+          hasRccm: Boolean(v.senderRccm),
+          hasNcc: Boolean(v.senderNcc),
+          hasRib: Boolean(v.senderRib)
+        })
+      );
+    }
+    if (v.fiscalRegime === "informal" && countryPolicy.defaultFiscalRegime === "formal") {
+      form.setValue("fiscalRegime", "formal");
+    }
+    if (Number(v.vatRatePct || 0) <= 0 || Number(v.vatRatePct) === DEFAULT_VAT_RATE_PCT) {
+      form.setValue("vatRatePct", countryPolicy.vatRatePct);
+    }
+  }, [auth.user, params.id, form, countryPolicy]);
+
+  useEffect(() => {
+    if (params.id) return;
+    const v = form.getValues();
+    if (!v.footerNote || /Cadre administratif|Merci pour votre confiance/i.test(v.footerNote)) {
+      form.setValue(
+        "footerNote",
+        buildAdministrativeClause(countryPolicy, v.docType, {
+          legalForm: v.senderLegalForm,
+          hasRccm: Boolean(v.senderRccm),
+          hasNcc: Boolean(v.senderNcc),
+          hasRib: Boolean(v.senderRib)
+        })
+      );
+    }
+  }, [
+    watched.docType,
+    watched.senderLegalForm,
+    watched.senderRccm,
+    watched.senderNcc,
+    watched.senderRib,
+    params.id,
+    form,
+    countryPolicy
+  ]);
 
   useEffect(() => {
     if (!params.id) return;

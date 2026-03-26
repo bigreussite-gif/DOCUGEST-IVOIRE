@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { name, email, password, whatsapp } = parsed.data;
+    const { name, email, password, whatsapp, country } = parsed.data;
     const cleanEmail = email.trim().toLowerCase();
     console.log("[api/auth/register] email candidat", cleanEmail);
     const pool = getPool();
@@ -75,15 +75,16 @@ export async function POST(req: Request) {
     const full_name = name.trim();
     const placeholderPhone = buildPlaceholderPhone(cleanEmail);
     const cleanWhatsapp = typeof whatsapp === "string" && whatsapp.trim() ? whatsapp.trim() : null;
+    const cleanCountry = typeof country === "string" && country.trim() ? country.trim() : null;
 
     let row: UserRow;
     try {
       const ins = await pool.query(
         `INSERT INTO public.users (
-          full_name, phone, whatsapp, email, password_hash
-        ) VALUES ($1, $2, $3, $4, $5)
+          full_name, phone, whatsapp, email, password_hash, user_typology
+        ) VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING *`,
-        [full_name, placeholderPhone, cleanWhatsapp, cleanEmail, password_hash]
+        [full_name, placeholderPhone, cleanWhatsapp, cleanEmail, password_hash, cleanCountry]
       );
       row = ins.rows[0] as UserRow;
     } catch (e: unknown) {

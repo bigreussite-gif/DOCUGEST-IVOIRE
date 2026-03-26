@@ -9,15 +9,14 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { InlineAdStrip } from "@/components/promo/InlineAdStrip";
 import { SorobossFooter } from "@/components/promo/SorobossFooter";
-
-const COUNTRY_OPTIONS = [{ code: "CI", label: "Cote d'Ivoire", flag: "🇨🇮", dial: "+225" }] as const;
+import { FRANCOPHONE_AFRICA_COUNTRIES, findCountryByCode } from "@/lib/francophonePolicy";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
-  const [countryCode, setCountryCode] = useState<(typeof COUNTRY_OPTIONS)[number]["code"]>("CI");
+  const [countryCode, setCountryCode] = useState("CI");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -29,7 +28,7 @@ export default function RegisterPage() {
     setSuccess(false);
     setLoading(true);
     try {
-      const selectedCountry = COUNTRY_OPTIONS.find((c) => c.code === countryCode) ?? COUNTRY_OPTIONS[0];
+      const selectedCountry = findCountryByCode(countryCode) ?? FRANCOPHONE_AFRICA_COUNTRIES[0];
       const localPhone = whatsapp.replace(/\D/g, "").replace(/^0+/, "");
       const whatsappFull = localPhone ? `${selectedCountry.dial}${localPhone}` : "";
 
@@ -132,7 +131,7 @@ export default function RegisterPage() {
               </label>
               <div className="flex overflow-hidden rounded-xl border border-border bg-bg ring-primary/30 focus-within:ring-2">
                 <span className="inline-flex items-center gap-1 border-r border-border px-3 text-sm text-slate-700">
-                  {COUNTRY_OPTIONS.find((c) => c.code === countryCode)?.flag} {COUNTRY_OPTIONS.find((c) => c.code === countryCode)?.dial}
+                  {findCountryByCode(countryCode)?.flag} {findCountryByCode(countryCode)?.dial}
                 </span>
                 <input
                   id="whatsapp"
@@ -155,10 +154,10 @@ export default function RegisterPage() {
                 name="country"
                 required
                 value={countryCode}
-                onChange={(e) => setCountryCode(e.target.value as (typeof COUNTRY_OPTIONS)[number]["code"])}
+                onChange={(e) => setCountryCode(e.target.value)}
                 className="w-full rounded-xl border border-border bg-bg px-3 py-2 text-text outline-none ring-primary/30 focus:ring-2"
               >
-                {COUNTRY_OPTIONS.map((c) => (
+                {FRANCOPHONE_AFRICA_COUNTRIES.map((c) => (
                   <option key={c.code} value={c.code}>
                     {c.flag} {c.label}
                   </option>

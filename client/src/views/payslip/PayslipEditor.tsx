@@ -15,6 +15,7 @@ import { formatFCFA, clampMoney } from "../../utils/formatters";
 import PayslipPreview from "./PayslipPreview";
 import { InlineAdStrip } from "../../components/promo/InlineAdStrip";
 import { extractBrandColorsFromFile, fileToDataUrl, readableOnWhite } from "../../lib/brandColors";
+import { inferCountryPolicy, buildAdministrativeClause } from "../../lib/francophonePolicy";
 
 const schema = z.object({
   employerEmail: z.string().default(""),
@@ -66,13 +67,15 @@ export default function PayslipEditor() {
   const printRef = useRef<HTMLDivElement | null>(null);
   const autoPrintDoneRef = useRef(false);
 
+  const countryPolicy = useMemo(() => inferCountryPolicy(auth.user?.user_typology), [auth.user?.user_typology]);
+
   const defaultValues: Values = useMemo(
     () => ({
       employerEmail: "",
       employerWhatsapp: "",
       employerWebsite: "",
       employerHeadOffice: "",
-      employerLegalForm: "",
+      employerLegalForm: countryPolicy.defaultLegalForm,
       employerRib: "",
       employerNcc: "",
       employerRccm: "",
@@ -87,9 +90,9 @@ export default function PayslipEditor() {
       otherAllowances: 0,
       cnpsEmployee: 0,
       otherDeductions: 0,
-      notes: ""
+      notes: buildAdministrativeClause(countryPolicy, "payslip", { legalForm: countryPolicy.defaultLegalForm })
     }),
-    []
+    [countryPolicy]
   );
 
   const form = useForm<Values>({
@@ -141,6 +144,45 @@ export default function PayslipEditor() {
       cancelled = true;
     };
   }, [params.id, defaultValues, form]);
+
+  useEffect(() => {
+    if (!auth.user || params.id) return;
+    const v = form.getValues();
+    if (!v.employerEmail) form.setValue("employerEmail", auth.user.email || "");
+    if (!v.employerWhatsapp) form.setValue("employerWhatsapp", auth.user.whatsapp || "");
+    if (!v.employerHeadOffice) form.setValue("employerHeadOffice", auth.user.company_address || "");
+    if (!v.employerNcc) form.setValue("employerNcc", auth.user.company_ncc || "");
+    if (!v.employerRccm) form.setValue("employerRccm", auth.user.company_rccm || "");
+    if (!v.employerDfe) form.setValue("employerDfe", auth.user.company_dfe || "");
+    if (!v.employerLegalForm) form.setValue("employerLegalForm", countryPolicy.defaultLegalForm);
+    if (!v.notes || /Cadre administratif|Conforme aux pratiques administratives/i.test(v.notes)) {
+      form.setValue(
+        "notes",
+        buildAdministrativeClause(countryPolicy, "payslip", {
+          legalForm: v.employerLegalForm,
+          hasRccm: Boolean(v.employerRccm),
+          hasNcc: Boolean(v.employerNcc),
+          hasRib: Boolean(v.employerRib)
+        })
+      );
+    }
+  }, [auth.user, params.id, form, countryPolicy]);
+
+  useEffect(() => {
+    if (params.id) return;
+    const v = form.getValues();
+    if (!v.notes || /Cadre administratif|Conforme aux pratiques administratives/i.test(v.notes)) {
+      form.setValue(
+        "notes",
+        buildAdministrativeClause(countryPolicy, "payslip", {
+          legalForm: v.employerLegalForm,
+          hasRccm: Boolean(v.employerRccm),
+          hasNcc: Boolean(v.employerNcc),
+          hasRib: Boolean(v.employerRib)
+        })
+      );
+    }
+  }, [watched.employerLegalForm, watched.employerRccm, watched.employerNcc, watched.employerRib, params.id, form, countryPolicy]);
 
   const employerName = auth.user?.company_name || "Votre entreprise";
   const employerAddress = auth.user?.company_address || "";
