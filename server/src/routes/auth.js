@@ -37,46 +37,7 @@ function createResetToken({ userId }) {
 }
 
 // POST /api/auth/register
-router.post("/register", async (req, res) => {
-  const schema = z.object({
-    full_name: z.string().min(2),
-    phone: z.string().refine((v) => phonePattern.test(v.replace(/\s+/g, ""))),
-    whatsapp: z.string().nullable().optional(),
-    email: z.string().email(),
-    password: z.string().min(8)
-  });
-
-  const parsed = schema.safeParse(req.body);
-  if (!parsed.success) {
-    return res.status(400).json({ message: "Champs invalides", details: parsed.error.flatten() });
-  }
-
-  const { full_name, phone, whatsapp, email, password } = parsed.data;
-
-  const existing = await store.isEmailTaken(email);
-  if (existing) return res.status(409).json({ message: "Email déjà utilisé" });
-
-  const password_hash = await bcrypt.hash(password, 12);
-
-  const created = await store.createUser({ full_name, phone, whatsapp, email, password_hash });
-  if (!created.ok) return res.status(409).json({ message: created.reason });
-  const user = created.user;
-
-  try {
-    await sendMail({
-      to: user.email,
-      subject: "Bienvenue sur DocuGest Ivoire",
-      text: `Bonjour ${user.full_name},\n\nVotre compte DocuGest Ivoire est prêt.\n\nBon travail avec vos documents !`
-    });
-  } catch {
-    // On ne bloque pas l'accès si l'email échoue.
-  }
-
-  await store.ensureBootstrapAdmin(user.id);
-  const me = await store.getMe(user.id);
-  const token = createToken({ userId: user.id, rememberMe: true, role: me?.role });
-  return res.json({ token, user: me });
-});
+// — Inscription gérée par Next.js App Router : client/app/api/auth/register/route.ts
 
 // POST /api/auth/login
 router.post("/login", async (req, res) => {

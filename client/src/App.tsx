@@ -1,12 +1,11 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import Landing from "./pages/Landing";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
-import ResetPassword from "./pages/ResetPassword";
+import Landing from "./views/Landing";
+import Login from "./views/Login";
+import Dashboard from "./views/Dashboard";
+import ResetPassword from "./views/ResetPassword";
 
-const AdminApp = lazy(() => import("./pages/admin/AdminApp"));
+const AdminApp = lazy(() => import("./views/admin/AdminApp"));
 
 export default function App() {
   return (
@@ -14,7 +13,6 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/dashboard/*" element={<Dashboard />} />
         <Route

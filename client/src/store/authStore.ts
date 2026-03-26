@@ -48,15 +48,6 @@ type LoginPayload = {
   rememberMe: boolean;
 };
 
-type RegisterPayload = {
-  full_name: string;
-  phone: string;
-  whatsapp?: string | null;
-  email: string;
-  password: string;
-  company_name?: string | null;
-};
-
 type PasswordResetRequestPayload = { email: string };
 type PasswordResetPayload = { token: string; newPassword: string };
 
@@ -67,7 +58,6 @@ type AuthState = {
 
   loadMe: () => Promise<void>;
   login: (payload: LoginPayload) => Promise<boolean>;
-  register: (payload: RegisterPayload) => Promise<boolean>;
   logout: () => void;
   requestPasswordReset: (payload: PasswordResetRequestPayload) => Promise<void>;
   resetPassword: (payload: PasswordResetPayload) => Promise<void>;
@@ -114,24 +104,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       const res = await apiFetch<{ token: string; user: AuthUser }>("/api/auth/login", {
         method: "POST",
         json: { email, password, rememberMe }
-      });
-      localStorage.setItem("docugest_token", res.token);
-      localStorage.setItem(USER_CACHE_KEY, JSON.stringify(res.user));
-      set({ user: res.user, loading: false });
-      void flushSyncQueue();
-      return true;
-    } catch (e) {
-      set({ loading: false, error: apiErrorMessage(e) });
-      return false;
-    }
-  },
-
-  register: async ({ full_name, phone, whatsapp, email, password }) => {
-    set({ loading: true, error: null });
-    try {
-      const res = await apiFetch<{ token: string; user: AuthUser }>("/api/auth/register", {
-        method: "POST",
-        json: { full_name, phone, whatsapp, email, password }
       });
       localStorage.setItem("docugest_token", res.token);
       localStorage.setItem(USER_CACHE_KEY, JSON.stringify(res.user));

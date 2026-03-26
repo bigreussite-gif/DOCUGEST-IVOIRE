@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import Link from "next/link";
+import { Link as RouterLink } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 import { MonetizationTopBar } from "../components/promo/MonetizationTopBar";
 import { BottomAdZone } from "../components/promo/BottomAdZone";
@@ -45,10 +46,10 @@ export default function Landing() {
             </div>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Link to="/login">
+            <RouterLink to="/login">
               <Button variant="secondary">Me connecter</Button>
-            </Link>
-            <Link to="/register">
+            </RouterLink>
+            <Link href="/register">
               <Button variant="primary">Créer mon compte — gratuit</Button>
             </Link>
           </div>
@@ -78,16 +79,16 @@ export default function Landing() {
               </p>
 
               <div className="mt-8 flex flex-wrap gap-4">
-                <Link to="/register">
+                <Link href="/register">
                   <Button variant="primary" className="min-h-[48px] px-8 text-base shadow-lg shadow-primary/25">
                     Je commence maintenant
                   </Button>
                 </Link>
-                <Link to="/login">
+                <RouterLink to="/login">
                   <Button variant="ghost" className="min-h-[48px] text-base">
                     J’ai déjà un compte
                   </Button>
-                </Link>
+                </RouterLink>
               </div>
 
               <p className="mt-6 text-sm text-slate-500">
@@ -126,7 +127,7 @@ export default function Landing() {
             </p>
             <div className="mt-8">
               <Link
-                to="/register"
+                href="/register"
                 className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-white px-8 text-base font-semibold text-slate-900 shadow-lg shadow-black/20 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-white/60"
               >
                 Créer mon compte gratuit
