@@ -27,7 +27,9 @@ const PRESET_SLOTS = [
   "bottom-bar-adsense",
   "landing-hero",
   "dashboard-inline",
-  "invoice-sidebar"
+  "invoice-sidebar",
+  "invoice-editor-top",
+  "invoice-editor-before-preview"
 ];
 
 const SLOT_LABELS: Record<string, string> = {
@@ -37,7 +39,9 @@ const SLOT_LABELS: Record<string, string> = {
   "bottom-bar-adsense": "Barre bas — Ads",
   "landing-hero": "Landing — héros",
   "dashboard-inline": "Dashboard — inline",
-  "invoice-sidebar": "Facture — encart"
+  "invoice-sidebar": "Facture — encart (legacy)",
+  "invoice-editor-top": "Facture — après type de document",
+  "invoice-editor-before-preview": "Facture — avant aperçu PDF"
 };
 
 export function AdminAds() {

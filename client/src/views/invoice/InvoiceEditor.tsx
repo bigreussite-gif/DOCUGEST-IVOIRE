@@ -18,6 +18,13 @@ import { apiFetch } from "../../lib/api";
 import { InlineAdStrip } from "../../components/promo/InlineAdStrip";
 import { extractBrandColorsFromFile, fileToDataUrl, readableOnWhite } from "../../lib/brandColors";
 import { inferCountryPolicy, buildAdministrativeClause, buildFiscalPaymentTerms } from "../../lib/francophonePolicy";
+import {
+  CI_VAT_REGIME_LABELS,
+  CI_VAT_REGIME_VALUES,
+  type CiVatRegime,
+  ciVatRegimeToFiscalRegime,
+  fiscalRegimeToCiVat
+} from "../../constants/ciVatRegimes";
 
 type DocType = "invoice" | "proforma" | "devis";
 
@@ -40,6 +47,8 @@ const editorSchema = z.object({
   clientPhone: z.string().default(""),
   clientEmail: z.string().default(""),
   fiscalRegime: z.enum(["informal", "formal"]),
+  /** Régime d’assujettissement TVA (CI) — pilote `fiscalRegime` pour le calcul. */
+  ciVatRegime: z.enum(CI_VAT_REGIME_VALUES),
   globalDiscountPct: z.number().min(0).max(100).default(0),
   vatRatePct: z.number().min(0).max(100).default(DEFAULT_VAT_RATE_PCT),
   senderCompanyName: z.string().min(1, "Entreprise requise"),
@@ -132,6 +141,7 @@ export default function InvoiceEditor() {
       clientPhone: "",
       clientEmail: "",
       fiscalRegime: countryPolicy.defaultFiscalRegime,
+      ciVatRegime: fiscalRegimeToCiVat(countryPolicy.defaultFiscalRegime),
       globalDiscountPct: 0,
       vatRatePct: countryPolicy.defaultFiscalRegime === "formal" ? countryPolicy.vatRatePct : DEFAULT_VAT_RATE_PCT,
       senderCompanyName: auth.user?.company_name ?? "",
@@ -297,6 +307,7 @@ export default function InvoiceEditor() {
           dueDateMode?: EditorValues["dueDateMode"];
           dueDateManual?: string;
           fiscalRegime?: EditorValues["fiscalRegime"];
+          ciVatRegime?: EditorValues["ciVatRegime"];
           lines?: EditorValues["lines"];
           globalDiscountPct?: number;
           vatRatePct?: number;
@@ -331,6 +342,7 @@ export default function InvoiceEditor() {
           dueDateMode: d.dueDateMode ?? "net30",
           dueDateManual: d.dueDateManual ?? "",
           fiscalRegime: d.fiscalRegime ?? "informal",
+          ciVatRegime: d.ciVatRegime ?? fiscalRegimeToCiVat((d.fiscalRegime ?? "informal") as "informal" | "formal"),
           lines:
             Array.isArray(d.lines) && d.lines.length > 0
               ? (d.lines as EditorValues["lines"])
@@ -445,6 +457,7 @@ export default function InvoiceEditor() {
         dueDateMode: values.dueDateMode,
         dueDateManual: values.dueDateManual,
         fiscalRegime: values.fiscalRegime,
+        ciVatRegime: values.ciVatRegime,
         lines: values.lines,
         globalDiscountPct: values.globalDiscountPct,
         vatRatePct: values.vatRatePct,
@@ -496,49 +509,62 @@ export default function InvoiceEditor() {
 
   return (
     <div className="p-4 sm:p-6 print:p-2">
-      <div className="mb-4 print:hidden">
-        <InlineAdStrip variant="compact" />
-      </div>
-      <div className="rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70 print:hidden">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0 flex-1">
-            <div className="text-sm font-semibold text-text">Type de document</div>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {(["invoice", "proforma", "devis"] as DocType[]).map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => form.setValue("docType", t, { shouldDirty: true })}
-                  className={[
-                    "rounded-xl px-3 py-2 text-sm font-semibold ring-1 transition",
-                    watched.docType === t ? "bg-primary text-white ring-primary/30" : "bg-surface text-text ring-border/70 hover:bg-bg"
-                  ].join(" ")}
-                >
-                  {docTypeLabel(t)}
-                </button>
-              ))}
-            </div>
-            <p className="mt-2 text-xs leading-relaxed text-slate-600">
-              Renseignez d’abord le formulaire au centre : l’aperçu se met à jour à droite (ou en dessous sur mobile). Le PDF se
-              trouve en bas du formulaire lorsque vous êtes prêt.
-            </p>
-          </div>
-          <Button className="min-h-11 w-full shrink-0 sm:w-auto sm:min-w-[10rem]" onClick={form.handleSubmit(onSave)} disabled={saving}>
-            {saving ? "Sauvegarde…" : "Sauvegarder"}
-          </Button>
-        </div>
-      </div>
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 print:block">
+        <div className="rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70 sm:p-6 print:hidden">
+          <form className="text-[13px] sm:text-[14px]" onSubmit={(e) => e.preventDefault()}>
+            <div className="grid gap-6">
+              <div className="rounded-2xl border-2 border-primary/25 bg-gradient-to-br from-white to-primary/[0.04] p-5 shadow-sm ring-1 ring-primary/10 sm:p-6">
+                <p className="text-center text-xs font-semibold uppercase tracking-wide text-primary sm:text-left">
+                  1 — Choisissez le document, puis renseignez les champs
+                </p>
+                <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div
+                    className="flex flex-wrap justify-center gap-2 sm:justify-start"
+                    role="tablist"
+                    aria-label="Type de document"
+                  >
+                    {(["invoice", "proforma", "devis"] as DocType[]).map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        role="tab"
+                        aria-selected={watched.docType === t}
+                        onClick={() => form.setValue("docType", t, { shouldDirty: true })}
+                        className={[
+                          "min-h-[48px] min-w-[7.5rem] rounded-2xl px-4 py-3 text-sm font-bold ring-2 transition sm:text-base",
+                          watched.docType === t
+                            ? "bg-primary text-white ring-primary shadow-md"
+                            : "bg-surface text-text ring-border/60 hover:bg-bg hover:ring-primary/30"
+                        ].join(" ")}
+                      >
+                        {docTypeLabel(t)}
+                      </button>
+                    ))}
+                  </div>
+                  <Button
+                    className="min-h-[48px] w-full shrink-0 px-6 text-base font-semibold lg:w-auto lg:min-w-[11rem]"
+                    onClick={form.handleSubmit(onSave)}
+                    disabled={saving}
+                  >
+                    {saving ? "Sauvegarde…" : "Sauvegarder"}
+                  </Button>
+                </div>
+                <p className="mt-4 text-center text-sm leading-relaxed text-slate-700 sm:text-left">
+                  Le formulaire commence ici : remplissez les sections suivantes. L’aperçu PDF est plus bas, après la saisie. Le
+                  téléchargement se fait en bas de page (pas en haut).
+                </p>
+              </div>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] print:block">
-        <div className="order-1 rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70 sm:p-5 print:hidden">
-          <div className="mb-4 rounded-xl border border-teal-200/80 bg-teal-50/60 px-4 py-3 ring-1 ring-teal-100">
-            <p className="text-xs font-semibold uppercase tracking-wide text-teal-900">Étape 1 — Formulaire</p>
-            <p className="mt-1 text-sm text-slate-700">
-              Complétez les blocs ci-dessous : votre document et l’aperçu se construisent en même temps.
-            </p>
-          </div>
-          <form className="max-h-[min(85vh,1200px)] overflow-auto pr-1 text-[13px] sm:pr-2" onSubmit={(e) => e.preventDefault()}>
-            <div className="grid gap-5">
+              <div className="rounded-xl border border-primary/15 bg-gradient-to-br from-primary/[0.04] to-bg p-3 ring-1 ring-border/60 print:hidden sm:p-4">
+                <InlineAdStrip
+                  variant="compact"
+                  adSlot="invoice-editor-top"
+                  hint="Encart sous le choix du document"
+                  heading="Gratuit grâce aux partenaires"
+                  subheading="Pas d’abonnement caché : ces visibilités financent les serveurs et le produit. Merci pour votre attention."
+                />
+              </div>
+
               <div className="rounded-xl bg-surface p-5 ring-1 ring-border/70">
                 <div className="text-sm font-semibold text-text">Identité visuelle</div>
                 <p className="mt-1.5 text-xs leading-relaxed text-slate-600">
@@ -670,11 +696,21 @@ export default function InvoiceEditor() {
                 </div>
                 <div className="mt-3 grid gap-4 md:grid-cols-2">
                   <Input label="RIB / Compte bancaire" {...form.register("senderRib")} />
-                  <Input label="NCC" {...form.register("senderNcc")} />
                 </div>
+                <p className="mt-3 text-xs leading-relaxed text-slate-600">
+                  Ordre usuel en Côte d’Ivoire : <strong>RCCM</strong> (immatriculation au registre du commerce),{" "}
+                  <strong>DFE</strong> (déclaration fiscale d’existence), puis le <strong>NCC / IFU</strong> : le numéro
+                  fiscal est attribué après l’immatriculation fiscale (la DFE précède la délivrance du NCC).
+                </p>
                 <div className="mt-3 grid gap-4 md:grid-cols-2">
                   <Input label="RCCM" {...form.register("senderRccm")} />
                   <Input label="DFE" {...form.register("senderDfe")} />
+                </div>
+                <div className="mt-3">
+                  <Input label="NCC / IFU (n° fiscal)" {...form.register("senderNcc")} />
+                  <p className="mt-1.5 text-xs text-slate-500">
+                    Identifiant fiscal une fois l’entreprise enregistrée auprès de la DGI — distinct d’une « formule » de TVA.
+                  </p>
                 </div>
               </div>
 
@@ -792,37 +828,35 @@ export default function InvoiceEditor() {
               </div>
 
               <div className="rounded-xl bg-surface p-4 ring-1 ring-border/70">
-                <div className="text-sm font-semibold text-text">Régime fiscal</div>
-                <div className="mt-3 flex gap-3">
-                  <button
-                    type="button"
-                    className={[
-                      "flex-1 rounded-xl px-3 py-2 ring-1 transition",
-                      watched.fiscalRegime === "informal"
-                        ? "bg-primary text-white ring-primary/30"
-                        : "bg-bg text-text ring-border/70 hover:bg-surface"
-                    ].join(" ")}
-                    onClick={() => form.setValue("fiscalRegime", "informal", { shouldDirty: true })}
-                  >
-                    INFORMEL
-                  </button>
-                  <button
-                    type="button"
-                    className={[
-                      "flex-1 rounded-xl px-3 py-2 ring-1 transition",
-                      watched.fiscalRegime === "formal"
-                        ? "bg-secondary text-white ring-secondary/30"
-                        : "bg-bg text-text ring-border/70 hover:bg-surface"
-                    ].join(" ")}
-                    onClick={() => form.setValue("fiscalRegime", "formal", { shouldDirty: true })}
-                  >
-                    FORMEL
-                  </button>
+                <div className="text-sm font-semibold text-text">Régime TVA / assujettissement (DGI)</div>
+                <p className="mt-1.5 text-xs leading-relaxed text-slate-600">
+                  Choisissez la <strong>catégorie fiscale</strong> (réel, franchise, etc.) — ce n’est pas une « formule » : cela
+                  indique si la TVA s’applique sur le document. Les taux ci-dessous servent au calcul des lignes.
+                </p>
+                <div className="mt-3">
+                  <label className="block">
+                    <span className="mb-1 block text-sm font-medium text-text">Régime</span>
+                    <select
+                      className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+                      value={watched.ciVatRegime}
+                      onChange={(e) => {
+                        const v = e.target.value as CiVatRegime;
+                        form.setValue("ciVatRegime", v, { shouldDirty: true });
+                        form.setValue("fiscalRegime", ciVatRegimeToFiscalRegime(v), { shouldDirty: true });
+                      }}
+                    >
+                      {CI_VAT_REGIME_VALUES.map((k) => (
+                        <option key={k} value={k}>
+                          {CI_VAT_REGIME_LABELS[k]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                 </div>
 
                 {watched.fiscalRegime === "informal" ? (
                   <div className="mt-3 rounded-xl bg-primary/10 p-3 text-sm text-text ring-1 ring-primary/30">
-                    Mode simplifié — aucune TVA calculée.
+                    Aucune TVA calculée sur ce document (montants hors TVA = montants TTC affichés).
                   </div>
                 ) : (
                   <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -832,7 +866,7 @@ export default function InvoiceEditor() {
                       {...form.register("globalDiscountPct", { valueAsNumber: true })}
                     />
                     <label className="block">
-                      <span className="mb-1 block text-sm font-medium text-text">TVA (%)</span>
+                      <span className="mb-1 block text-sm font-medium text-text">Taux de TVA (%)</span>
                       <select
                         className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30"
                         {...form.register("vatRatePct", { valueAsNumber: true })}
@@ -891,12 +925,22 @@ export default function InvoiceEditor() {
           </form>
         </div>
 
-        <div className="order-2 rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70 sm:p-5 print:shadow-none print:ring-0">
-          <div className="sticky top-4 print:static">
-            <div className="flex items-center justify-between gap-3 pb-3">
+        <div className="print:hidden">
+          <InlineAdStrip
+            variant="compact"
+            adSlot="invoice-editor-before-preview"
+            hint="Encart entre le formulaire et l’aperçu"
+            heading="Encart partenaires"
+            subheading="Un clic ici aide à garder la création de documents accessible à tous."
+          />
+        </div>
+
+        <div className="relative rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70 sm:p-6 print:shadow-none print:ring-0">
+            <div className="flex flex-col gap-2 border-b border-border/60 pb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
               <div>
-                <div className="text-sm font-semibold text-text">{docTypeLabel(previewValues.docType)}</div>
-                <div className="text-[11px] text-slate-600">Aperçu en temps réel (A4) — après saisie</div>
+                <div className="text-base font-bold text-text">Aperçu du document</div>
+                <div className="text-sm font-semibold text-primary">{docTypeLabel(previewValues.docType)}</div>
+                <div className="mt-1 text-xs text-slate-600">Mise à jour en direct (format A4) — complétez d’abord le formulaire ci-dessus.</div>
               </div>
               <div className="text-right">
                 <div className="text-xs text-slate-600">Total</div>
@@ -909,7 +953,7 @@ export default function InvoiceEditor() {
               </div>
             </div>
 
-            <div ref={previewWrapRef} className="max-h-[78vh] overflow-auto rounded-xl bg-slate-100/80 p-2 ring-1 ring-border/50">
+            <div ref={previewWrapRef} className="mt-4 max-h-[min(85vh,1200px)] overflow-auto rounded-xl bg-slate-100/80 p-3 ring-1 ring-border/50">
               <InvoicePreview
                 themeColor={themeColor}
                 customAccentHex={accentForPreview}
@@ -999,7 +1043,6 @@ export default function InvoiceEditor() {
                 />
               </div>
             </div>
-          </div>
         </div>
       </div>
     </div>

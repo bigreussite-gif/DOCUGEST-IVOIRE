@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { InlineAdStrip } from "@/components/promo/InlineAdStrip";
 import { SorobossFooter } from "@/components/promo/SorobossFooter";
+import { TrustModelBanner } from "@/components/trust/TrustModelBanner";
 import { FRANCOPHONE_AFRICA_COUNTRIES, findCountryByCode } from "@/lib/francophonePolicy";
 import { useAuthStore, type AuthUser } from "@/store/authStore";
 
@@ -102,8 +103,12 @@ export default function RegisterPage() {
           <h1 className="mt-3 text-2xl font-bold text-text">Créer un compte</h1>
           <p className="mt-1 text-sm text-slate-600">Commencez gratuitement en quelques secondes.</p>
           <p className="mt-2 text-xs text-slate-500">
-            Factures, devis et bulletins prets plus vite, sans complexite.
+            Factures, devis et bulletins prêts plus vite, sans complexité inutile.
           </p>
+        </div>
+
+        <div className="mb-5">
+          <TrustModelBanner variant="compact" />
         </div>
 
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
@@ -223,13 +228,17 @@ export default function RegisterPage() {
         <div className="mt-6 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-center">
           <p className="text-xs font-semibold uppercase tracking-wide text-primary">Pourquoi DocuGest ?</p>
           <p className="mt-1 text-xs leading-relaxed text-slate-700">
-            Gagnez du temps, professionnalisez vos documents et inspirez confiance a vos clients.
+            Gagnez du temps, professionnalisez vos documents et inspirez confiance à vos clients.
           </p>
         </div>
       </div>
 
       <div className="mx-auto mt-4 w-full max-w-md">
-        <InlineAdStrip variant="compact" />
+        <InlineAdStrip
+          variant="compact"
+          heading="Bienvenue aux partenaires"
+          subheading="Ils rendent possible l’offre gratuite au quotidien — un clic utile pour la communauté."
+        />
       </div>
 
       <div className="mx-auto mt-4 w-full max-w-md border-t border-slate-200/70 pt-4">

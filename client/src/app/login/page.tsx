@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { InlineAdStrip } from "@/components/promo/InlineAdStrip";
 import { SorobossFooter } from "@/components/promo/SorobossFooter";
+import { TrustModelBanner } from "@/components/trust/TrustModelBanner";
 import { useAuthStore, type AuthUser } from "@/store/authStore";
 
 export default function LoginPage() {
@@ -75,14 +76,20 @@ export default function LoginPage() {
             Connexion
           </p>
           <h1 className="mt-3 text-2xl font-bold text-text">Bienvenue</h1>
-          <p className="mt-1 text-sm text-slate-600">Accedez a votre espace DocuGest.</p>
-          <p className="mt-2 text-xs text-slate-500">Votre espace pro, simple, rapide et pense pour l'Afrique francophone.</p>
+          <p className="mt-1 text-sm text-slate-600">Accédez à votre espace DocuGest.</p>
+          <p className="mt-2 text-xs text-slate-500">
+            Espace professionnel pour l’Afrique francophone — factures, devis, bulletins.
+          </p>
+        </div>
+
+        <div className="mb-5">
+          <TrustModelBanner variant="compact" />
         </div>
 
         <div className="mb-5 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-center">
-          <p className="text-xs font-semibold uppercase tracking-wide text-primary">Boost productivité</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-primary">Productivité</p>
           <p className="mt-1 text-xs text-slate-700">
-            Connectez-vous et générez vos documents pro en quelques minutes, avec un rendu prêt à envoyer.
+            Documents prêts à envoyer en quelques minutes, PDF inclus.
           </p>
         </div>
 
@@ -139,7 +146,11 @@ export default function LoginPage() {
         </p>
       </div>
       <div className="mx-auto mt-4 w-full max-w-md">
-        <InlineAdStrip variant="compact" />
+        <InlineAdStrip
+          variant="compact"
+          heading="Partenaires"
+          subheading="Votre attention sur ces offres aide à garder l’inscription et l’usage gratuits."
+        />
       </div>
       <div className="mx-auto mt-4 w-full max-w-md border-t border-slate-200/70 pt-4">
         <SorobossFooter />

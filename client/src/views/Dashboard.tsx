@@ -8,6 +8,7 @@ import { MonetizationTopBar } from "../components/promo/MonetizationTopBar";
 import { MonetizationBottomBar } from "../components/promo/MonetizationBottomBar";
 import { InlineAdStrip } from "../components/promo/InlineAdStrip";
 import { SorobossFooter } from "../components/promo/SorobossFooter";
+import { TrustModelBanner } from "../components/trust/TrustModelBanner";
 import { ConnectionBanner } from "../components/ConnectionBanner";
 import { AppBrand } from "../components/dashboard/AppBrand";
 import { DashboardNav } from "../components/dashboard/DashboardNav";
@@ -101,21 +102,28 @@ function DashboardHome() {
             <div className="text-sm text-slate-600">Bonjour,</div>
             <div className="text-2xl font-bold text-text">{firstName}</div>
             <div className="mt-1 text-base leading-relaxed text-slate-600">
-              Ici, tu pilotes tes factures, devis et fiches de paie — sans friction.
+              Pilotez vos factures, devis et bulletins de paie depuis un espace clair et professionnel.
             </div>
           </div>
           <div className="text-right text-sm text-slate-600">
             {auth.user?.company_name ? (
               <span className="font-medium text-text">{auth.user.company_name}</span>
             ) : (
-              <span>Ajoute ton entreprise dans ton profil</span>
+              <span>Complétez votre entreprise dans le profil pour vos documents</span>
             )}
           </div>
         </div>
       </div>
 
       <div className="mt-6">
-        <InlineAdStrip />
+        <TrustModelBanner />
+      </div>
+
+      <div className="mt-6">
+        <InlineAdStrip
+          heading="Espace partenaires"
+          subheading="En consultant ces offres, vous contribuez à maintenir DocuGest gratuit pour les indépendants et les PME."
+        />
       </div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
@@ -499,9 +507,8 @@ export default function Dashboard() {
 
               <DashboardNav orientation="vertical" />
 
-              <div className="rounded-xl border border-dashed border-slate-200 p-3">
-                <p className="text-[10px] font-medium uppercase tracking-wide text-slate-500">Espace publicitaire</p>
-                <p className="mt-1 text-[11px] text-slate-500">Emplacement discret — compatible AdSense.</p>
+              <div className="rounded-xl border border-emerald-200/60 bg-gradient-to-br from-emerald-50/40 to-white p-3 ring-1 ring-emerald-100/70">
+                <TrustModelBanner variant="compact" />
               </div>
             </div>
           </aside>

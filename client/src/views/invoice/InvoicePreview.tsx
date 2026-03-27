@@ -241,7 +241,7 @@ export default function InvoicePreview({ docTypeLabel, themeColor, customAccentH
             {[data.sender.headOffice || data.sender.address, data.sender.legalForm, data.sender.rib].filter(Boolean).join(" · ")}
           </div>
           <div className="mt-1">
-            {[data.sender.ncc ? `NCC: ${data.sender.ncc}` : "", data.sender.rccm ? `RCCM: ${data.sender.rccm}` : "", data.sender.dfe ? `DFE: ${data.sender.dfe}` : ""]
+            {[data.sender.rccm ? `RCCM: ${data.sender.rccm}` : "", data.sender.dfe ? `DFE: ${data.sender.dfe}` : "", data.sender.ncc ? `NCC/IFU: ${data.sender.ncc}` : ""]
               .filter(Boolean)
               .join(" · ")}
           </div>

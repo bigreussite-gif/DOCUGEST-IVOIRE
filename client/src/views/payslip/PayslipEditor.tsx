@@ -14,6 +14,7 @@ import { apiFetch } from "../../lib/api";
 import { formatFCFA, clampMoney } from "../../utils/formatters";
 import PayslipPreview from "./PayslipPreview";
 import { InlineAdStrip } from "../../components/promo/InlineAdStrip";
+import { TrustModelBanner } from "../../components/trust/TrustModelBanner";
 import { extractBrandColorsFromFile, fileToDataUrl, readableOnWhite } from "../../lib/brandColors";
 import { inferCountryPolicy, buildAdministrativeClause } from "../../lib/francophonePolicy";
 
@@ -35,7 +36,13 @@ const schema = z.object({
   bonuses: z.number().min(0).default(0),
   transportAllowance: z.number().min(0).default(0),
   otherAllowances: z.number().min(0).default(0),
-  cnpsEmployee: z.number().min(0).default(0),
+  /** Taux cotisation CNPS salarié (%). Si > 0, le montant CNPS est dérivé de la base salaire + primes. */
+  cnpsRatePct: z.number().min(0).max(100).default(6.3),
+  /** Montant CNPS manuel (FCFA) si taux = 0 — compatibilité anciens bulletins. */
+  cnpsManualFcfa: z.number().min(0).default(0),
+  igrRetentionFcfa: z.number().min(0).default(0),
+  /** Parts pour IGR (affichage / traçabilité, ex. 1, 1,5, 2, 2,5…). */
+  familyTaxParts: z.number().min(0.5).max(15).default(1),
   otherDeductions: z.number().min(0).default(0),
   notes: z.string().default("")
 });
@@ -47,10 +54,20 @@ function todayISO() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+function cnpsAmountFromForm(v: Values): number {
+  const rate = Number(v.cnpsRatePct ?? 0);
+  if (rate > 0) {
+    const base = Number(v.baseSalary) + Number(v.bonuses);
+    return clampMoney(Math.max(0, (base * rate) / 100));
+  }
+  return clampMoney(Number(v.cnpsManualFcfa ?? 0));
+}
+
 function computeNet(v: Values) {
   const gross =
     Number(v.baseSalary) + Number(v.bonuses) + Number(v.transportAllowance) + Number(v.otherAllowances);
-  const ded = Number(v.cnpsEmployee) + Number(v.otherDeductions);
+  const cnps = cnpsAmountFromForm(v);
+  const ded = cnps + Number(v.igrRetentionFcfa) + Number(v.otherDeductions);
   return clampMoney(Math.max(0, gross - ded));
 }
 
@@ -88,7 +105,10 @@ export default function PayslipEditor() {
       bonuses: 0,
       transportAllowance: 0,
       otherAllowances: 0,
-      cnpsEmployee: 0,
+      cnpsRatePct: 6.3,
+      cnpsManualFcfa: 0,
+      igrRetentionFcfa: 0,
+      familyTaxParts: 1,
       otherDeductions: 0,
       notes: buildAdministrativeClause(countryPolicy, "payslip", { legalForm: countryPolicy.defaultLegalForm })
     }),
@@ -125,15 +145,37 @@ export default function PayslipEditor() {
           doc_number: string;
         }>(`/api/documents/${params.id}`);
         if (cancelled || !doc?.doc_data) return;
-        const d = doc.doc_data as Partial<Values> & {
-          logoDataUrl?: string | null;
-          brandPrimaryHex?: string | null;
-        };
-        setLogoDataUrl(typeof d.logoDataUrl === "string" ? d.logoDataUrl : null);
-        setBrandPrimaryHex(typeof d.brandPrimaryHex === "string" ? d.brandPrimaryHex : null);
+        const raw = doc.doc_data as Partial<Values> & { cnpsEmployee?: number; logoDataUrl?: string | null; brandPrimaryHex?: string | null };
+        setLogoDataUrl(typeof raw.logoDataUrl === "string" ? raw.logoDataUrl : null);
+        setBrandPrimaryHex(typeof raw.brandPrimaryHex === "string" ? raw.brandPrimaryHex : null);
+        const { cnpsEmployee: legacyCnpsAmount, logoDataUrl: _ld, brandPrimaryHex: _bh, ...d } = raw;
+
+        const legacy = typeof legacyCnpsAmount === "number" ? legacyCnpsAmount : 0;
+        const hasNewCnps =
+          typeof d.cnpsRatePct === "number" ||
+          typeof d.cnpsManualFcfa === "number";
+        const cnpsRatePct = hasNewCnps
+          ? typeof d.cnpsRatePct === "number"
+            ? d.cnpsRatePct
+            : 6.3
+          : legacy > 0
+            ? 0
+            : 6.3;
+        const cnpsManualFcfa = hasNewCnps
+          ? typeof d.cnpsManualFcfa === "number"
+            ? d.cnpsManualFcfa
+            : 0
+          : legacy > 0
+            ? legacy
+            : 0;
+
         form.reset({
           ...defaultValues,
           ...d,
+          cnpsRatePct,
+          cnpsManualFcfa,
+          igrRetentionFcfa: typeof d.igrRetentionFcfa === "number" ? d.igrRetentionFcfa : 0,
+          familyTaxParts: typeof d.familyTaxParts === "number" ? d.familyTaxParts : 1,
           emissionDate: typeof d.emissionDate === "string" ? d.emissionDate : defaultValues.emissionDate
         });
       } catch {
@@ -212,7 +254,10 @@ export default function PayslipEditor() {
       transportAllowance: Number(watched.transportAllowance),
       otherAllowances: Number(watched.otherAllowances),
       bonuses: Number(watched.bonuses),
-      cnpsEmployee: Number(watched.cnpsEmployee),
+      cnpsRatePct: Number(watched.cnpsRatePct),
+      cnpsEmployee: cnpsAmountFromForm(watched),
+      igrRetentionFcfa: Number(watched.igrRetentionFcfa),
+      familyTaxParts: Number(watched.familyTaxParts),
       otherDeductions: Number(watched.otherDeductions),
       netPay,
       notes: watched.notes,
@@ -304,16 +349,23 @@ export default function PayslipEditor() {
 
   return (
     <div className="p-4 sm:p-6">
-      <div className="mb-4">
-        <InlineAdStrip variant="compact" />
+      <div className="mb-4 space-y-3">
+        <TrustModelBanner variant="compact" />
+        <InlineAdStrip
+          variant="compact"
+          heading="Partenaires bulletin de paie"
+          subheading="Votre regard sur ces annonces soutient un outil gratuit pour les employeurs."
+        />
       </div>
 
       <div className="rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="text-lg font-bold text-text">Bulletin de salaire</div>
-            <div className="text-sm text-slate-600">Remplissez le formulaire ci-dessous — le net est calculé automatiquement.</div>
-            <p className="mt-2 text-xs text-slate-500">Le PDF est disponible en bas du formulaire une fois les montants saisis.</p>
+            <div className="text-sm text-slate-600">
+              Remplissez le formulaire — le net se met à jour automatiquement selon vos retenues.
+            </div>
+            <p className="mt-2 text-xs text-slate-500">PDF disponible en bas après vérification des montants.</p>
           </div>
           <Button type="button" className="min-h-11 w-full shrink-0 sm:w-auto" onClick={form.handleSubmit(onSave)} disabled={saving}>
             {saving ? "Sauvegarde…" : "Sauvegarder"}
@@ -415,15 +467,25 @@ export default function PayslipEditor() {
               <Input label="Forme juridique" {...form.register("employerLegalForm")} />
               <Input label="RIB" {...form.register("employerRib")} />
             </div>
-            <div className="mt-4 grid gap-4 md:grid-cols-3">
-              <Input label="NCC" {...form.register("employerNcc")} />
+            <p className="mt-3 text-xs leading-relaxed text-slate-600">
+              RCCM → DFE → <strong>NCC / IFU</strong> : le numéro fiscal est attribué après l’immatriculation fiscale (la DFE précède
+              le NCC).
+            </p>
+            <div className="mt-3 grid gap-4 md:grid-cols-2">
               <Input label="RCCM" {...form.register("employerRccm")} />
               <Input label="DFE" {...form.register("employerDfe")} />
+            </div>
+            <div className="mt-3">
+              <Input label="NCC / IFU (n° fiscal)" {...form.register("employerNcc")} />
             </div>
           </div>
 
           <div className="rounded-xl bg-surface p-5 ring-1 ring-border/70">
-            <div className="text-sm font-semibold text-text">Montants (FCFA)</div>
+            <div className="text-sm font-semibold text-text">Montants & retenues (FCFA)</div>
+            <p className="mt-1 text-xs text-slate-600">
+              Gains : salaire, primes, transport et indemnités. Retenues : la CNPS salarié est un <strong>taux</strong> appliqué
+              sur une base (ici : salaire + primes) ; saisissez aussi l’IGR et autres retenues si elles s’appliquent.
+            </p>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <Input label="Salaire de base" type="number" {...form.register("baseSalary", { valueAsNumber: true })} />
               <Input label="Primes" type="number" {...form.register("bonuses", { valueAsNumber: true })} />
@@ -433,8 +495,37 @@ export default function PayslipEditor() {
               <Input label="Autres indemnités" type="number" {...form.register("otherAllowances", { valueAsNumber: true })} />
             </div>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <Input label="CNPS / retenues sociales" type="number" {...form.register("cnpsEmployee", { valueAsNumber: true })} />
-              <Input label="Autres déductions" type="number" {...form.register("otherDeductions", { valueAsNumber: true })} />
+              <Input
+                label="Taux CNPS salarié (%)"
+                type="number"
+                step="0.1"
+                {...form.register("cnpsRatePct", { valueAsNumber: true })}
+              />
+              <Input
+                label="Montant CNPS manuel (si taux = 0)"
+                type="number"
+                {...form.register("cnpsManualFcfa", { valueAsNumber: true })}
+              />
+            </div>
+            <p className="mt-1 text-xs text-slate-500">
+              Base indicative CNPS : salaire + primes. Taux courant secteur privé souvent autour de 6,3 % — à ajuster selon votre
+              convention.
+            </p>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <Input label="IGR / impôt sur revenu retenu" type="number" {...form.register("igrRetentionFcfa", { valueAsNumber: true })} />
+              <Input
+                label="Parts (IGR / situation familiale)"
+                type="number"
+                step="0.5"
+                {...form.register("familyTaxParts", { valueAsNumber: true })}
+              />
+            </div>
+            <p className="mt-1 text-xs text-slate-500">
+              Indiquez le nombre de parts (1 ; 1,5 ; 2 ; 2,5 ; 3…) pour la traçabilité — le calcul détaillé de l’IGR reste à saisir
+              en montant.
+            </p>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <Input label="Autres retenues (cotisations, avances…)" type="number" {...form.register("otherDeductions", { valueAsNumber: true })} />
             </div>
             <div className="mt-5 rounded-xl bg-primary/10 px-4 py-4 text-sm ring-1 ring-primary/20">
               <span className="text-slate-700">Net à payer : </span>

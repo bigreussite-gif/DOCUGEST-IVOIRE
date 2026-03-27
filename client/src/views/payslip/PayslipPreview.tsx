@@ -21,7 +21,11 @@ export type PayslipPreviewData = {
   transportAllowance: number;
   otherAllowances: number;
   bonuses: number;
+  /** Montant CNPS salarié (calculé ou manuel). */
   cnpsEmployee: number;
+  cnpsRatePct?: number;
+  igrRetentionFcfa?: number;
+  familyTaxParts?: number;
   otherDeductions: number;
   netPay: number;
   notes: string;
@@ -37,7 +41,8 @@ export default function PayslipPreview({ data }: { data: PayslipPreviewData }) {
   const accent = data.accentHex && data.accentHex.trim() !== "" ? data.accentHex : BLUE_LIGHT;
   const gross =
     data.baseSalary + data.transportAllowance + data.otherAllowances + data.bonuses;
-  const totalDed = data.cnpsEmployee + data.otherDeductions;
+  const igr = Number(data.igrRetentionFcfa ?? 0);
+  const totalDed = data.cnpsEmployee + igr + data.otherDeductions;
 
   return (
     <div className="bg-slate-100/80 p-2 print:bg-white print:p-0">
@@ -94,7 +99,7 @@ export default function PayslipPreview({ data }: { data: PayslipPreviewData }) {
         <div className="mt-3 text-center text-[9px] text-slate-600">
           {data.employerLegalForm ? <span>Société · {data.employerLegalForm}</span> : null}
           {data.employerNcc ? (
-            <span className={data.employerLegalForm ? " ml-2" : ""}>N° NCC / IFU : {data.employerNcc}</span>
+            <span className={data.employerLegalForm ? " ml-2" : ""}>NCC / IFU : {data.employerNcc}</span>
           ) : null}
         </div>
 
@@ -113,9 +118,15 @@ export default function PayslipPreview({ data }: { data: PayslipPreviewData }) {
                 <span className="text-slate-500">Emploi</span>
                 <span className="text-right text-slate-800">{data.employeeRole || "—"}</span>
               </div>
-              <div className="flex justify-between gap-2">
+              <div className="flex justify-between gap-2 border-b border-slate-100 pb-2">
                 <span className="text-slate-500">Période</span>
                 <span className="font-medium text-slate-800">{data.periodLabel || "—"}</span>
+              </div>
+              <div className="flex justify-between gap-2">
+                <span className="text-slate-500">Parts (IGR)</span>
+                <span className="font-medium text-slate-800">
+                  {typeof data.familyTaxParts === "number" ? String(data.familyTaxParts).replace(".", ",") : "—"}
+                </span>
               </div>
             </div>
           </div>
@@ -162,11 +173,36 @@ export default function PayslipPreview({ data }: { data: PayslipPreviewData }) {
                 </td>
               </tr>
               <tr className="bg-rose-50/60">
-                <td className="border-b border-slate-200 px-2 py-2 font-medium text-rose-900">Retenues (CNPS, autres)</td>
+                <td className="border-b border-slate-200 px-2 py-2 text-rose-900">
+                  <div className="font-medium">CNPS salarié</div>
+                  {typeof data.cnpsRatePct === "number" && data.cnpsRatePct > 0 ? (
+                    <div className="text-[8.5px] font-normal text-rose-800/90">
+                      Taux {String(data.cnpsRatePct).replace(".", ",")} % (base indicative salaire + primes)
+                    </div>
+                  ) : (
+                    <div className="text-[8.5px] font-normal text-rose-800/90">Montant saisi manuellement</div>
+                  )}
+                </td>
                 <td className="border-b border-slate-200 px-2 py-2 text-right font-semibold tabular-nums text-rose-800">
-                  − {formatFCFA(totalDed)}
+                  − {formatFCFA(data.cnpsEmployee)}
                 </td>
               </tr>
+              {igr > 0 ? (
+                <tr className="bg-rose-50/40">
+                  <td className="border-b border-slate-200 px-2 py-2 font-medium text-rose-900">IGR / impôt sur le revenu</td>
+                  <td className="border-b border-slate-200 px-2 py-2 text-right font-semibold tabular-nums text-rose-800">
+                    − {formatFCFA(igr)}
+                  </td>
+                </tr>
+              ) : null}
+              {data.otherDeductions > 0 ? (
+                <tr className="bg-rose-50/40">
+                  <td className="border-b border-slate-200 px-2 py-2 font-medium text-rose-900">Autres retenues</td>
+                  <td className="border-b border-slate-200 px-2 py-2 text-right font-semibold tabular-nums text-rose-800">
+                    − {formatFCFA(data.otherDeductions)}
+                  </td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
         </div>
@@ -213,7 +249,7 @@ export default function PayslipPreview({ data }: { data: PayslipPreviewData }) {
             {[data.employerHeadOffice || data.employerAddress, data.employerRib].filter(Boolean).join(" · ")}
           </div>
           <div className="mt-1">
-            {[data.employerNcc ? `NCC: ${data.employerNcc}` : "", data.employerRccm ? `RCCM: ${data.employerRccm}` : "", data.employerDfe ? `DFE: ${data.employerDfe}` : ""]
+            {[data.employerRccm ? `RCCM: ${data.employerRccm}` : "", data.employerDfe ? `DFE: ${data.employerDfe}` : "", data.employerNcc ? `NCC/IFU: ${data.employerNcc}` : ""]
               .filter(Boolean)
               .join(" · ")}
           </div>

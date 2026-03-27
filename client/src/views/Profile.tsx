@@ -4,6 +4,7 @@ import { apiFetch } from "../lib/api";
 import { roleLabelFr } from "../lib/roles";
 import { InlineAdStrip } from "../components/promo/InlineAdStrip";
 import { SorobossFooter } from "../components/promo/SorobossFooter";
+import { TrustModelBanner } from "../components/trust/TrustModelBanner";
 import { Button } from "../components/ui/Button";
 import { FRANCOPHONE_AFRICA_COUNTRIES } from "../lib/francophonePolicy";
 
@@ -96,8 +97,13 @@ export default function Profile() {
 
   return (
     <div className="p-4 sm:p-6">
-      <div className="mb-4">
-        <InlineAdStrip variant="compact" />
+      <div className="mb-4 space-y-3">
+        <TrustModelBanner variant="compact" />
+        <InlineAdStrip
+          variant="compact"
+          heading="Soutien au service gratuit"
+          subheading="Les annonces ci-dessous financent l’hébergement et les mises à jour."
+        />
       </div>
 
       <div className="rounded-2xl bg-bg p-6 shadow-soft ring-1 ring-border/70">
