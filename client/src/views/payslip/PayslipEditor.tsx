@@ -348,7 +348,7 @@ export default function PayslipEditor() {
   }
 
   return (
-    <div className="p-4 sm:p-6">
+    <div className="min-w-0 px-3 py-4 sm:p-6">
       <div className="mb-4 space-y-3">
         <TrustModelBanner variant="compact" />
         <InlineAdStrip
@@ -373,14 +373,17 @@ export default function PayslipEditor() {
         </div>
       </div>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+      <div className="mt-6 grid min-w-0 grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <form
-          className="order-1 space-y-6 rounded-2xl bg-bg p-5 text-[13px] shadow-soft ring-1 ring-border/70"
+          className="order-1 min-w-0 space-y-6 rounded-2xl bg-bg p-4 text-[13px] shadow-soft ring-1 ring-border/70 sm:p-5"
           onSubmit={(e) => e.preventDefault()}
         >
           <div className="rounded-xl border border-teal-200/80 bg-teal-50/60 px-4 py-3 ring-1 ring-teal-100">
             <p className="text-xs font-semibold uppercase tracking-wide text-teal-900">Étape 1 — Formulaire</p>
-            <p className="mt-1 text-sm text-slate-700">Saisissez les informations employeur et salarié ; l’aperçu se met à jour à droite.</p>
+            <p className="mt-1 text-sm text-slate-700">
+              Saisissez les informations employeur et salarié ; l’aperçu se met à jour en dessous (mobile) ou à droite (grand
+              écran).
+            </p>
           </div>
           <div className="rounded-xl bg-surface p-5 ring-1 ring-border/70">
             <div className="text-sm font-semibold text-text">Identité employeur</div>
@@ -468,8 +471,8 @@ export default function PayslipEditor() {
               <Input label="RIB" {...form.register("employerRib")} />
             </div>
             <p className="mt-3 text-xs leading-relaxed text-slate-600">
-              RCCM → DFE → <strong>NCC / IFU</strong> : le numéro fiscal est attribué après l’immatriculation fiscale (la DFE précède
-              le NCC).
+              Même logique que sur la facture : sur le <strong>PDF</strong>, si le <strong>NCC / IFU</strong> est renseigné, la{" "}
+              <strong>DFE</strong> n’est pas affichée (évite la redondance).
             </p>
             <div className="mt-3 grid gap-4 md:grid-cols-2">
               <Input label="RCCM" {...form.register("employerRccm")} />
@@ -548,10 +551,13 @@ export default function PayslipEditor() {
           </div>
         </form>
 
-        <div className="order-2 rounded-2xl bg-bg p-5 shadow-soft ring-1 ring-border/70">
-          <div className="sticky top-4">
+        <div className="relative order-2 min-w-0 rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70 sm:p-5">
+          <div className="xl:sticky xl:top-4">
             <div className="mb-3 text-xs font-semibold text-text">Aperçu en temps réel</div>
-            <div ref={previewRef} className="max-h-[78vh] overflow-auto rounded-xl bg-slate-100/80 p-2 ring-1 ring-border/50">
+            <div
+              ref={previewRef}
+              className="max-h-[min(70vh,900px)] overflow-x-auto overflow-y-auto rounded-xl bg-slate-100/80 p-2 ring-1 ring-border/50 xl:max-h-[78vh]"
+            >
               <PayslipPreview data={previewPayload} />
             </div>
             <div className="pointer-events-none absolute -left-[99999px] top-0 opacity-0">

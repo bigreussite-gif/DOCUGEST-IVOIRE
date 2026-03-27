@@ -96,7 +96,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="p-4 sm:p-6">
+    <div className="min-w-0 px-3 py-4 sm:p-6">
       <div className="mb-4 space-y-3">
         <TrustModelBanner variant="compact" />
         <InlineAdStrip

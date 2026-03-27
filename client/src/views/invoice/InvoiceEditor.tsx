@@ -508,7 +508,7 @@ export default function InvoiceEditor() {
   };
 
   return (
-    <div className="p-4 sm:p-6 print:p-2">
+    <div className="min-w-0 px-3 py-4 print:p-2 sm:p-6">
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 print:block">
         <div className="rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70 sm:p-6 print:hidden">
           <form className="text-[13px] sm:text-[14px]" onSubmit={(e) => e.preventDefault()}>
@@ -698,9 +698,9 @@ export default function InvoiceEditor() {
                   <Input label="RIB / Compte bancaire" {...form.register("senderRib")} />
                 </div>
                 <p className="mt-3 text-xs leading-relaxed text-slate-600">
-                  Ordre usuel en Côte d’Ivoire : <strong>RCCM</strong> (immatriculation au registre du commerce),{" "}
-                  <strong>DFE</strong> (déclaration fiscale d’existence), puis le <strong>NCC / IFU</strong> : le numéro
-                  fiscal est attribué après l’immatriculation fiscale (la DFE précède la délivrance du NCC).
+                  Saisissez le <strong>RCCM</strong>, puis la <strong>DFE</strong> et/ou le <strong>NCC / IFU</strong> selon
+                  votre situation. <strong>Sur le PDF</strong> : si le NCC/IFU est renseigné, la DFE n’apparaît pas (évite la
+                  redondance) ; sinon seule la DFE peut s’afficher.
                 </p>
                 <div className="mt-3 grid gap-4 md:grid-cols-2">
                   <Input label="RCCM" {...form.register("senderRccm")} />
@@ -709,7 +709,7 @@ export default function InvoiceEditor() {
                 <div className="mt-3">
                   <Input label="NCC / IFU (n° fiscal)" {...form.register("senderNcc")} />
                   <p className="mt-1.5 text-xs text-slate-500">
-                    Identifiant fiscal une fois l’entreprise enregistrée auprès de la DGI — distinct d’une « formule » de TVA.
+                    Une fois le NCC/IFU renseigné, la DFE ne sera plus imprimée sur le document.
                   </p>
                 </div>
               </div>
@@ -953,7 +953,10 @@ export default function InvoiceEditor() {
               </div>
             </div>
 
-            <div ref={previewWrapRef} className="mt-4 max-h-[min(85vh,1200px)] overflow-auto rounded-xl bg-slate-100/80 p-3 ring-1 ring-border/50">
+            <div
+              ref={previewWrapRef}
+              className="mt-4 max-h-[min(85vh,1200px)] overflow-x-auto overflow-y-auto rounded-xl bg-slate-100/80 p-2 ring-1 ring-border/50 sm:p-3"
+            >
               <InvoicePreview
                 themeColor={themeColor}
                 customAccentHex={accentForPreview}

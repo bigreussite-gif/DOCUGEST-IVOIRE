@@ -1,5 +1,6 @@
 import { formatDateCI, formatFCFA, amountToWordsFCFA } from "../../utils/formatters";
 import { computeInvoiceTotals } from "../../utils/calculations";
+import { fiscalMentionSegments } from "../../utils/fiscalMentions";
 
 type Line = {
   description: string;
@@ -70,6 +71,7 @@ export default function InvoicePreview({ docTypeLabel, themeColor, customAccentH
     globalDiscountPct: data.globalDiscountPct,
     vatRatePct: data.vatRatePct
   });
+  const fiscalFooter = fiscalMentionSegments(data.sender.rccm, data.sender.dfe, data.sender.ncc);
 
   const accentTeal = customAccentHex && customAccentHex.trim() !== "" ? customAccentHex : themeBar(themeColor);
   const navyTitle = NAVY;
@@ -240,11 +242,7 @@ export default function InvoicePreview({ docTypeLabel, themeColor, customAccentH
           <div className="mt-1">
             {[data.sender.headOffice || data.sender.address, data.sender.legalForm, data.sender.rib].filter(Boolean).join(" · ")}
           </div>
-          <div className="mt-1">
-            {[data.sender.rccm ? `RCCM: ${data.sender.rccm}` : "", data.sender.dfe ? `DFE: ${data.sender.dfe}` : "", data.sender.ncc ? `NCC/IFU: ${data.sender.ncc}` : ""]
-              .filter(Boolean)
-              .join(" · ")}
-          </div>
+          {fiscalFooter.length > 0 ? <div className="mt-1">{fiscalFooter.join(" · ")}</div> : null}
           <div className="mt-2 text-slate-400">Document généré avec DocuGest Ivoire</div>
         </footer>
       </div>

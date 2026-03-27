@@ -95,7 +95,7 @@ function DashboardHome() {
   const firstName = auth.user?.full_name?.split(" ")[0] ?? "—";
 
   return (
-    <div className="p-4 sm:p-6">
+      <div className="min-w-0 px-3 py-4 sm:p-6">
       <div className="rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70 sm:p-5">
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
@@ -191,21 +191,28 @@ function DashboardHome() {
                     {new Date(d.created_at).toLocaleString("fr-FR")}
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-semibold text-text">{formatFCFA(Number(d.total_amount))}</span>
-                  <Link to={openDoc(d)}>
-                    <Button variant="secondary" className="h-10 text-sm">
-                      Modifier
+                <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+                  <span className="text-sm font-semibold text-text sm:mr-1">{formatFCFA(Number(d.total_amount))}</span>
+                  <div className="flex flex-wrap gap-2">
+                    <Link to={openDoc(d)} className="min-w-0">
+                      <Button variant="secondary" className="h-10 w-full min-w-[7rem] text-sm sm:w-auto">
+                        Modifier
+                      </Button>
+                    </Link>
+                    <Link to={`${openDoc(d)}?action=print`} className="min-w-0">
+                      <Button variant="ghost" className="h-10 w-full min-w-[7rem] text-sm sm:w-auto">
+                        Imprimer
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="danger"
+                      className="h-10 w-full min-w-[7rem] text-sm sm:w-auto"
+                      type="button"
+                      onClick={() => removeDoc(d.id)}
+                    >
+                      Supprimer
                     </Button>
-                  </Link>
-                  <Link to={`${openDoc(d)}?action=print`}>
-                    <Button variant="ghost" className="h-10 text-sm">
-                      Imprimer
-                    </Button>
-                  </Link>
-                  <Button variant="danger" className="h-10 text-sm" type="button" onClick={() => removeDoc(d.id)}>
-                    Supprimer
-                  </Button>
+                  </div>
                 </div>
               </li>
             ))}

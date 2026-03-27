@@ -1,4 +1,5 @@
 import { formatDateCI, formatFCFA } from "../../utils/formatters";
+import { fiscalMentionSegments } from "../../utils/fiscalMentions";
 
 export type PayslipPreviewData = {
   employerName: string;
@@ -43,6 +44,7 @@ export default function PayslipPreview({ data }: { data: PayslipPreviewData }) {
     data.baseSalary + data.transportAllowance + data.otherAllowances + data.bonuses;
   const igr = Number(data.igrRetentionFcfa ?? 0);
   const totalDed = data.cnpsEmployee + igr + data.otherDeductions;
+  const fiscalLine = fiscalMentionSegments(data.employerRccm, data.employerDfe, data.employerNcc);
 
   return (
     <div className="bg-slate-100/80 p-2 print:bg-white print:p-0">
@@ -96,11 +98,9 @@ export default function PayslipPreview({ data }: { data: PayslipPreviewData }) {
           </div>
         </div>
 
-        <div className="mt-3 text-center text-[9px] text-slate-600">
-          {data.employerLegalForm ? <span>Société · {data.employerLegalForm}</span> : null}
-          {data.employerNcc ? (
-            <span className={data.employerLegalForm ? " ml-2" : ""}>NCC / IFU : {data.employerNcc}</span>
-          ) : null}
+        <div className="mt-3 space-y-1 text-center text-[9px] leading-snug text-slate-600">
+          {data.employerLegalForm ? <div>Société · {data.employerLegalForm}</div> : null}
+          {fiscalLine.length > 0 ? <div className="font-medium text-slate-700">{fiscalLine.join(" · ")}</div> : null}
         </div>
 
         {/* Blocs salarié + période */}
@@ -248,11 +248,7 @@ export default function PayslipPreview({ data }: { data: PayslipPreviewData }) {
           <div className="mt-1">
             {[data.employerHeadOffice || data.employerAddress, data.employerRib].filter(Boolean).join(" · ")}
           </div>
-          <div className="mt-1">
-            {[data.employerRccm ? `RCCM: ${data.employerRccm}` : "", data.employerDfe ? `DFE: ${data.employerDfe}` : "", data.employerNcc ? `NCC/IFU: ${data.employerNcc}` : ""]
-              .filter(Boolean)
-              .join(" · ")}
-          </div>
+          {fiscalLine.length > 0 ? <div className="mt-1">{fiscalLine.join(" · ")}</div> : null}
           <div className="mt-3 text-slate-400">Document généré avec DocuGest Ivoire</div>
         </footer>
       </div>

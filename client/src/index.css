@@ -41,10 +41,15 @@
   box-sizing: border-box;
 }
 
+html {
+  overflow-x: clip;
+}
+
 body {
   margin: 0;
   background: #ffffff;
   color: #0f172a;
+  overflow-x: clip;
 }
 
 /* Force un rendu clair et lisible pour tous les formulaires. */
