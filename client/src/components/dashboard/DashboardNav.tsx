@@ -32,7 +32,7 @@ export function DashboardNav({ orientation = "horizontal", onNavigate, className
 
   const wrap =
     orientation === "horizontal"
-      ? "flex flex-wrap items-center gap-1 sm:gap-2"
+      ? "flex flex-wrap items-center gap-1 sm:gap-2 xl:justify-center"
       : "flex flex-col gap-1";
 
   const itemClass = (on: boolean) =>
