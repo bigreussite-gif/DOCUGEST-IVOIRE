@@ -1,5 +1,19 @@
 import { config } from "../config";
 
+/**
+ * Les routes `/api/auth/*` sont servies par les Route Handlers Next (JWT signé côté Next).
+ * Si `NEXT_PUBLIC_API_BASE_URL` pointe vers un autre hôte (ex. API Express locale), il ne faut
+ * pas y envoyer le Bearer : le jeton serait rejeté et la session « coincerait » après login.
+ */
+function resolveApiUrl(path: string): string {
+  const base = config.apiBaseUrl;
+  if (path.startsWith("/api/auth/")) {
+    return path;
+  }
+  if (!base) return path;
+  return `${base}${path}`;
+}
+
 export type ApiError = {
   message: string;
   details?: unknown;
@@ -20,7 +34,7 @@ export async function networkFetch<T>(path: string, init?: RequestInit & { json?
   headers.set("Content-Type", "application/json");
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const res = await fetch(`${config.apiBaseUrl}${path}`, {
+  const res = await fetch(resolveApiUrl(path), {
     ...init,
     headers,
     credentials: "include",

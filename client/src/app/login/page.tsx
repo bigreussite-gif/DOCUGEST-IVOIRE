@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { InlineAdStrip } from "@/components/promo/InlineAdStrip";
 import { SorobossFooter } from "@/components/promo/SorobossFooter";
+import { useAuthStore, type AuthUser } from "@/store/authStore";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,18 +26,30 @@ export default function LoginPage() {
         body: JSON.stringify({ email: email.trim(), password, rememberMe: true })
       });
 
-      const data = (await res.json().catch(() => ({}))) as { message?: string; token?: string; user?: unknown };
+      const data = (await res.json().catch(() => ({}))) as {
+        message?: string;
+        token?: string;
+        user?: AuthUser;
+      };
       if (!res.ok) {
         setError(typeof data.message === "string" ? data.message : "Connexion impossible");
         return;
       }
 
-      if (data.token && typeof window !== "undefined") {
-        localStorage.setItem("docugest_token", data.token);
-        localStorage.setItem("docugest_user_cache", JSON.stringify(data.user ?? {}));
+      if (!data.token) {
+        setError("Réponse serveur invalide (pas de session). Réessayez.");
+        return;
       }
 
-      router.push("/dashboard");
+      if (typeof window !== "undefined") {
+        localStorage.setItem("docugest_token", data.token);
+        localStorage.setItem("docugest_user_cache", JSON.stringify(data.user ?? {}));
+        if (data.user && typeof data.user === "object" && "id" in data.user) {
+          useAuthStore.setState({ user: data.user, loading: false, error: null });
+        }
+      }
+
+      router.replace("/dashboard");
     } catch {
       setError("Erreur réseau. Réessayez.");
     } finally {
