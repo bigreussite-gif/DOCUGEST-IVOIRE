@@ -81,8 +81,34 @@ export async function POST(req: Request) {
     }
     console.log("[api/auth/login] succès", userRow.id);
     return NextResponse.json({ token, user: me });
-  } catch (e) {
+  } catch (e: unknown) {
     console.error("[api/auth/login]", e);
-    return NextResponse.json({ message: "Service d'authentification temporairement indisponible" }, { status: 503 });
+    const msg = e instanceof Error ? e.message : String(e);
+    const code = (e as { code?: string }).code;
+    if (msg.includes("JWT_SECRET") || msg.toLowerCase().includes("jwt")) {
+      return NextResponse.json(
+        { message: "Configuration serveur : JWT_SECRET manquant ou invalide." },
+        { status: 503 }
+      );
+    }
+    if (
+      msg.includes("DATABASE_URL") ||
+      msg.includes("ECONNREFUSED") ||
+      msg.includes("connect") ||
+      code === "ECONNREFUSED" ||
+      code === "57P01"
+    ) {
+      return NextResponse.json(
+        { message: "Base de données temporairement injoignable. Réessayez dans quelques instants." },
+        { status: 503 }
+      );
+    }
+    return NextResponse.json(
+      {
+        message:
+          "Connexion impossible pour le moment. Réessayez, ou utilisez « Réinitialiser la session » sur le tableau de bord puis reconnectez-vous."
+      },
+      { status: 503 }
+    );
   }
 }

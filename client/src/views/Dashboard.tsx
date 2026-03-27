@@ -118,7 +118,7 @@ function DashboardHome() {
         <InlineAdStrip />
       </div>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <Link to="/dashboard/invoice/new?type=invoice" className="block">
           <div className="rounded-2xl bg-primary/10 p-5 ring-1 ring-primary/30 transition hover:bg-primary/15">
             <div className="text-sm font-semibold text-text">Nouvelle facture</div>
@@ -129,6 +129,12 @@ function DashboardHome() {
           <div className="rounded-2xl bg-secondary/10 p-5 ring-1 ring-secondary/30 transition hover:bg-secondary/15">
             <div className="text-sm font-semibold text-text">Proforma / devis</div>
             <div className="mt-2 text-sm leading-relaxed text-slate-700">Même éditeur, type adapté</div>
+          </div>
+        </Link>
+        <Link to="/dashboard/invoice/express" className="block">
+          <div className="rounded-2xl border border-emerald-300/80 bg-gradient-to-br from-emerald-50 to-teal-50/90 p-5 ring-1 ring-emerald-200/80 transition hover:from-emerald-100/90 hover:to-teal-50">
+            <div className="text-sm font-semibold text-emerald-950">Facture e-commerce (rapide)</div>
+            <div className="mt-2 text-sm leading-relaxed text-emerald-900/90">Panier, livraison, plusieurs lignes TTC</div>
           </div>
         </Link>
         <Link to="/dashboard/payslip/new" className="block">
@@ -157,63 +163,63 @@ function DashboardHome() {
             Aucun document pour l’instant. Lance une facture ou un bulletin pour remplir ton tableau.
           </div>
         ) : (
-          <div className="mt-4">
-            <ul className="divide-y divide-border/60">
-              {docs.map((d) => (
-                <li key={d.id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <Link to={openDoc(d)} className="font-medium text-primary hover:underline">
-                      {d.doc_number}
-                    </Link>
-                    <span className="ml-2 rounded-full bg-surface px-2 py-0.5 text-xs text-slate-600">
-                      {typeLabel(d.type)}
-                    </span>
-                    {d._offlinePending ? (
-                      <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
-                        Synchro en attente
-                      </span>
-                    ) : null}
-                    <div className="text-base text-slate-700">{d.client_name}</div>
-                    <div className="text-sm text-slate-500">
-                      {new Date(d.created_at).toLocaleString("fr-FR")}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-semibold text-text">{formatFCFA(Number(d.total_amount))}</span>
-                    <Link to={openDoc(d)}>
-                      <Button variant="secondary" className="h-10 text-sm">
-                        Modifier
-                      </Button>
-                    </Link>
-                    <Link to={`${openDoc(d)}?action=print`}>
-                      <Button variant="ghost" className="h-10 text-sm">
-                        Imprimer
-                      </Button>
-                    </Link>
-                    <Button variant="danger" className="h-10 text-sm" type="button" onClick={() => removeDoc(d.id)}>
-                      Supprimer
-                    </Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <ul className="mt-4 divide-y divide-border/60">
+            {docs.map((d) => (
+              <li key={d.id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <div className="text-sm font-semibold text-emerald-900">Facture rapide e-commerce</div>
-                  <div className="text-xs text-emerald-800">
-                    Pour les ventes en ligne: ouvrez un modele simplifie puis editez en 1 minute.
+                  <Link to={openDoc(d)} className="font-medium text-primary hover:underline">
+                    {d.doc_number}
+                  </Link>
+                  <span className="ml-2 rounded-full bg-surface px-2 py-0.5 text-xs text-slate-600">
+                    {typeLabel(d.type)}
+                  </span>
+                  {d._offlinePending ? (
+                    <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
+                      Synchro en attente
+                    </span>
+                  ) : null}
+                  <div className="text-base text-slate-700">{d.client_name}</div>
+                  <div className="text-sm text-slate-500">
+                    {new Date(d.created_at).toLocaleString("fr-FR")}
                   </div>
                 </div>
-                <Link to="/dashboard/invoice/express">
-                  <Button variant="primary" className="h-10 text-sm">
-                    Nouvelle facture rapide
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-semibold text-text">{formatFCFA(Number(d.total_amount))}</span>
+                  <Link to={openDoc(d)}>
+                    <Button variant="secondary" className="h-10 text-sm">
+                      Modifier
+                    </Button>
+                  </Link>
+                  <Link to={`${openDoc(d)}?action=print`}>
+                    <Button variant="ghost" className="h-10 text-sm">
+                      Imprimer
+                    </Button>
+                  </Link>
+                  <Button variant="danger" className="h-10 text-sm" type="button" onClick={() => removeDoc(d.id)}>
+                    Supprimer
                   </Button>
-                </Link>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+        {!loading ? (
+          <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="text-sm font-semibold text-emerald-900">Facture rapide e-commerce</div>
+                <div className="text-xs text-emerald-800">
+                  Ventes en ligne : plusieurs lignes TTC, frais de livraison, PDF en un clic.
+                </div>
               </div>
+              <Link to="/dashboard/invoice/express">
+                <Button variant="primary" className="h-10 text-sm">
+                  Ouvrir la facture rapide
+                </Button>
+              </Link>
             </div>
           </div>
-        )}
+        ) : null}
       </div>
 
       <div className="mt-8">
@@ -253,6 +259,7 @@ function UserMenu({ compact }: { compact?: boolean }) {
 export default function Dashboard() {
   const auth = useAuthStore();
   const loadMe = useAuthStore((s) => s.loadMe);
+  const clearLocalSessionAndRelogin = useAuthStore((s) => s.clearLocalSessionAndRelogin);
   const location = useLocation();
   const { mode, setMode } = useNavLayout();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -306,17 +313,29 @@ export default function Dashboard() {
       {auth.error ? (
         <div
           role="status"
-          className="flex flex-col items-center justify-center gap-2 border-b border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-950 sm:flex-row sm:gap-4"
+          className="flex flex-col items-center justify-center gap-2 border-b border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-950 sm:flex-row sm:flex-wrap sm:gap-3"
         >
-          <span className="text-center">{auth.error}</span>
-          <button
-            type="button"
-            disabled={auth.loading}
-            onClick={() => void loadMe()}
-            className="shrink-0 rounded-lg border border-amber-400 bg-white px-3 py-1.5 text-sm font-medium text-amber-950 shadow-sm transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {auth.loading ? "Vérification…" : "Réessayer"}
-          </button>
+          <span className="max-w-2xl text-center">{auth.error}</span>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <button
+              type="button"
+              disabled={auth.loading}
+              onClick={() => void loadMe()}
+              className="shrink-0 rounded-lg border border-amber-400 bg-white px-3 py-1.5 text-sm font-medium text-amber-950 shadow-sm transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {auth.loading ? "Vérification…" : "Réessayer"}
+            </button>
+            <button
+              type="button"
+              onClick={() => clearLocalSessionAndRelogin()}
+              className="shrink-0 rounded-lg border border-slate-400 bg-white px-3 py-1.5 text-sm font-medium text-slate-800 shadow-sm transition hover:bg-slate-100"
+            >
+              Réinitialiser la session
+            </button>
+          </div>
+          <p className="w-full text-center text-[11px] text-amber-900/80">
+            En cas de blocage répété, ce bouton efface le jeton et le cache local (comme une déconnexion forcée).
+          </p>
         </div>
       ) : null}
       <MonetizationTopBar />

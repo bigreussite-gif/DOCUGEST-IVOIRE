@@ -19,8 +19,12 @@ export function DashboardNav({ orientation = "horizontal", onNavigate, className
     (pathname === "/dashboard" || pathname === "/dashboard/") && hash === "#documents";
   const isTableauOnly = (pathname === "/dashboard" || pathname === "/dashboard/") && hash !== "#documents";
 
+  const isExpressEcommerce = pathname.startsWith("/dashboard/invoice/express");
   const isFacture =
-    pathname.startsWith("/dashboard/invoice") && q.get("type") !== "proforma" && q.get("type") !== "devis";
+    pathname.startsWith("/dashboard/invoice") &&
+    !isExpressEcommerce &&
+    q.get("type") !== "proforma" &&
+    q.get("type") !== "devis";
   const isProforma =
     pathname.startsWith("/dashboard/invoice") && (q.get("type") === "proforma" || q.get("type") === "devis");
   const isPayslip = pathname.startsWith("/dashboard/payslip");
@@ -49,6 +53,13 @@ export function DashboardNav({ orientation = "horizontal", onNavigate, className
         onClick={onNavigate}
       >
         Facture
+      </NavLink>
+      <NavLink
+        to="/dashboard/invoice/express"
+        className={() => itemClass(isExpressEcommerce)}
+        onClick={onNavigate}
+      >
+        E-commerce rapide
       </NavLink>
       <NavLink
         to="/dashboard/invoice/new?type=proforma"

@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { apiFetch, type ApiError } from "../lib/api";
 import { networkFetch, isNetworkFailure, getHttpStatusFromError } from "../lib/apiNetwork";
 import { flushSyncQueue } from "../lib/offline/sync";
+import { AD_SLOTS_LS_KEY } from "./adSlotsStore";
 
 const USER_CACHE_KEY = "docugest_user_cache";
 
@@ -69,6 +70,8 @@ type AuthState = {
   loadMe: () => Promise<void>;
   login: (payload: LoginPayload) => Promise<boolean>;
   logout: () => void;
+  /** Efface token / cache local (localStorage) et renvoie vers /login — utile si session corrompue. */
+  clearLocalSessionAndRelogin: () => void;
   requestPasswordReset: (payload: PasswordResetRequestPayload) => Promise<void>;
   resetPassword: (payload: PasswordResetPayload) => Promise<void>;
 };
@@ -165,6 +168,20 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
+  clearLocalSessionAndRelogin: () => {
+    if (typeof window === "undefined") return;
+    localStorage.removeItem("docugest_token");
+    localStorage.removeItem(USER_CACHE_KEY);
+    localStorage.removeItem("docugest_ad_session_id");
+    try {
+      localStorage.removeItem(AD_SLOTS_LS_KEY);
+    } catch {
+      /* ignore */
+    }
+    set({ user: null, loading: false, error: null });
+    window.location.assign("/login");
+  },
+
   requestPasswordReset: async ({ email }) => {
     set({ loading: true, error: null });
     try {
@@ -191,4 +208,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   }
 }));
+
+/** Utilisateur affiché dans le store, sinon cache disque (évite échec silencieux si le store n’est pas encore hydraté). */
+export function getEffectiveAuthUser(): AuthUser | null {
+  const fromStore = useAuthStore.getState().user;
+  if (fromStore) return fromStore;
+  return readUserCache();
+}
 

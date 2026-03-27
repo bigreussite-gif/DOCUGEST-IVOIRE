@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuthStore } from "../../store/authStore";
-import { apiFetch } from "../../lib/api";
+import { getEffectiveAuthUser, useAuthStore } from "../../store/authStore";
+import { apiFetch, type ApiError } from "../../lib/api";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { computeInvoiceTotals } from "../../utils/calculations";
@@ -136,7 +136,11 @@ export default function QuickInvoiceEditor() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!auth.user) return;
+    const sessionUser = getEffectiveAuthUser();
+    if (!sessionUser) {
+      alert("Session indisponible. Rechargez la page ou reconnectez-vous.");
+      return;
+    }
     if (!clientName.trim()) {
       alert("Indiquez le nom du client.");
       return;
@@ -158,18 +162,18 @@ export default function QuickInvoiceEditor() {
 
     const doc_data = {
       sender: {
-        companyName: auth.user.company_name ?? "",
-        address: auth.user.company_address ?? "",
-        phone: auth.user.phone ?? "",
-        email: auth.user.email ?? "",
-        headOffice: auth.user.company_address ?? "",
+        companyName: sessionUser.company_name ?? "",
+        address: sessionUser.company_address ?? "",
+        phone: sessionUser.phone ?? "",
+        email: sessionUser.email ?? "",
+        headOffice: sessionUser.company_address ?? "",
         legalForm: countryPolicy.defaultLegalForm,
         rib: "",
-        ncc: auth.user.company_ncc ?? "",
-        rccm: auth.user.company_rccm ?? "",
-        dfe: auth.user.company_dfe ?? "",
+        ncc: sessionUser.company_ncc ?? "",
+        rccm: sessionUser.company_rccm ?? "",
+        dfe: sessionUser.company_dfe ?? "",
         website: "",
-        whatsapp: auth.user.whatsapp ?? ""
+        whatsapp: sessionUser.whatsapp ?? ""
       },
       client: {
         name: clientName.trim(),
@@ -189,8 +193,8 @@ export default function QuickInvoiceEditor() {
       conditions: buildFiscalPaymentTerms(countryPolicy, vatRatePct),
       footerNote: buildAdministrativeClause(countryPolicy, "invoice", {
         legalForm: countryPolicy.defaultLegalForm,
-        hasRccm: Boolean(auth.user.company_rccm),
-        hasNcc: Boolean(auth.user.company_ncc),
+        hasRccm: Boolean(sessionUser.company_rccm),
+        hasNcc: Boolean(sessionUser.company_ncc),
         hasRib: false
       })
     };
@@ -212,8 +216,12 @@ export default function QuickInvoiceEditor() {
         json: payload
       });
       navigate(`/dashboard/invoice/${created.id}?action=print`, { replace: true });
-    } catch {
-      alert("Impossible d’enregistrer la facture express.");
+    } catch (err) {
+      const msg =
+        err && typeof err === "object" && "message" in err
+          ? String((err as ApiError).message)
+          : "Erreur réseau ou serveur.";
+      alert(`Impossible d’enregistrer la facture express : ${msg}`);
     } finally {
       setSaving(false);
     }
