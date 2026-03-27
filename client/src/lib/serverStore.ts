@@ -2,7 +2,7 @@
  * Accès données Postgres (Insforge) pour les Route Handlers Next.js.
  * Logique alignée sur server/lib/pgStore.js (sans Express).
  */
-import { getPool, resetPool } from "@/lib/db";
+import { getPool, isTransientPgError, resetPool } from "@/lib/db";
 import type { PublicUser, UserRow } from "@/models/User";
 
 function iso(d: unknown): string | null {
@@ -33,20 +33,11 @@ export function pickUser(row: UserRow | null): PublicUser | null {
   };
 }
 
-function isTransientPgConnectionError(e: unknown): boolean {
-  const msg = e instanceof Error ? e.message : String(e ?? "");
-  return (
-    msg.includes("Connection terminated unexpectedly") ||
-    msg.includes("ECONNRESET") ||
-    msg.includes("Connection ended unexpectedly")
-  );
-}
-
 async function withPgRetry<T>(fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();
   } catch (e) {
-    if (!isTransientPgConnectionError(e)) throw e;
+    if (!isTransientPgError(e)) throw e;
     resetPool();
     return fn();
   }
@@ -148,8 +139,10 @@ export async function getMe(userId: string): Promise<PublicUser | null> {
 }
 
 export async function touchLastLogin(userId: string): Promise<void> {
-  const pool = getPool();
-  await pool.query(`UPDATE public.users SET last_login = NOW() WHERE id = $1`, [userId]);
+  await withPgRetry(async () => {
+    const pool = getPool();
+    await pool.query(`UPDATE public.users SET last_login = NOW() WHERE id = $1`, [userId]);
+  });
 }
 
 export async function ensureBootstrapAdmin(userId: string): Promise<void> {
