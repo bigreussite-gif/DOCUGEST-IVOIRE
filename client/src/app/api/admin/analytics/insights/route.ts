@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { parseAnalyticsRangeFromRequest } from "@/lib/adminAnalyticsQuery";
 import { buildInsights } from "@/lib/buildInsights";
 import { requireBackoffice, requireSessionAuth } from "@/lib/serverAuth";
 import * as store from "@/lib/serverStore";
@@ -12,8 +13,11 @@ export async function GET(req: Request) {
   const denied = requireBackoffice(auth);
   if (denied) return denied;
 
+  const range = parseAnalyticsRangeFromRequest(req);
+
   try {
-    const snapshot = await store.adminAnalyticsSnapshot();
+    const base = await store.adminAnalyticsSnapshot(range);
+    const snapshot = { ...base, meta: { filtered: Boolean(range) } };
     try {
       const insights = buildInsights(snapshot);
       return NextResponse.json(insights);

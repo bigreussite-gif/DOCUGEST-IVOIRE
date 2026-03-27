@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { parseAnalyticsRangeFromRequest } from "@/lib/adminAnalyticsQuery";
 import { requireBackoffice, requireSessionAuth } from "@/lib/serverAuth";
 import * as store from "@/lib/serverStore";
 
@@ -11,9 +12,19 @@ export async function GET(req: Request) {
   const denied = requireBackoffice(auth);
   if (denied) return denied;
 
+  const url = new URL(req.url);
+  const range = parseAnalyticsRangeFromRequest(req);
+
   try {
-    const snapshot = await store.adminAnalyticsSnapshot();
-    return NextResponse.json(snapshot);
+    const snapshot = await store.adminAnalyticsSnapshot(range);
+    return NextResponse.json({
+      ...snapshot,
+      meta: {
+        filtered: Boolean(range),
+        from: range ? url.searchParams.get("from") : null,
+        to: range ? url.searchParams.get("to") : null
+      }
+    });
   } catch (e) {
     console.error(e);
     return NextResponse.json({
@@ -26,7 +37,12 @@ export async function GET(req: Request) {
       recentLogins: [],
       demographics: { gender: {}, user_typology: {} },
       adSummary: { views: 0, clicks: 0, ctrPct: 0, byZone: {} },
-      degraded: true
+      degraded: true,
+      meta: {
+        filtered: Boolean(range),
+        from: range ? url.searchParams.get("from") : null,
+        to: range ? url.searchParams.get("to") : null
+      }
     });
   }
 }

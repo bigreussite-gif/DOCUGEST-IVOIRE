@@ -670,52 +670,132 @@ export async function insertAdEvent({
   );
 }
 
-export async function adminAnalyticsSnapshot(): Promise<Record<string, unknown>> {
+/** Plage inclusive/exclusive en UTC pour filtrer les analytics admin (documents, pubs, etc.). */
+export type AdminAnalyticsRange = { fromInclusive: Date; toExclusive: Date };
+
+function fillTrendGaps(
+  rows: { d: string; c: number }[],
+  fromInclusive: Date,
+  toExclusive: Date
+): { day: string; count: number }[] {
+  const byDay = new Map(rows.map((r) => [r.d, r.c]));
+  const out: { day: string; count: number }[] = [];
+  const cur = new Date(fromInclusive.getTime());
+  cur.setUTCHours(0, 0, 0, 0);
+  const end = new Date(toExclusive.getTime());
+  end.setUTCHours(0, 0, 0, 0);
+  while (cur < end) {
+    const key = cur.toISOString().slice(0, 10);
+    out.push({ day: key, count: byDay.get(key) ?? 0 });
+    cur.setUTCDate(cur.getUTCDate() + 1);
+  }
+  return out;
+}
+
+export async function adminAnalyticsSnapshot(range?: AdminAnalyticsRange | null): Promise<Record<string, unknown>> {
   const pool = getPool();
-  const { rows: typeRows } = await pool.query(`SELECT type, COUNT(*)::int AS c FROM public.documents GROUP BY type`);
+  const useRange =
+    range != null && range.fromInclusive.getTime() < range.toExclusive.getTime();
+  const p = useRange ? [range!.fromInclusive, range!.toExclusive] : [];
+
+  const docWhere = useRange
+    ? "WHERE created_at >= $1::timestamptz AND created_at < $2::timestamptz"
+    : "";
+
+  const { rows: typeRows } = useRange
+    ? await pool.query(
+        `SELECT type, COUNT(*)::int AS c FROM public.documents ${docWhere} GROUP BY type`,
+        p
+      )
+    : await pool.query(`SELECT type, COUNT(*)::int AS c FROM public.documents GROUP BY type`);
   const documentsByType: Record<string, number> = {};
   for (const r of typeRows as { type: string; c: number }[]) {
     documentsByType[r.type] = r.c;
   }
 
-  const { rows: hourRows } = await pool.query(
-    `SELECT EXTRACT(HOUR FROM created_at)::int AS h, COUNT(*)::int AS c
-     FROM public.documents GROUP BY 1 ORDER BY 1`
-  );
+  const { rows: hourRows } = useRange
+    ? await pool.query(
+        `SELECT EXTRACT(HOUR FROM created_at)::int AS h, COUNT(*)::int AS c
+         FROM public.documents ${docWhere} GROUP BY 1 ORDER BY 1`,
+        p
+      )
+    : await pool.query(
+        `SELECT EXTRACT(HOUR FROM created_at)::int AS h, COUNT(*)::int AS c
+         FROM public.documents GROUP BY 1 ORDER BY 1`
+      );
   const documentsByHour: Record<number, number> = {};
   for (const r of hourRows as { h: number; c: number }[]) {
     documentsByHour[r.h] = r.c;
   }
 
-  const { rows: dowRows } = await pool.query(
-    `SELECT EXTRACT(DOW FROM created_at)::int AS d, COUNT(*)::int AS c
-     FROM public.documents GROUP BY 1 ORDER BY 1`
-  );
+  const { rows: dowRows } = useRange
+    ? await pool.query(
+        `SELECT EXTRACT(DOW FROM created_at)::int AS d, COUNT(*)::int AS c
+         FROM public.documents ${docWhere} GROUP BY 1 ORDER BY 1`,
+        p
+      )
+    : await pool.query(
+        `SELECT EXTRACT(DOW FROM created_at)::int AS d, COUNT(*)::int AS c
+         FROM public.documents GROUP BY 1 ORDER BY 1`
+      );
   const documentsByWeekday: Record<number, number> = {};
   for (const r of dowRows as { d: number; c: number }[]) {
     documentsByWeekday[r.d] = r.c;
   }
 
-  const { rows: uc } = await pool.query(`SELECT COUNT(*)::int AS c FROM public.users`);
+  const { rows: uc } = useRange
+    ? await pool.query(
+        `SELECT COUNT(*)::int AS c FROM public.users
+         WHERE created_at >= $1::timestamptz AND created_at < $2::timestamptz`,
+        p
+      )
+    : await pool.query(`SELECT COUNT(*)::int AS c FROM public.users`);
   const userCount = uc[0]?.c ?? 0;
 
-  const { rows: trendRows } = await pool.query(
-    `SELECT to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS d, COUNT(*)::int AS c
-     FROM public.documents
-     WHERE created_at >= NOW() - INTERVAL '14 days'
-     GROUP BY 1 ORDER BY 1`
-  );
-  const documentsTrendLast14Days = (trendRows as { d: string; c: number }[]).map((r) => ({ day: r.d, count: r.c }));
+  let documentsTrendLast14Days: { day: string; count: number }[] = [];
+  if (useRange) {
+    const { rows: trendRows } = await pool.query(
+      `SELECT to_char((created_at AT TIME ZONE 'UTC')::date, 'YYYY-MM-DD') AS d, COUNT(*)::int AS c
+       FROM public.documents
+       WHERE created_at >= $1::timestamptz AND created_at < $2::timestamptz
+       GROUP BY 1 ORDER BY 1`,
+      p
+    );
+    documentsTrendLast14Days = fillTrendGaps(
+      trendRows as { d: string; c: number }[],
+      range!.fromInclusive,
+      range!.toExclusive
+    );
+  } else {
+    const { rows: trendRows } = await pool.query(
+      `SELECT to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS d, COUNT(*)::int AS c
+       FROM public.documents
+       WHERE created_at >= NOW() - INTERVAL '14 days'
+       GROUP BY 1 ORDER BY 1`
+    );
+    documentsTrendLast14Days = (trendRows as { d: string; c: number }[]).map((r) => ({ day: r.d, count: r.c }));
+  }
 
-  const { rows: mau } = await pool.query(
-    `SELECT COUNT(DISTINCT user_id)::int AS c FROM public.documents
-     WHERE created_at > NOW() - INTERVAL '30 days'`
-  );
+  const { rows: mau } = useRange
+    ? await pool.query(
+        `SELECT COUNT(DISTINCT user_id)::int AS c FROM public.documents
+         WHERE created_at >= $1::timestamptz AND created_at < $2::timestamptz`,
+        p
+      )
+    : await pool.query(
+        `SELECT COUNT(DISTINCT user_id)::int AS c FROM public.documents
+         WHERE created_at > NOW() - INTERVAL '30 days'`
+      );
   const monthlyActiveUsers = mau[0]?.c ?? 0;
 
-  const { rows: recent } = await pool.query(
-    `SELECT id, full_name, email, last_login FROM public.users ORDER BY last_login DESC NULLS LAST LIMIT 20`
-  );
+  const { rows: recent } = useRange
+    ? await pool.query(
+        `SELECT id, full_name, email, last_login FROM public.users
+         WHERE last_login >= $1::timestamptz AND last_login < $2::timestamptz
+         ORDER BY last_login DESC NULLS LAST LIMIT 20`,
+        p
+      )
+    : await pool.query(`SELECT id, full_name, email, last_login FROM public.users ORDER BY last_login DESC NULLS LAST LIMIT 20`);
   const recentLogins = (recent as { id: string; full_name: string; email: string; last_login: unknown }[]).map(
     (r) => ({
       id: r.id,
@@ -725,27 +805,58 @@ export async function adminAnalyticsSnapshot(): Promise<Record<string, unknown>>
     })
   );
 
-  const { rows: demoRows } = await pool.query(`SELECT gender, COUNT(*)::int AS c FROM public.users GROUP BY gender`);
   const demographics: { gender: Record<string, number>; user_typology: Record<string, number> } = {
     gender: {},
     user_typology: {}
   };
-  for (const r of demoRows as { gender: string; c: number }[]) {
-    if (r.gender) demographics.gender[r.gender] = r.c;
-  }
-  const { rows: typRows } = await pool.query(
-    `SELECT user_typology, COUNT(*)::int AS c FROM public.users WHERE user_typology IS NOT NULL GROUP BY user_typology`
-  );
-  for (const r of typRows as { user_typology: string; c: number }[]) {
-    if (r.user_typology) demographics.user_typology[r.user_typology] = r.c;
+  if (useRange) {
+    const { rows: demoRows } = await pool.query(
+      `SELECT gender, COUNT(*)::int AS c FROM public.users
+       WHERE created_at >= $1::timestamptz AND created_at < $2::timestamptz
+       GROUP BY gender`,
+      p
+    );
+    for (const r of demoRows as { gender: string; c: number }[]) {
+      if (r.gender) demographics.gender[r.gender] = r.c;
+    }
+    const { rows: typRows } = await pool.query(
+      `SELECT user_typology, COUNT(*)::int AS c FROM public.users
+       WHERE user_typology IS NOT NULL
+         AND created_at >= $1::timestamptz AND created_at < $2::timestamptz
+       GROUP BY user_typology`,
+      p
+    );
+    for (const r of typRows as { user_typology: string; c: number }[]) {
+      if (r.user_typology) demographics.user_typology[r.user_typology] = r.c;
+    }
+  } else {
+    const { rows: demoRows } = await pool.query(`SELECT gender, COUNT(*)::int AS c FROM public.users GROUP BY gender`);
+    for (const r of demoRows as { gender: string; c: number }[]) {
+      if (r.gender) demographics.gender[r.gender] = r.c;
+    }
+    const { rows: typRows } = await pool.query(
+      `SELECT user_typology, COUNT(*)::int AS c FROM public.users WHERE user_typology IS NOT NULL GROUP BY user_typology`
+    );
+    for (const r of typRows as { user_typology: string; c: number }[]) {
+      if (r.user_typology) demographics.user_typology[r.user_typology] = r.c;
+    }
   }
 
-  const { rows: countryRows } = await pool.query(
-    `SELECT coalesce(nullif(trim(user_typology), ''), 'Non renseigné') AS country, COUNT(*)::int AS c
-     FROM public.users
-     WHERE last_login IS NOT NULL
-     GROUP BY 1 ORDER BY c DESC LIMIT 10`
-  );
+  const { rows: countryRows } = useRange
+    ? await pool.query(
+        `SELECT coalesce(nullif(trim(user_typology), ''), 'Non renseigné') AS country, COUNT(*)::int AS c
+         FROM public.users
+         WHERE last_login IS NOT NULL
+           AND last_login >= $1::timestamptz AND last_login < $2::timestamptz
+         GROUP BY 1 ORDER BY c DESC LIMIT 10`,
+        p
+      )
+    : await pool.query(
+        `SELECT coalesce(nullif(trim(user_typology), ''), 'Non renseigné') AS country, COUNT(*)::int AS c
+         FROM public.users
+         WHERE last_login IS NOT NULL
+         GROUP BY 1 ORDER BY c DESC LIMIT 10`
+      );
   const topCountriesByLogin = (countryRows as { country: string; c: number }[]).map((r) => ({
     country: r.country,
     count: r.c
@@ -753,20 +864,55 @@ export async function adminAnalyticsSnapshot(): Promise<Record<string, unknown>>
 
   let adSummary = { views: 0, clicks: 0, ctrPct: 0, byZone: {} as Record<string, unknown> };
   try {
-    const { rows: adViews } = await pool.query(
-      `SELECT zone, COUNT(*)::int AS c FROM public.ad_analytics_events WHERE event_type = 'view' GROUP BY zone`
-    );
-    const { rows: adClicks } = await pool.query(
-      `SELECT zone, COUNT(*)::int AS c FROM public.ad_analytics_events WHERE event_type = 'click' GROUP BY zone`
-    );
+    let adViews: { zone: string; c: number }[];
+    let adClicks: { zone: string; c: number }[];
+    if (useRange) {
+      try {
+        adViews = (
+          await pool.query(
+            `SELECT zone, COUNT(*)::int AS c FROM public.ad_analytics_events
+             WHERE event_type = 'view' AND created_at >= $1::timestamptz AND created_at < $2::timestamptz
+             GROUP BY zone`,
+            p
+          )
+        ).rows as { zone: string; c: number }[];
+        adClicks = (
+          await pool.query(
+            `SELECT zone, COUNT(*)::int AS c FROM public.ad_analytics_events
+             WHERE event_type = 'click' AND created_at >= $1::timestamptz AND created_at < $2::timestamptz
+             GROUP BY zone`,
+            p
+          )
+        ).rows as { zone: string; c: number }[];
+      } catch {
+        /* colonne created_at absente : repli sans filtre date */
+        adViews = (
+          await pool.query(
+            `SELECT zone, COUNT(*)::int AS c FROM public.ad_analytics_events WHERE event_type = 'view' GROUP BY zone`
+          )
+        ).rows as { zone: string; c: number }[];
+        adClicks = (
+          await pool.query(
+            `SELECT zone, COUNT(*)::int AS c FROM public.ad_analytics_events WHERE event_type = 'click' GROUP BY zone`
+          )
+        ).rows as { zone: string; c: number }[];
+      }
+    } else {
+      adViews = (
+        await pool.query(`SELECT zone, COUNT(*)::int AS c FROM public.ad_analytics_events WHERE event_type = 'view' GROUP BY zone`)
+      ).rows as { zone: string; c: number }[];
+      adClicks = (
+        await pool.query(`SELECT zone, COUNT(*)::int AS c FROM public.ad_analytics_events WHERE event_type = 'click' GROUP BY zone`)
+      ).rows as { zone: string; c: number }[];
+    }
     let views = 0;
     let clicks = 0;
     const byZone: Record<string, { views?: number; clicks?: number; ctrPct?: number }> = {};
-    for (const r of adViews as { zone: string; c: number }[]) {
+    for (const r of adViews) {
       views += r.c;
       byZone[r.zone] = { ...(byZone[r.zone] || {}), views: r.c };
     }
-    for (const r of adClicks as { zone: string; c: number }[]) {
+    for (const r of adClicks) {
       clicks += r.c;
       byZone[r.zone] = { ...(byZone[r.zone] || {}), clicks: r.c };
     }
@@ -785,7 +931,9 @@ export async function adminAnalyticsSnapshot(): Promise<Record<string, unknown>>
     /* table absente */
   }
 
-  const { rows: docTotal } = await pool.query(`SELECT COUNT(*)::int AS c FROM public.documents`);
+  const { rows: docTotal } = useRange
+    ? await pool.query(`SELECT COUNT(*)::int AS c FROM public.documents ${docWhere}`, p)
+    : await pool.query(`SELECT COUNT(*)::int AS c FROM public.documents`);
   const documentsTotal = docTotal[0]?.c ?? 0;
 
   return {

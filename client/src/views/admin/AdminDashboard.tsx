@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { adminFetch } from "../../lib/adminApi";
+import { rangeForPreset, type DatePreset } from "../../lib/adminAnalyticsQuery";
 
 type Overview = {
   documentsTotal: number;
@@ -14,6 +15,7 @@ type Overview = {
   adSummary: { views: number; clicks: number; ctrPct: number; byZone: Record<string, { views?: number; clicks?: number; ctrPct?: number }> };
   documentsTrendLast14Days?: { day: string; count: number }[];
   topCountriesByLogin?: { country: string; count: number }[];
+  meta?: { filtered?: boolean; from?: string | null; to?: string | null };
 };
 
 type Insights = {
@@ -25,63 +27,90 @@ type Insights = {
 
 const days = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
 
+type PeriodMode = "all" | DatePreset;
+
+function analyticsQuery(mode: PeriodMode, customFrom: string, customTo: string): string {
+  if (mode === "all") return "";
+  if (mode === "custom") {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(customFrom) || !/^\d{4}-\d{2}-\d{2}$/.test(customTo)) return "";
+    if (customFrom > customTo) return "";
+    return `?${new URLSearchParams({ from: customFrom, to: customTo }).toString()}`;
+  }
+  const { from, to } = rangeForPreset(mode);
+  return `?${new URLSearchParams({ from, to }).toString()}`;
+}
+
 export function AdminDashboard() {
+  const m = rangeForPreset("month");
+  const [periodMode, setPeriodMode] = useState<PeriodMode>("month");
+  const [customFrom, setCustomFrom] = useState(m.from);
+  const [customTo, setCustomTo] = useState(m.to);
   const [overview, setOverview] = useState<Overview | null>(null);
   const [insights, setInsights] = useState<Insights | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<string | null>(null);
 
-  useEffect(() => {
-    let c = false;
-    const load = async () => {
-      try {
-        const [overviewRes, insightsRes] = await Promise.allSettled([
-          adminFetch<Overview>("/analytics/overview"),
-          adminFetch<Insights>("/analytics/insights")
-        ]);
+  const load = useCallback(async () => {
+    const qs = analyticsQuery(periodMode, customFrom, customTo);
+    if (periodMode === "custom" && !qs) {
+      setErr("Dates personnalisées invalides (format AAAA-MM-JJ, du ≤ au).");
+      return;
+    }
+    setErr(null);
+    try {
+      const [overviewRes, insightsRes] = await Promise.allSettled([
+        adminFetch<Overview>(`/analytics/overview${qs}`),
+        adminFetch<Insights>(`/analytics/insights${qs}`)
+      ]);
 
-        if (c) return;
-
-        if (overviewRes.status === "fulfilled") {
-          setOverview(overviewRes.value);
-        } else {
-          const m = overviewRes.reason instanceof Error ? overviewRes.reason.message : "Erreur";
-          setErr(m);
-          return;
-        }
-
-        if (insightsRes.status === "fulfilled") {
-          setInsights(insightsRes.value);
-        } else {
-          setInsights({
-            summary: "Le module d'analyse avancée est temporairement indisponible.",
-            recommendations: ["Les KPI principaux restent disponibles dans cette vue."],
-            generatedAt: new Date().toISOString(),
-            model: "client-fallback-v1"
-          });
-        }
-        setLastRefresh(new Date().toISOString());
-      } catch (e) {
-        if (!c) setErr(e instanceof Error ? e.message : "Erreur");
+      if (overviewRes.status === "fulfilled") {
+        setOverview(overviewRes.value);
+      } else {
+        const msg = overviewRes.reason instanceof Error ? overviewRes.reason.message : "Erreur";
+        setErr(msg);
+        return;
       }
-    };
+
+      if (insightsRes.status === "fulfilled") {
+        setInsights(insightsRes.value);
+      } else {
+        setInsights({
+          summary: "Le module d'analyse avancée est temporairement indisponible.",
+          recommendations: ["Les KPI principaux restent disponibles dans cette vue."],
+          generatedAt: new Date().toISOString(),
+          model: "client-fallback-v1"
+        });
+      }
+      setLastRefresh(new Date().toISOString());
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Erreur");
+    }
+  }, [periodMode, customFrom, customTo]);
+
+  useEffect(() => {
     void load();
     const t = setInterval(() => void load(), 30_000);
-    return () => {
-      c = true;
-      clearInterval(t);
-    };
-  }, []);
+    return () => clearInterval(t);
+  }, [load]);
 
-  if (err) return <div className="rounded-xl bg-rose-50 p-4 text-rose-800">{err}</div>;
+  if (!overview && err) return <div className="rounded-xl bg-rose-50 p-4 text-rose-800">{err}</div>;
   if (!overview) return <div className="text-slate-600">Chargement des indicateurs…</div>;
+
+  const filtered = Boolean(overview.meta?.filtered);
+  const periodLabel =
+    filtered && overview.meta?.from && overview.meta?.to
+      ? `${overview.meta.from} → ${overview.meta.to}`
+      : "Toutes données";
 
   const typeEntries = Object.entries(overview.documentsByType);
   const maxType = Math.max(1, ...typeEntries.map(([, n]) => n));
 
   const hourEntries = Array.from({ length: 24 }, (_, h) => [h, overview.documentsByHour[h] ?? overview.documentsByHour[String(h)] ?? 0] as const);
   const maxHour = Math.max(1, ...hourEntries.map(([, n]) => n));
-  const adoptionRate = overview.userCount > 0 ? Math.round((overview.monthlyActiveUsers / overview.userCount) * 1000) / 10 : 0;
+  const adoptionRate =
+    !filtered && overview.userCount > 0
+      ? Math.round((overview.monthlyActiveUsers / overview.userCount) * 1000) / 10
+      : 0;
   const adRevenueSignal = Math.round((overview.adSummary.clicks || 0) * 120);
   const trustedScore = Math.min(
     100,
@@ -108,10 +137,98 @@ export function AdminDashboard() {
           </p>
           <p className="mt-3 text-xs text-slate-500">Dernière mise à jour · {liveText}</p>
         </div>
+
+        <div className="mx-auto mt-6 max-w-4xl rounded-2xl border border-teal-200/50 bg-white/90 p-4 shadow-sm">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Filtrer les données</p>
+              <p className="mt-1 text-[11px] text-slate-500">Jour / mois / année (UTC) ou plage personnalisée.</p>
+            </div>
+            <p className="text-right text-[11px] font-medium text-teal-800">{periodLabel}</p>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {(
+              [
+                ["all", "Tout"],
+                ["day", "Jour"],
+                ["month", "Mois"],
+                ["year", "Année"],
+                ["custom", "Personnalisé"]
+              ] as const
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => {
+                  setPeriodMode(key);
+                  if (key !== "custom" && key !== "all") {
+                    const r = rangeForPreset(key);
+                    setCustomFrom(r.from);
+                    setCustomTo(r.to);
+                  }
+                }}
+                className={[
+                  "min-h-[40px] rounded-xl px-3 py-2 text-xs font-semibold ring-1 transition sm:text-sm",
+                  periodMode === key
+                    ? "bg-teal-600 text-white ring-teal-500"
+                    : "bg-slate-50 text-slate-700 ring-slate-200 hover:bg-slate-100"
+                ].join(" ")}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {periodMode === "custom" ? (
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+              <label className="flex flex-col text-xs font-medium text-slate-600">
+                Du
+                <input
+                  type="date"
+                  value={customFrom}
+                  onChange={(e) => setCustomFrom(e.target.value)}
+                  className="mt-1 min-h-[44px] rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900"
+                />
+              </label>
+              <label className="flex flex-col text-xs font-medium text-slate-600">
+                Au
+                <input
+                  type="date"
+                  value={customTo}
+                  onChange={(e) => setCustomTo(e.target.value)}
+                  className="mt-1 min-h-[44px] rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => void load()}
+                className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-700"
+              >
+                Appliquer
+              </button>
+            </div>
+          ) : null}
+          {err ? <p className="mt-2 text-xs text-rose-600">{err}</p> : null}
+        </div>
+
         <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <KpiCard label="Utilisateurs" value={String(overview.userCount)} hint="base totale" accent="teal" />
-          <KpiCard label="Adoption 30j" value={`${adoptionRate}%`} hint={`${overview.monthlyActiveUsers} actifs`} accent="emerald" />
-          <KpiCard label="Documents" value={String(overview.documentsTotal)} hint="volume produit" accent="cyan" />
+          <KpiCard
+            label={filtered ? "Nouveaux comptes" : "Utilisateurs"}
+            value={String(overview.userCount)}
+            hint={filtered ? "inscriptions sur la période" : "base totale"}
+            accent="teal"
+          />
+          <KpiCard
+            label={filtered ? "Actifs (documents)" : "Adoption 30j"}
+            value={filtered ? String(overview.monthlyActiveUsers) : `${adoptionRate}%`}
+            hint={filtered ? "ayant créé au moins un doc" : `${overview.monthlyActiveUsers} actifs`}
+            accent="emerald"
+          />
+          <KpiCard
+            label="Documents"
+            value={String(overview.documentsTotal)}
+            hint={filtered ? "créés sur la période" : "volume produit"}
+            accent="cyan"
+          />
           <KpiCard label="Revenue signal" value={`${adRevenueSignal.toLocaleString("fr-FR")} FCFA`} hint="proxy pub" accent="amber" />
         </div>
       </section>
@@ -136,7 +253,9 @@ export function AdminDashboard() {
       <div className="grid gap-5 xl:grid-cols-[1.6fr_1fr]">
         <section className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between gap-2">
-            <h2 className="text-base font-semibold text-slate-800">Évolution documents (14 jours)</h2>
+            <h2 className="text-base font-semibold text-slate-800">
+              Évolution documents {filtered ? "(période)" : "(14 jours)"}
+            </h2>
             <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-medium text-slate-600">Live</span>
           </div>
           {trend.length === 0 ? (

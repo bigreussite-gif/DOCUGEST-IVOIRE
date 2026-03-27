@@ -63,7 +63,14 @@ export function buildInsights(snapshot: AnalyticsSnapshot) {
 
   const mau = (snapshot.monthlyActiveUsers as number) ?? 0;
   const ucount = (snapshot.userCount as number) ?? 0;
-  if (ucount > 0) {
+  const filtered = Boolean((snapshot as { meta?: { filtered?: boolean } }).meta?.filtered);
+  if (filtered) {
+    if (mau > 0 || ucount > 0) {
+      lines.push(
+        `Période filtrée : ${mau} utilisateur(s) ayant produit au moins un document, ${ucount} nouveau(x) compte(s) inscrit(s) sur cette plage.`
+      );
+    }
+  } else if (ucount > 0) {
     lines.push(`Utilisateurs actifs (30j) : ${mau} sur ${ucount} comptes enregistrés.`);
     if (mau / ucount < 0.2) {
       recos.push(
