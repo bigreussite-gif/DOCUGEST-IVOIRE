@@ -8,6 +8,48 @@ import { signSessionToken, toPublicUser } from "@/lib/auth";
 import * as store from "@/lib/serverStore";
 export const runtime = "nodejs";
 
+function isDbOrNetworkError(e: unknown): boolean {
+  const m = e instanceof Error ? e.message : String(e);
+  const code = (e as { code?: string }).code;
+  if (code && ["ECONNREFUSED", "ETIMEDOUT", "ENOTFOUND", "ECONNRESET", "EAI_AGAIN"].includes(code)) return true;
+  if (m.includes("DATABASE_URL") || m.includes("INSFORGE_DATABASE_URL") || m.includes("manquant")) return true;
+  if (m.includes("ECONNREFUSED") || m.includes("connect ETIMEDOUT") || m.includes("getaddrinfo")) return true;
+  if (m.includes("timeout") && m.toLowerCase().includes("connection")) return true;
+  if (m.includes("SSL") || m.includes("certificate") || m.includes("self signed")) return true;
+  return false;
+}
+
+function loginFailureMessage(e: unknown): { message: string; status: number } {
+  const m = e instanceof Error ? e.message : String(e);
+  const code = (e as { code?: string }).code;
+
+  if (m.includes("JWT_SECRET") || m.toLowerCase().includes("jwt")) {
+    return { message: "Configuration serveur : JWT_SECRET manquant ou invalide.", status: 503 };
+  }
+  if (m.includes("DATABASE_URL") || m.includes("INSFORGE_DATABASE_URL") || /manquant|missing/i.test(m)) {
+    return {
+      message:
+        "Base de données non configurée sur le serveur (DATABASE_URL). Vérifiez les variables d’environnement sur Vercel.",
+      status: 503
+    };
+  }
+  if (isDbOrNetworkError(e)) {
+    return {
+      message: "Impossible de joindre la base de données. Réessayez dans quelques instants.",
+      status: 503
+    };
+  }
+  if (code === "57P01") {
+    return { message: "Service de base de données en maintenance. Réessayez plus tard.", status: 503 };
+  }
+  console.error("[api/auth/login] erreur non classée", { code, message: m.slice(0, 500) });
+  return {
+    message:
+      "Connexion impossible pour le moment. Réessayez dans quelques minutes. Si le problème continue, vérifiez que DATABASE_URL et JWT_SECRET sont bien définis sur Vercel.",
+    status: 503
+  };
+}
+
 const schema = z.object({
   email: z.string().min(3),
   password: z.string().min(1),
@@ -83,32 +125,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ token, user: me });
   } catch (e: unknown) {
     console.error("[api/auth/login]", e);
-    const msg = e instanceof Error ? e.message : String(e);
-    const code = (e as { code?: string }).code;
-    if (msg.includes("JWT_SECRET") || msg.toLowerCase().includes("jwt")) {
-      return NextResponse.json(
-        { message: "Configuration serveur : JWT_SECRET manquant ou invalide." },
-        { status: 503 }
-      );
-    }
-    if (
-      msg.includes("DATABASE_URL") ||
-      msg.includes("ECONNREFUSED") ||
-      msg.includes("connect") ||
-      code === "ECONNREFUSED" ||
-      code === "57P01"
-    ) {
-      return NextResponse.json(
-        { message: "Base de données temporairement injoignable. Réessayez dans quelques instants." },
-        { status: 503 }
-      );
-    }
-    return NextResponse.json(
-      {
-        message:
-          "Connexion impossible pour le moment. Réessayez, ou utilisez « Réinitialiser la session » sur le tableau de bord puis reconnectez-vous."
-      },
-      { status: 503 }
-    );
+    const { message, status } = loginFailureMessage(e);
+    return NextResponse.json({ message }, { status });
   }
 }
