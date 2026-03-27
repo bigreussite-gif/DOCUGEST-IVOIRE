@@ -223,11 +223,10 @@ export default function PayslipEditor() {
   );
 
   async function downloadPdf() {
-    if (!printRef.current && !previewRef.current) return;
+    const source = previewRef.current ?? printRef.current;
+    if (!source) return;
     setPdfDownloading(true);
     try {
-      const source = printRef.current ?? previewRef.current;
-      if (!source) return;
       const canvas = await html2canvas(source, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF("p", "mm", "a4");
@@ -310,24 +309,27 @@ export default function PayslipEditor() {
       </div>
 
       <div className="rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="text-lg font-bold text-text">Bulletin de salaire</div>
-            <div className="text-sm text-slate-600">Saisissez les montants — le net est calculé automatiquement.</div>
+            <div className="text-sm text-slate-600">Remplissez le formulaire ci-dessous — le net est calculé automatiquement.</div>
+            <p className="mt-2 text-xs text-slate-500">Le PDF est disponible en bas du formulaire une fois les montants saisis.</p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="primary" type="button" onClick={downloadPdf} disabled={pdfDownloading || saving}>
-              {pdfDownloading ? "PDF…" : "Télécharger PDF"}
-            </Button>
-            <Button type="button" onClick={form.handleSubmit(onSave)} disabled={saving}>
-              {saving ? "Sauvegarde…" : "Sauvegarder"}
-            </Button>
-          </div>
+          <Button type="button" className="min-h-11 w-full shrink-0 sm:w-auto" onClick={form.handleSubmit(onSave)} disabled={saving}>
+            {saving ? "Sauvegarde…" : "Sauvegarder"}
+          </Button>
         </div>
       </div>
 
-      <div className="mt-6 grid gap-4 xl:grid-cols-2">
-        <form className="space-y-6 rounded-2xl bg-bg p-5 text-[13px] shadow-soft ring-1 ring-border/70" onSubmit={(e) => e.preventDefault()}>
+      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+        <form
+          className="order-1 space-y-6 rounded-2xl bg-bg p-5 text-[13px] shadow-soft ring-1 ring-border/70"
+          onSubmit={(e) => e.preventDefault()}
+        >
+          <div className="rounded-xl border border-teal-200/80 bg-teal-50/60 px-4 py-3 ring-1 ring-teal-100">
+            <p className="text-xs font-semibold uppercase tracking-wide text-teal-900">Étape 1 — Formulaire</p>
+            <p className="mt-1 text-sm text-slate-700">Saisissez les informations employeur et salarié ; l’aperçu se met à jour à droite.</p>
+          </div>
           <div className="rounded-xl bg-surface p-5 ring-1 ring-border/70">
             <div className="text-sm font-semibold text-text">Identité employeur</div>
             <p className="mt-1 text-xs leading-relaxed text-slate-600">
@@ -443,10 +445,20 @@ export default function PayslipEditor() {
           <div className="rounded-xl bg-surface p-5 ring-1 ring-border/70">
             <Textarea label="Notes internes" rows={4} {...form.register("notes")} />
           </div>
+
+          <div className="rounded-xl border-2 border-primary/25 bg-gradient-to-br from-primary/[0.06] to-white p-5 ring-1 ring-primary/15">
+            <p className="text-xs font-semibold uppercase tracking-wide text-primary">Étape 2 — Export PDF</p>
+            <p className="mt-1 text-sm text-slate-700">Après vérification des montants, générez le fichier PDF.</p>
+            <div className="mt-4">
+              <Button variant="primary" type="button" onClick={() => void downloadPdf()} disabled={pdfDownloading || saving}>
+                {pdfDownloading ? "PDF…" : "Télécharger PDF"}
+              </Button>
+            </div>
+          </div>
         </form>
 
-        <div className="rounded-2xl bg-bg p-5 shadow-soft ring-1 ring-border/70">
-          <div className="sticky top-20 md:top-4">
+        <div className="order-2 rounded-2xl bg-bg p-5 shadow-soft ring-1 ring-border/70">
+          <div className="sticky top-4">
             <div className="mb-3 text-xs font-semibold text-text">Aperçu en temps réel</div>
             <div ref={previewRef} className="max-h-[78vh] overflow-auto rounded-xl bg-slate-100/80 p-2 ring-1 ring-border/50">
               <PayslipPreview data={previewPayload} />

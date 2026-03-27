@@ -500,10 +500,10 @@ export default function InvoiceEditor() {
         <InlineAdStrip variant="compact" />
       </div>
       <div className="rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70 print:hidden">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0 flex-1">
             <div className="text-sm font-semibold text-text">Type de document</div>
-            <div className="mt-2 flex gap-2">
+            <div className="mt-2 flex flex-wrap gap-2">
               {(["invoice", "proforma", "devis"] as DocType[]).map((t) => (
                 <button
                   key={t}
@@ -518,38 +518,26 @@ export default function InvoiceEditor() {
                 </button>
               ))}
             </div>
+            <p className="mt-2 text-xs leading-relaxed text-slate-600">
+              Renseignez d’abord le formulaire au centre : l’aperçu se met à jour à droite (ou en dessous sur mobile). Le PDF se
+              trouve en bas du formulaire lorsque vous êtes prêt.
+            </p>
           </div>
-
-          <div className="grid w-full gap-2 sm:flex sm:max-w-none sm:flex-wrap sm:justify-end sm:gap-2">
-            <Button
-              variant="secondary"
-              className="min-h-11 w-full sm:w-auto"
-              onClick={() => printPreview()}
-              disabled={pdfDownloading || saving}
-            >
-              Imprimer
-            </Button>
-            <Button
-              variant="primary"
-              className="min-h-11 w-full sm:w-auto"
-              onClick={() => void downloadPdf()}
-              disabled={pdfDownloading || saving}
-            >
-              {pdfDownloading ? "Téléchargement…" : "Télécharger PDF"}
-            </Button>
-            <Button variant="ghost" className="min-h-11 w-full sm:w-auto" onClick={onReset} disabled={saving}>
-              Réinitialiser
-            </Button>
-            <Button className="min-h-11 w-full sm:w-auto" onClick={form.handleSubmit(onSave)} disabled={saving}>
-              {saving ? "Sauvegarde…" : "Sauvegarder"}
-            </Button>
-          </div>
+          <Button className="min-h-11 w-full shrink-0 sm:w-auto sm:min-w-[10rem]" onClick={form.handleSubmit(onSave)} disabled={saving}>
+            {saving ? "Sauvegarde…" : "Sauvegarder"}
+          </Button>
         </div>
       </div>
 
-      <div className="mt-6 grid gap-4 xl:grid-cols-2 print:block">
-        <div className="rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70 sm:p-5 print:hidden">
-          <form className="max-h-[85vh] overflow-auto pr-2 text-[13px]" onSubmit={(e) => e.preventDefault()}>
+      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] print:block">
+        <div className="order-1 rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70 sm:p-5 print:hidden">
+          <div className="mb-4 rounded-xl border border-teal-200/80 bg-teal-50/60 px-4 py-3 ring-1 ring-teal-100">
+            <p className="text-xs font-semibold uppercase tracking-wide text-teal-900">Étape 1 — Formulaire</p>
+            <p className="mt-1 text-sm text-slate-700">
+              Complétez les blocs ci-dessous : votre document et l’aperçu se construisent en même temps.
+            </p>
+          </div>
+          <form className="max-h-[min(85vh,1200px)] overflow-auto pr-1 text-[13px] sm:pr-2" onSubmit={(e) => e.preventDefault()}>
             <div className="grid gap-5">
               <div className="rounded-xl bg-surface p-5 ring-1 ring-border/70">
                 <div className="text-sm font-semibold text-text">Identité visuelle</div>
@@ -869,16 +857,46 @@ export default function InvoiceEditor() {
                   <Textarea label="Texte pied de page" rows={2} {...form.register("footerNote")} />
                 </div>
               </div>
+
+              <div className="rounded-xl border-2 border-primary/25 bg-gradient-to-br from-primary/[0.06] to-white p-5 ring-1 ring-primary/15">
+                <p className="text-xs font-semibold uppercase tracking-wide text-primary">Étape 2 — Export</p>
+                <p className="mt-1 text-sm text-slate-700">
+                  Lorsque le formulaire est à jour, téléchargez le PDF ou imprimez. Vous pouvez aussi réinitialiser le brouillon.
+                </p>
+                <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                  <Button
+                    variant="secondary"
+                    className="min-h-11 w-full sm:w-auto"
+                    type="button"
+                    onClick={() => printPreview()}
+                    disabled={pdfDownloading || saving}
+                  >
+                    Imprimer
+                  </Button>
+                  <Button
+                    variant="primary"
+                    className="min-h-11 w-full sm:w-auto"
+                    type="button"
+                    onClick={() => void downloadPdf()}
+                    disabled={pdfDownloading || saving}
+                  >
+                    {pdfDownloading ? "Téléchargement…" : "Télécharger PDF"}
+                  </Button>
+                  <Button variant="ghost" className="min-h-11 w-full sm:w-auto" type="button" onClick={onReset} disabled={saving}>
+                    Réinitialiser
+                  </Button>
+                </div>
+              </div>
             </div>
           </form>
         </div>
 
-        <div className="rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70 sm:p-5 print:shadow-none print:ring-0">
-          <div className="sticky top-20 md:top-4 print:static">
+        <div className="order-2 rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70 sm:p-5 print:shadow-none print:ring-0">
+          <div className="sticky top-4 print:static">
             <div className="flex items-center justify-between gap-3 pb-3">
               <div>
                 <div className="text-sm font-semibold text-text">{docTypeLabel(previewValues.docType)}</div>
-                <div className="text-[11px] text-slate-600">Aperçu en temps réel (A4)</div>
+                <div className="text-[11px] text-slate-600">Aperçu en temps réel (A4) — après saisie</div>
               </div>
               <div className="text-right">
                 <div className="text-xs text-slate-600">Total</div>

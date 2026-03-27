@@ -313,6 +313,9 @@ export default function Dashboard() {
 
   const closeMobile = () => setMobileOpen(false);
 
+  /** Éditeurs de documents : moins de bandeaux figés + moins de distraction pour la saisie */
+  const isDocEditorRoute = /^\/dashboard\/(invoice|payslip)(\/|$)/.test(location.pathname);
+
   const dashboardRoutes = (
     <Suspense fallback={<EditorFallback />}>
       <Routes>
@@ -359,39 +362,47 @@ export default function Dashboard() {
         </div>
       ) : null}
 
-      {/* Toujours visible : raccourcis (pas seulement sur l’accueil ni seulement si erreur auth) */}
-      <div className="border-b border-emerald-200/90 bg-gradient-to-r from-emerald-50 via-white to-teal-50/80">
-        <div className="mx-auto flex max-w-[1600px] flex-col gap-2 px-3 py-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-900/90">Actions rapides</p>
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              to="/dashboard/invoice/express"
-              className="inline-flex min-h-[40px] items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm ring-1 ring-emerald-700/20 transition hover:bg-emerald-700"
-            >
-              Facture e-commerce (rapide)
-            </Link>
-            <button
-              type="button"
-              onClick={() => clearLocalSessionAndRelogin()}
-              className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-slate-400 bg-white px-4 py-2 text-sm font-medium text-slate-800 shadow-sm transition hover:bg-slate-50"
-            >
-              Réinitialiser la session
-            </button>
-            <Link
-              to="/dashboard"
-              className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-border bg-surface px-3 py-2 text-sm font-medium text-text hover:bg-bg"
-            >
-              Tableau de bord
-            </Link>
+      {!isDocEditorRoute ? (
+        <>
+          <div className="border-b border-emerald-200/90 bg-gradient-to-r from-emerald-50 via-white to-teal-50/80">
+            <div className="mx-auto flex max-w-[1600px] flex-col gap-2 px-3 py-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-900/90">Actions rapides</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <Link
+                  to="/dashboard/invoice/express"
+                  className="inline-flex min-h-[40px] items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm ring-1 ring-emerald-700/20 transition hover:bg-emerald-700"
+                >
+                  Facture e-commerce (rapide)
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => clearLocalSessionAndRelogin()}
+                  className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-slate-400 bg-white px-4 py-2 text-sm font-medium text-slate-800 shadow-sm transition hover:bg-slate-50"
+                >
+                  Réinitialiser la session
+                </button>
+                <Link
+                  to="/dashboard"
+                  className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-border bg-surface px-3 py-2 text-sm font-medium text-text hover:bg-bg"
+                >
+                  Tableau de bord
+                </Link>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      <MonetizationTopBar />
+          <MonetizationTopBar />
+        </>
+      ) : null}
 
       {mode === "top" ? (
         <>
-          <header className="sticky top-0 z-40 border-b border-border/80 bg-bg/95 shadow-sm backdrop-blur-md">
+          <header
+            className={[
+              "z-40 border-b border-border/80 bg-bg/95 shadow-sm backdrop-blur-md",
+              isDocEditorRoute ? "relative" : "sticky top-0"
+            ].join(" ")}
+          >
             <div className="mx-auto flex max-w-[1600px] flex-col gap-3 px-3 py-3 sm:px-4 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
               <div className="flex min-w-0 items-center justify-between gap-3 lg:justify-start">
                 <AppBrand compact={false} />

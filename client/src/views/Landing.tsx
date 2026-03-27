@@ -74,7 +74,7 @@ export default function Landing() {
         </div>
 
         <main className="mt-6 sm:mt-8">
-          <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-center">
+          <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-start lg:gap-10">
             <div>
               <p className="inline-block rounded-full bg-primary/10 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
                 100 % pensé pour l’entrepreneuriat en Afrique francophone
@@ -155,6 +155,22 @@ export default function Landing() {
               </div>
             </div>
           </div>
+
+          <section
+            className="mt-10 scroll-mt-6 rounded-3xl border border-emerald-200/90 bg-gradient-to-br from-emerald-50/90 via-white to-teal-50/50 p-6 shadow-sm sm:p-8"
+            aria-labelledby="fne-heading"
+          >
+            <h2 id="fne-heading" className="text-lg font-bold tracking-tight text-slate-900 sm:text-xl">
+              Complémentaire à la FNE — pas un concurrent
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-slate-700 sm:text-base">
+              La facturation électronique normalisée (FNE) et les dispositifs officiels de l’État ont leur rôle : conformité,
+              déclarations, interconnexion. <strong>DocuGest Ivoire ne les remplace pas.</strong> Nous vous aidons à produire au
+              quotidien des documents commerciaux clairs — devis, factures PDF, bulletins — pour gagner du temps et rassurer
+              vos clients. Pensez à notre outil comme un <strong>partenaire de mise en forme et d’efficacité</strong>, aligné
+              avec votre démarche administrative.
+            </p>
+          </section>
 
           <section className="mt-12 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-blue-950 px-6 py-10 text-center sm:px-12">
             <h2 className="text-2xl font-bold text-white sm:text-3xl">Ton activité mérite des documents à la hauteur</h2>
