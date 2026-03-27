@@ -4,6 +4,7 @@ import { getEffectiveAuthUser, useAuthStore } from "../../store/authStore";
 import { apiFetch, type ApiError } from "../../lib/api";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
+import { Textarea } from "../../components/ui/Textarea";
 import { computeInvoiceTotals } from "../../utils/calculations";
 import { clampMoney, formatFCFA } from "../../utils/formatters";
 import { DEFAULT_VAT_RATE_PCT } from "../../constants/taxes";
@@ -85,7 +86,18 @@ export default function QuickInvoiceEditor() {
   const [lines, setLines] = useState<LineDraft[]>(() => [newLine()]);
   const [deliveryLabel, setDeliveryLabel] = useState("Frais de livraison");
   const [deliveryAmountTtc, setDeliveryAmountTtc] = useState("");
+  const [senderCompanyName, setSenderCompanyName] = useState("");
+  const [senderPhone, setSenderPhone] = useState("");
+  const [senderAddress, setSenderAddress] = useState("");
   const clientRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const u = getEffectiveAuthUser();
+    if (!u) return;
+    setSenderCompanyName((s) => s || u.company_name || "");
+    setSenderPhone((s) => s || u.phone || "");
+    setSenderAddress((s) => s || u.company_address || "");
+  }, [auth.user]);
 
   const countryPolicy = useMemo(() => inferCountryPolicy(auth.user?.user_typology), [auth.user?.user_typology]);
   const fiscalRegime = countryPolicy.defaultFiscalRegime;
@@ -134,8 +146,7 @@ export default function QuickInvoiceEditor() {
     setLines((prev) => (prev.length <= 1 ? prev : prev.filter((r) => r.id !== id)));
   }
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function runCreate(mode: "draft" | "export") {
     const sessionUser = getEffectiveAuthUser();
     if (!sessionUser) {
       alert("Session indisponible. Rechargez la page ou reconnectez-vous.");
@@ -143,6 +154,18 @@ export default function QuickInvoiceEditor() {
     }
     if (!clientName.trim()) {
       alert("Indiquez le nom du client.");
+      return;
+    }
+    if (!senderCompanyName.trim() && !sessionUser.company_name) {
+      alert("Indiquez le nom de votre entreprise (affiché sur la facture).");
+      return;
+    }
+    if (!senderPhone.trim() && !sessionUser.phone) {
+      alert("Indiquez le numéro de téléphone de votre entreprise (ou complétez votre profil).");
+      return;
+    }
+    if (!senderAddress.trim() && !sessionUser.company_address) {
+      alert("Indiquez l’adresse de votre entreprise (ou complétez votre profil).");
       return;
     }
     if (docLinesPreview.length === 0) {
@@ -156,17 +179,26 @@ export default function QuickInvoiceEditor() {
       globalDiscountPct: 0,
       vatRatePct: fiscalRegime === "formal" ? vatRatePct : DEFAULT_VAT_RATE_PCT
     });
+    const totalTtc = clampMoney(totals.totalTTC);
+    if (!Number.isFinite(totalTtc) || totalTtc <= 0) {
+      alert("Le total de la facture est invalide. Vérifiez les montants.");
+      return;
+    }
 
     const year = new Date().getFullYear();
     const docNumber = `FAC-${year}-${Date.now().toString(36).toUpperCase().slice(-6)}`;
 
+    const companyName = senderCompanyName.trim() || sessionUser.company_name || "";
+    const companyPhone = senderPhone.trim() || sessionUser.phone || "";
+    const companyAddress = senderAddress.trim() || sessionUser.company_address || "";
+
     const doc_data = {
       sender: {
-        companyName: sessionUser.company_name ?? "",
-        address: sessionUser.company_address ?? "",
-        phone: sessionUser.phone ?? "",
+        companyName,
+        address: companyAddress,
+        phone: companyPhone,
         email: sessionUser.email ?? "",
-        headOffice: sessionUser.company_address ?? "",
+        headOffice: companyAddress,
         legalForm: countryPolicy.defaultLegalForm,
         rib: "",
         ncc: sessionUser.company_ncc ?? "",
@@ -203,7 +235,7 @@ export default function QuickInvoiceEditor() {
       type: "invoice" as const,
       doc_number: docNumber,
       client_name: clientName.trim(),
-      total_amount: clampMoney(totals.totalTTC),
+      total_amount: totalTtc,
       currency: "FCFA",
       status: "draft" as const,
       doc_data
@@ -211,11 +243,20 @@ export default function QuickInvoiceEditor() {
 
     setSaving(true);
     try {
-      const created = await apiFetch<{ id: string }>("/api/documents", {
+      const created = await apiFetch<{ id?: string }>("/api/documents", {
         method: "POST",
         json: payload
       });
-      navigate(`/dashboard/invoice/${created.id}?action=print`, { replace: true });
+      const id = created?.id;
+      if (!id || typeof id !== "string") {
+        alert("Réponse serveur inattendue : identifiant du document manquant.");
+        return;
+      }
+      const next =
+        mode === "export"
+          ? `/dashboard/invoice/${id}?action=print`
+          : `/dashboard/invoice/${id}`;
+      navigate(next, { replace: true });
     } catch (err) {
       const msg =
         err && typeof err === "object" && "message" in err
@@ -234,7 +275,7 @@ export default function QuickInvoiceEditor() {
           <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">Facture express</p>
           <h1 className="text-2xl font-bold text-slate-900">E-commerce — panier & livraison</h1>
           <p className="mt-1 text-sm text-slate-600">
-            Plusieurs lignes en TTC, frais de livraison optionnels, puis PDF automatique.
+            Plusieurs lignes en TTC, frais de livraison optionnels, puis PDF ou impression.
           </p>
         </div>
         <Link
@@ -246,9 +287,43 @@ export default function QuickInvoiceEditor() {
       </div>
 
       <form
-        onSubmit={onSubmit}
+        onSubmit={(e) => {
+          e.preventDefault();
+          void runCreate("export");
+        }}
         className="space-y-5 rounded-2xl border border-teal-200/60 bg-white p-5 shadow-lg shadow-teal-900/5 ring-1 ring-slate-100 sm:p-6"
       >
+        <div className="rounded-xl border border-teal-100 bg-teal-50/50 p-4 ring-1 ring-teal-100/80">
+          <p className="text-xs font-semibold uppercase tracking-wide text-teal-900">Votre entreprise (sur la facture)</p>
+          <p className="mt-1 text-xs text-slate-600">
+            Ces informations figurent en en-tête. Elles sont préremplies depuis votre profil si disponible.
+          </p>
+          <div className="mt-4 space-y-3">
+            <Input
+              label="Nom de l’entreprise"
+              autoComplete="organization"
+              value={senderCompanyName}
+              onChange={(e) => setSenderCompanyName(e.target.value)}
+              placeholder="Ex. SARL Mon Commerce"
+            />
+            <Input
+              label="Téléphone / WhatsApp pro"
+              autoComplete="tel"
+              inputMode="tel"
+              value={senderPhone}
+              onChange={(e) => setSenderPhone(e.target.value)}
+              placeholder="Ex. +225 07 00 00 00 00"
+            />
+            <Textarea
+              label="Adresse complète"
+              rows={3}
+              value={senderAddress}
+              onChange={(e) => setSenderAddress(e.target.value)}
+              placeholder="Quartier, ville, pays…"
+            />
+          </div>
+        </div>
+
         <Input
           ref={clientRef}
           label="Nom du client"
@@ -362,17 +437,29 @@ export default function QuickInvoiceEditor() {
           </p>
         )}
 
-        <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+        <div className="flex flex-col gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:flex-wrap sm:justify-end sm:gap-3">
           <Link
             to="/dashboard"
-            className="inline-flex h-11 items-center justify-center rounded-lg border border-border/70 px-4 text-sm font-semibold text-text transition hover:bg-surface"
+            className="inline-flex h-11 min-h-[44px] w-full items-center justify-center rounded-lg border border-border/70 px-4 text-sm font-semibold text-text transition hover:bg-surface sm:w-auto sm:min-w-[8rem]"
           >
             Annuler
           </Link>
-          <Button type="submit" variant="primary" disabled={saving}>
-            {saving ? "Création…" : "Créer & exporter PDF"}
+          <Button
+            type="button"
+            variant="secondary"
+            className="h-11 min-h-[44px] w-full sm:w-auto sm:min-w-[12rem]"
+            disabled={saving}
+            onClick={() => void runCreate("draft")}
+          >
+            {saving ? "Enregistrement…" : "Enregistrer (brouillon)"}
+          </Button>
+          <Button type="submit" variant="primary" className="h-11 min-h-[44px] w-full sm:w-auto sm:min-w-[14rem]" disabled={saving}>
+            {saving ? "Création…" : "Créer & ouvrir le PDF"}
           </Button>
         </div>
+        <p className="text-center text-[11px] text-slate-500">
+          Après création : télécharger, imprimer ou sauvegarder depuis l’écran d’édition.
+        </p>
       </form>
     </div>
   );

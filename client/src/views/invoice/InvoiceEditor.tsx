@@ -111,6 +111,7 @@ export default function InvoiceEditor() {
   const previewWrapRef = useRef<HTMLDivElement | null>(null);
   const printWrapRef = useRef<HTMLDivElement | null>(null);
   const autoPrintDoneRef = useRef(false);
+  const pendingPrintAfterLoadRef = useRef(false);
 
   const countryPolicy = useMemo(() => inferCountryPolicy(auth.user?.user_typology), [auth.user?.user_typology]);
 
@@ -185,6 +186,11 @@ export default function InvoiceEditor() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watched.docType]);
+
+  useEffect(() => {
+    autoPrintDoneRef.current = false;
+    pendingPrintAfterLoadRef.current = searchParams.get("action") === "print";
+  }, [params.id, searchParams]);
 
   useEffect(() => {
     const onIdSynced = (e: Event) => {
@@ -334,6 +340,14 @@ export default function InvoiceEditor() {
           conditions: d.conditions ?? "Paiement à 30 jours",
           footerNote: d.footerNote ?? "Merci pour votre confiance."
         });
+        setPreviewValues(form.getValues());
+        if (pendingPrintAfterLoadRef.current && !autoPrintDoneRef.current) {
+          autoPrintDoneRef.current = true;
+          pendingPrintAfterLoadRef.current = false;
+          window.setTimeout(() => {
+            void downloadPdf();
+          }, 550);
+        }
       } catch {
         /* ignore */
       }
@@ -362,11 +376,14 @@ export default function InvoiceEditor() {
   const accentForPreview = brandPrimaryHex ? readableOnWhite(brandPrimaryHex) : null;
 
   async function downloadPdf() {
-    if (!printWrapRef.current && !previewWrapRef.current) return;
+    /** L’aperçu visible rend correctement ; l’élément hors écran peut produire un PDF vide avec html2canvas. */
+    const source = previewWrapRef.current ?? printWrapRef.current;
+    if (!source) {
+      alert("Aperçu indisponible. Patientez un instant puis réessayez.");
+      return;
+    }
     setPdfDownloading(true);
     try {
-      const source = printWrapRef.current ?? previewWrapRef.current;
-      if (!source) return;
       const canvas = await html2canvas(source, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF("p", "mm", "a4");
@@ -374,22 +391,20 @@ export default function InvoiceEditor() {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`${previewValues.docNumber}.pdf`);
+      pdf.save(`${form.getValues().docNumber || previewValues.docNumber || "facture"}.pdf`);
+    } catch (e) {
+      console.error(e);
+      alert(
+        "Impossible de générer le PDF automatiquement. Utilisez « Imprimer » puis « Enregistrer au format PDF » dans la boîte de dialogue."
+      );
     } finally {
       setPdfDownloading(false);
     }
   }
 
-  useEffect(() => {
-    if (autoPrintDoneRef.current) return;
-    if (searchParams.get("action") !== "print") return;
-    autoPrintDoneRef.current = true;
-    const t = setTimeout(() => {
-      void downloadPdf();
-    }, 700);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, params.id]);
+  function printPreview() {
+    window.print();
+  }
 
   async function onSave() {
     const values = form.getValues();
@@ -480,11 +495,11 @@ export default function InvoiceEditor() {
   };
 
   return (
-    <div className="p-4 sm:p-6">
-      <div className="mb-4">
+    <div className="p-4 sm:p-6 print:p-2">
+      <div className="mb-4 print:hidden">
         <InlineAdStrip variant="compact" />
       </div>
-      <div className="rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70">
+      <div className="rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70 print:hidden">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="text-sm font-semibold text-text">Type de document</div>
@@ -505,22 +520,35 @@ export default function InvoiceEditor() {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-3">
-            <Button variant="primary" onClick={downloadPdf} disabled={pdfDownloading || saving}>
-              {pdfDownloading ? "Téléchargement..." : "Télécharger PDF"}
+          <div className="grid w-full gap-2 sm:flex sm:max-w-none sm:flex-wrap sm:justify-end sm:gap-2">
+            <Button
+              variant="secondary"
+              className="min-h-11 w-full sm:w-auto"
+              onClick={() => printPreview()}
+              disabled={pdfDownloading || saving}
+            >
+              Imprimer
             </Button>
-            <Button variant="ghost" onClick={onReset} disabled={saving}>
+            <Button
+              variant="primary"
+              className="min-h-11 w-full sm:w-auto"
+              onClick={() => void downloadPdf()}
+              disabled={pdfDownloading || saving}
+            >
+              {pdfDownloading ? "Téléchargement…" : "Télécharger PDF"}
+            </Button>
+            <Button variant="ghost" className="min-h-11 w-full sm:w-auto" onClick={onReset} disabled={saving}>
               Réinitialiser
             </Button>
-            <Button onClick={form.handleSubmit(onSave)} disabled={saving}>
-              {saving ? "Sauvegarde..." : "Sauvegarder"}
+            <Button className="min-h-11 w-full sm:w-auto" onClick={form.handleSubmit(onSave)} disabled={saving}>
+              {saving ? "Sauvegarde…" : "Sauvegarder"}
             </Button>
           </div>
         </div>
       </div>
 
-      <div className="mt-6 grid gap-4 xl:grid-cols-2">
-        <div className="rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70 sm:p-5">
+      <div className="mt-6 grid gap-4 xl:grid-cols-2 print:block">
+        <div className="rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70 sm:p-5 print:hidden">
           <form className="max-h-[85vh] overflow-auto pr-2 text-[13px]" onSubmit={(e) => e.preventDefault()}>
             <div className="grid gap-5">
               <div className="rounded-xl bg-surface p-5 ring-1 ring-border/70">
@@ -845,8 +873,8 @@ export default function InvoiceEditor() {
           </form>
         </div>
 
-        <div className="rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70 sm:p-5">
-          <div className="sticky top-20 md:top-4">
+        <div className="rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70 sm:p-5 print:shadow-none print:ring-0">
+          <div className="sticky top-20 md:top-4 print:static">
             <div className="flex items-center justify-between gap-3 pb-3">
               <div>
                 <div className="text-sm font-semibold text-text">{docTypeLabel(previewValues.docType)}</div>
