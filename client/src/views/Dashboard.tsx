@@ -125,10 +125,7 @@ function DashboardHome() {
       </div>
 
       <div className="mt-6">
-        <InlineAdStrip
-          heading="Espace partenaires"
-          subheading="En consultant ces offres, vous contribuez à maintenir DocuGest gratuit pour les indépendants et les PME."
-        />
+        <InlineAdStrip />
       </div>
 
       <DashboardSection

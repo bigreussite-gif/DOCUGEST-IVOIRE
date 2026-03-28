@@ -4,11 +4,6 @@ import { AdPlaceholder } from "./AdPlaceholder";
 export function MonetizationBottomBar() {
   return (
     <div className="border-t border-slate-200/80 bg-gradient-to-r from-slate-50 via-white to-slate-50">
-      <div className="mx-auto max-w-6xl px-3 pt-2">
-        <p className="text-center text-[10px] font-medium text-slate-500 sm:text-left">
-          Publicité · partenaires — merci : ils participent à la viabilité du service.
-        </p>
-      </div>
       <div className="mx-auto grid max-w-6xl grid-cols-1 gap-2 px-3 py-2 sm:grid-cols-2 sm:items-stretch">
         <div className="flex min-h-[48px] items-center">
           <AdPlaceholder

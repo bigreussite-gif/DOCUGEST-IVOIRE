@@ -5,9 +5,6 @@ export function BottomAdZone() {
   return (
     <section className="border-t border-slate-200 bg-slate-50/80 py-10">
       <div className="mx-auto max-w-6xl px-4">
-        <p className="mb-4 text-center text-xs font-medium uppercase tracking-wide text-slate-500">
-          Soutiens & partenaires
-        </p>
         <div className="grid gap-4 md:grid-cols-2 md:gap-6">
           <AdPlaceholder
             label="Partenaires & annonceurs"

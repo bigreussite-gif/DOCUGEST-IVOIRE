@@ -1,7 +1,28 @@
 /**
- * Compression locale d’images pour les encarts publicitaires (WebP, poids réduit, rendu net).
+ * Compression locale d'images pour les encarts publicitaires.
+ * - GIF : transmis tels quels (conserver l'animation)
+ * - Autres : compression WebP (avec fallback JPEG)
  */
+
+function isGif(file: File): boolean {
+  return file.type === "image/gif" || file.name.toLowerCase().endsWith(".gif");
+}
+
+function readFileAsDataURL(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("Lecture fichier"));
+    reader.readAsDataURL(file);
+  });
+}
+
 export async function compressImageToWebP(file: File, maxWidth = 1200, quality = 0.82): Promise<string> {
+  // GIF animé : on retourne le data URL sans conversion pour conserver l'animation
+  if (isGif(file)) {
+    return readFileAsDataURL(file);
+  }
+
   const bitmap = await createImageBitmap(file);
   const ratio = bitmap.width > maxWidth ? maxWidth / bitmap.width : 1;
   const w = Math.round(bitmap.width * ratio);
@@ -21,10 +42,5 @@ export async function compressImageToWebP(file: File, maxWidth = 1200, quality =
   if (!blob) {
     return canvas.toDataURL("image/jpeg", 0.88);
   }
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error("Lecture fichier"));
-    reader.readAsDataURL(blob);
-  });
+  return readFileAsDataURL(new File([blob], "ad.webp", { type: "image/webp" }));
 }

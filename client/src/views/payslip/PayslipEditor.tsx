@@ -351,11 +351,7 @@ export default function PayslipEditor() {
     <div className="min-w-0 px-3 py-4 sm:p-6">
       <div className="mb-4 space-y-3">
         <TrustModelBanner variant="compact" />
-        <InlineAdStrip
-          variant="compact"
-          heading="Partenaires bulletin de paie"
-          subheading="Votre regard sur ces annonces soutient un outil gratuit pour les employeurs."
-        />
+        <InlineAdStrip variant="compact" />
       </div>
 
       <div className="rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70">

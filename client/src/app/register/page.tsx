@@ -245,11 +245,7 @@ export default function RegisterPage() {
         </div>
 
         <div className="mx-auto mt-6 w-full max-w-md">
-          <InlineAdStrip
-            variant="compact"
-            heading="Bienvenue aux partenaires"
-            subheading="Ils rendent possible l’offre gratuite au quotidien — un clic utile pour la communauté."
-          />
+          <InlineAdStrip variant="compact" adSlot="register-inline" />
         </div>
 
         <div className="mx-auto mt-6 w-full max-w-md border-t border-slate-200/70 pt-5">

@@ -560,8 +560,6 @@ export default function InvoiceEditor() {
                   variant="compact"
                   adSlot="invoice-editor-top"
                   hint="Encart sous le choix du document"
-                  heading="Gratuit grâce aux partenaires"
-                  subheading="Pas d’abonnement caché : ces visibilités financent les serveurs et le produit. Merci pour votre attention."
                 />
               </div>
 
@@ -930,8 +928,6 @@ export default function InvoiceEditor() {
             variant="compact"
             adSlot="invoice-editor-before-preview"
             hint="Encart entre le formulaire et l’aperçu"
-            heading="Encart partenaires"
-            subheading="Un clic ici aide à garder la création de documents accessible à tous."
           />
         </div>
 

@@ -129,13 +129,29 @@ export function AdPlaceholder({ label, hint, adSlot, className = "", minHeight =
     >
       {dynamic?.imageDataUrl ? <div className="w-full">{imageWithLink}</div> : null}
 
-      <span className="mt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-        {dynamic?.title || label}
-      </span>
-      {dynamic?.body ? <span className="mt-1 text-[11px] text-slate-600">{dynamic.body}</span> : null}
-      {!dynamic?.body && !dynamic?.imageDataUrl && hint ? (
-        <span className="mt-1 text-[11px] text-slate-500">{hint}</span>
-      ) : null}
+      {dynamic?.imageDataUrl?.trim() ? (
+        <>
+          {dynamic?.title?.trim() ? (
+            <span className="mt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+              {dynamic.title}
+            </span>
+          ) : null}
+          {dynamic?.body?.trim() ? (
+            <span className="mt-1 text-[11px] text-slate-600">{dynamic.body}</span>
+          ) : null}
+        </>
+      ) : (
+        <>
+          <span className="mt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">{label}</span>
+          {dynamic?.title?.trim() ? (
+            <span className="mt-1 text-[11px] font-semibold text-slate-700">{dynamic.title}</span>
+          ) : null}
+          {dynamic?.body?.trim() ? (
+            <span className="mt-1 text-[11px] text-slate-600">{dynamic.body}</span>
+          ) : null}
+          {hint ? <span className="mt-1 text-[11px] text-slate-500">{hint}</span> : null}
+        </>
+      )}
 
       {linkOk && !hasImage ? (
         <a

@@ -108,6 +108,9 @@ export function AdminAds() {
     try {
       const dataUrl = await compressImageToWebP(file, 1200, 0.82);
       setImageDataUrl(dataUrl);
+      if (file.type === "image/gif" && file.size > 3_000_000) {
+        setMsg("GIF accepté — attention : il est volumineux, ce qui peut ralentir l’affichage.");
+      }
     } catch {
       setMsg("Impossible de traiter l’image.");
     } finally {
@@ -199,7 +202,8 @@ export function AdminAds() {
                 onChange={(e) => void onPickImage(e.target.files?.[0] ?? null)}
               />
             </label>
-            {compressing ? <p className="text-sm text-slate-500 sm:col-span-2">Optimisation WebP…</p> : null}
+            {compressing ? <p className="text-sm text-slate-500 sm:col-span-2">Traitement image…</p> : null}
+            <p className="text-[11px] text-slate-400 sm:col-span-2">PNG, JPG, WebP, SVG → optimisé WebP · GIF → conservé tel quel (animation préservée)</p>
 
             <Input label="Titre (court)" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex. Promo livraison" />
             <Input label="Texte (optionnel)" value={body} onChange={(e) => setBody(e.target.value)} placeholder="Sous-titre" />
