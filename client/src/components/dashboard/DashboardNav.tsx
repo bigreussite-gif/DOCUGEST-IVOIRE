@@ -9,7 +9,7 @@ type Props = {
 const inactive =
   "text-slate-600 hover:bg-surface hover:text-text ring-1 ring-transparent hover:ring-border/70";
 const active =
-  "bg-gradient-to-r from-primary/15 to-secondary/10 text-text font-semibold ring-2 ring-primary/40 shadow-sm";
+  "bg-gradient-to-r from-primary/15 to-secondary/10 text-text font-semibold ring-2 ring-primary/35 shadow-sm";
 
 export function DashboardNav({ orientation = "horizontal", onNavigate, className = "" }: Props) {
   const { pathname, search, hash } = useLocation();
@@ -37,8 +37,8 @@ export function DashboardNav({ orientation = "horizontal", onNavigate, className
 
   const itemClass = (on: boolean) =>
     [
-      "rounded-xl px-3 py-2.5 text-sm transition-all duration-200 ease-out",
-      orientation === "vertical" ? "min-h-[44px] w-full text-left" : "min-h-[40px] whitespace-nowrap",
+      "rounded-2xl px-4 py-3 text-sm transition-all duration-200 ease-out",
+      orientation === "vertical" ? "min-h-[48px] w-full text-left" : "min-h-[48px] whitespace-nowrap",
       on ? active : inactive
     ].join(" ");
 

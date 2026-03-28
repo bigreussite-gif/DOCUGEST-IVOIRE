@@ -2,7 +2,11 @@ import { NavLink, Outlet } from "react-router-dom";
 import type { AdminSession } from "../../lib/adminApi";
 
 const inactive = "text-slate-600 hover:bg-slate-100 hover:text-text";
-const active = "bg-primary/10 font-semibold text-primary ring-1 ring-primary/25";
+const active = "bg-primary/10 font-semibold text-primary ring-2 ring-primary/20 shadow-sm";
+const navItemBase =
+  "flex min-h-[48px] items-center rounded-2xl px-3.5 py-2.5 text-sm transition-colors duration-150";
+const mobileNavScroll =
+  "flex max-w-full gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
 
 export function AdminLayout({ session }: { session: AdminSession }) {
   const { user, roleLabel, canManageUsers } = session;
@@ -17,49 +21,31 @@ export function AdminLayout({ session }: { session: AdminSession }) {
             Donnees live pour pilotage
           </div>
         </div>
-        <nav className="flex flex-1 flex-col gap-0.5 p-3">
-          <NavLink to="/admin" end className={({ isActive }) => `rounded-xl px-3 py-2.5 text-sm ${isActive ? active : inactive}`}>
+        <nav className="flex flex-1 flex-col gap-1 p-3">
+          <NavLink to="/admin" end className={({ isActive }) => `${navItemBase} ${isActive ? active : inactive}`}>
             Vue investisseur
           </NavLink>
-          <NavLink
-            to="/admin/documents"
-            className={({ isActive }) => `rounded-xl px-3 py-2.5 text-sm ${isActive ? active : inactive}`}
-          >
+          <NavLink to="/admin/documents" className={({ isActive }) => `${navItemBase} ${isActive ? active : inactive}`}>
             Documents (tableau)
           </NavLink>
-          <NavLink
-            to="/admin/ads"
-            className={({ isActive }) => `rounded-xl px-3 py-2.5 text-sm ${isActive ? active : inactive}`}
-          >
+          <NavLink to="/admin/ads" className={({ isActive }) => `${navItemBase} ${isActive ? active : inactive}`}>
             Affichages pub
           </NavLink>
           {canManageUsers ? (
-            <NavLink
-              to="/admin/users"
-              className={({ isActive }) => `rounded-xl px-3 py-2.5 text-sm ${isActive ? active : inactive}`}
-            >
+            <NavLink to="/admin/users" className={({ isActive }) => `${navItemBase} ${isActive ? active : inactive}`}>
               Utilisateurs & gouvernance
             </NavLink>
           ) : null}
-          <NavLink
-            to="/admin/audit"
-            className={({ isActive }) => `rounded-xl px-3 py-2.5 text-sm ${isActive ? active : inactive}`}
-          >
+          <NavLink to="/admin/audit" className={({ isActive }) => `${navItemBase} ${isActive ? active : inactive}`}>
             Confiance & traçabilité
           </NavLink>
-          <NavLink
-            to="/admin/reports"
-            className={({ isActive }) => `rounded-xl px-3 py-2.5 text-sm ${isActive ? active : inactive}`}
-          >
+          <NavLink to="/admin/reports" className={({ isActive }) => `${navItemBase} ${isActive ? active : inactive}`}>
             Rapports & exports
           </NavLink>
-          <NavLink
-            to="/admin/growth"
-            className={({ isActive }) => `rounded-xl px-3 py-2.5 text-sm ${isActive ? active : inactive}`}
-          >
+          <NavLink to="/admin/growth" className={({ isActive }) => `${navItemBase} ${isActive ? active : inactive}`}>
             Croissance & partenariats
           </NavLink>
-          <a href="/dashboard" className={`mt-4 rounded-xl px-3 py-2.5 text-sm ${inactive}`}>
+          <a href="/dashboard" className={`${navItemBase} mt-3 border border-slate-200/80 bg-white/80 ${inactive}`}>
             ← Application
           </a>
         </nav>
@@ -79,28 +65,64 @@ export function AdminLayout({ session }: { session: AdminSession }) {
                 </span>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2 md:hidden">
-              <NavLink to="/admin" className="rounded-lg bg-slate-100 px-3 py-2 text-sm">
+            <div className={mobileNavScroll}>
+              <NavLink
+                to="/admin"
+                end
+                className={({ isActive }) =>
+                  `shrink-0 rounded-2xl px-4 py-2.5 text-sm font-medium ${isActive ? `${active} text-primary` : "bg-slate-100 text-slate-700 ring-1 ring-slate-200/80"}`
+                }
+              >
                 Synthèse
               </NavLink>
-              <NavLink to="/admin/documents" className="rounded-lg bg-slate-100 px-3 py-2 text-sm">
+              <NavLink
+                to="/admin/documents"
+                className={({ isActive }) =>
+                  `shrink-0 rounded-2xl px-4 py-2.5 text-sm font-medium ${isActive ? `${active} text-primary` : "bg-slate-100 text-slate-700 ring-1 ring-slate-200/80"}`
+                }
+              >
                 Documents
               </NavLink>
-              <NavLink to="/admin/ads" className="rounded-lg bg-slate-100 px-3 py-2 text-sm">
+              <NavLink
+                to="/admin/ads"
+                className={({ isActive }) =>
+                  `shrink-0 rounded-2xl px-4 py-2.5 text-sm font-medium ${isActive ? `${active} text-primary` : "bg-slate-100 text-slate-700 ring-1 ring-slate-200/80"}`
+                }
+              >
                 Pub
               </NavLink>
               {canManageUsers ? (
-                <NavLink to="/admin/users" className="rounded-lg bg-slate-100 px-3 py-2 text-sm">
+                <NavLink
+                  to="/admin/users"
+                  className={({ isActive }) =>
+                    `shrink-0 rounded-2xl px-4 py-2.5 text-sm font-medium ${isActive ? `${active} text-primary` : "bg-slate-100 text-slate-700 ring-1 ring-slate-200/80"}`
+                  }
+                >
                   Utilisateurs
                 </NavLink>
               ) : null}
-              <NavLink to="/admin/audit" className="rounded-lg bg-slate-100 px-3 py-2 text-sm">
+              <NavLink
+                to="/admin/audit"
+                className={({ isActive }) =>
+                  `shrink-0 rounded-2xl px-4 py-2.5 text-sm font-medium ${isActive ? `${active} text-primary` : "bg-slate-100 text-slate-700 ring-1 ring-slate-200/80"}`
+                }
+              >
                 Journal
               </NavLink>
-              <NavLink to="/admin/reports" className="rounded-lg bg-slate-100 px-3 py-2 text-sm">
+              <NavLink
+                to="/admin/reports"
+                className={({ isActive }) =>
+                  `shrink-0 rounded-2xl px-4 py-2.5 text-sm font-medium ${isActive ? `${active} text-primary` : "bg-slate-100 text-slate-700 ring-1 ring-slate-200/80"}`
+                }
+              >
                 Rapports
               </NavLink>
-              <NavLink to="/admin/growth" className="rounded-lg bg-slate-100 px-3 py-2 text-sm">
+              <NavLink
+                to="/admin/growth"
+                className={({ isActive }) =>
+                  `shrink-0 rounded-2xl px-4 py-2.5 text-sm font-medium ${isActive ? `${active} text-primary` : "bg-slate-100 text-slate-700 ring-1 ring-slate-200/80"}`
+                }
+              >
                 Croissance
               </NavLink>
             </div>

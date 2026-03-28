@@ -12,6 +12,8 @@ import { TrustModelBanner } from "../components/trust/TrustModelBanner";
 import { ConnectionBanner } from "../components/ConnectionBanner";
 import { AppBrand } from "../components/dashboard/AppBrand";
 import { DashboardNav } from "../components/dashboard/DashboardNav";
+import { DashboardSection } from "../components/dashboard/DashboardSection";
+import { QuickActionCard } from "../components/dashboard/QuickActionCard";
 import { useNavLayout } from "../components/dashboard/useNavLayout";
 import Profile from "./Profile";
 import { isBackofficeRole, roleLabelFr } from "../lib/roles";
@@ -95,21 +97,24 @@ function DashboardHome() {
   const firstName = auth.user?.full_name?.split(" ")[0] ?? "—";
 
   return (
-      <div className="min-w-0 px-3 py-4 sm:p-6">
-      <div className="rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70 sm:p-5">
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <div>
-            <div className="text-sm text-slate-600">Bonjour,</div>
-            <div className="text-2xl font-bold text-text">{firstName}</div>
-            <div className="mt-1 text-base leading-relaxed text-slate-600">
-              Pilotez vos factures, devis et bulletins de paie depuis un espace clair et professionnel.
-            </div>
+    <div className="min-w-0 px-3 py-4 sm:p-6">
+      <div className="rounded-2xl bg-gradient-to-br from-white via-bg to-surface/90 p-4 shadow-soft ring-1 ring-border/70 sm:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Espace professionnel</p>
+            <p className="mt-1 text-sm text-slate-600">Bonjour,</p>
+            <p className="mt-0.5 text-2xl font-bold tracking-tight text-text sm:text-3xl">{firstName}</p>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-600">
+              Créez vos documents en quelques gestes — tout est regroupé ci-dessous.
+            </p>
           </div>
-          <div className="text-right text-sm text-slate-600">
+          <div className="shrink-0 rounded-2xl bg-surface px-4 py-3 text-sm ring-1 ring-border/70 sm:text-right">
             {auth.user?.company_name ? (
-              <span className="font-medium text-text">{auth.user.company_name}</span>
+              <span className="font-semibold text-text">{auth.user.company_name}</span>
             ) : (
-              <span>Complétez votre entreprise dans le profil pour vos documents</span>
+              <Link to="/dashboard/profile" className="font-medium text-primary underline-offset-2 hover:underline">
+                Compléter le profil entreprise
+              </Link>
             )}
           </div>
         </div>
@@ -126,52 +131,82 @@ function DashboardHome() {
         />
       </div>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        <Link to="/dashboard/invoice/new?type=invoice" className="block">
-          <div className="rounded-2xl bg-primary/10 p-5 ring-1 ring-primary/30 transition hover:bg-primary/15">
-            <div className="text-sm font-semibold text-text">Nouvelle facture</div>
-            <div className="mt-2 text-sm leading-relaxed text-slate-700">Numérotation, TVA, PDF en un clic</div>
-          </div>
-        </Link>
-        <Link to="/dashboard/invoice/new?type=proforma" className="block">
-          <div className="rounded-2xl bg-secondary/10 p-5 ring-1 ring-secondary/30 transition hover:bg-secondary/15">
-            <div className="text-sm font-semibold text-text">Proforma / devis</div>
-            <div className="mt-2 text-sm leading-relaxed text-slate-700">Même éditeur, type adapté</div>
-          </div>
-        </Link>
-        <Link to="/dashboard/invoice/express" className="block">
-          <div className="rounded-2xl border border-emerald-300/80 bg-gradient-to-br from-emerald-50 to-teal-50/90 p-5 ring-1 ring-emerald-200/80 transition hover:from-emerald-100/90 hover:to-teal-50">
-            <div className="text-sm font-semibold text-emerald-950">Facture e-commerce (rapide)</div>
-            <div className="mt-2 text-sm leading-relaxed text-emerald-900/90">Panier, livraison, plusieurs lignes TTC</div>
-          </div>
-        </Link>
-        <Link to="/dashboard/payslip/new" className="block">
-          <div className="rounded-2xl bg-warning/10 p-5 ring-1 ring-warning/30 transition hover:bg-warning/15">
-            <div className="text-sm font-semibold text-text">Bulletin de salaire</div>
-            <div className="mt-2 text-sm leading-relaxed text-slate-700">Salaire, retenues, net à payer</div>
-          </div>
-        </Link>
-        <Link to="/dashboard#documents" className="block">
-          <div className="rounded-2xl bg-surface p-5 ring-1 ring-border/70 transition hover:bg-bg">
-            <div className="text-sm font-semibold text-text">Mes documents</div>
-            <div className="mt-2 text-sm leading-relaxed text-slate-700">Historique ci-dessous</div>
-          </div>
-        </Link>
-      </div>
-
-      <div id="documents" className="mt-8 scroll-mt-28 rounded-2xl bg-bg p-5 shadow-soft ring-1 ring-border/70">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-sm font-semibold text-text">Mes derniers documents</div>
-          <div className="text-xs text-slate-500">Tri du plus récent au plus ancien</div>
+      <DashboardSection
+        title="Créer un document"
+        kicker="Actions"
+        description="Choisissez le type de document — les options les plus utilisées sont mises en avant."
+        className="mt-8"
+      >
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+          <QuickActionCard
+            to="/dashboard/invoice/new?type=invoice"
+            variant="primary"
+            emoji="📄"
+            title="Nouvelle facture"
+            description="TVA, lignes, PDF — le flux standard pour vos clients."
+          />
+          <QuickActionCard
+            to="/dashboard/payslip/new"
+            variant="warm"
+            emoji="🧾"
+            title="Bulletin de salaire"
+            description="Salaire, retenues, net à payer — PDF prêt à remettre."
+          />
         </div>
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+          <QuickActionCard
+            to="/dashboard/invoice/new?type=proforma"
+            variant="secondary"
+            emoji="📋"
+            title="Proforma / devis"
+            description="Même éditeur, type de document adapté."
+          />
+          <QuickActionCard
+            to="/dashboard/invoice/express"
+            variant="accent"
+            emoji="🛒"
+            title="Facture e-commerce"
+            description="Lignes TTC, livraison — idéal vente en ligne."
+          />
+          <QuickActionCard
+            to="/dashboard#documents"
+            variant="muted"
+            emoji="📂"
+            title="Mes documents"
+            description="Historique et brouillons — voir la liste ci-dessous."
+          />
+        </div>
+      </DashboardSection>
+
+      <DashboardSection
+        id="documents"
+        title="Historique"
+        kicker="Documents"
+        description="Vos derniers fichiers, du plus récent au plus ancien."
+        className="mt-10"
+      >
+        <div className="rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70 sm:p-6">
         {loading ? (
-          <div className="mt-4 text-base text-slate-600">Chargement…</div>
+          <div className="mt-2 text-base text-slate-600">Chargement…</div>
         ) : docs.length === 0 ? (
-          <div className="mt-4 text-base leading-relaxed text-slate-600">
-            Aucun document pour l’instant. Lance une facture ou un bulletin pour remplir ton tableau.
+          <div className="mt-2 rounded-2xl border border-dashed border-border/80 bg-surface/80 px-4 py-8 text-center">
+            <p className="text-sm font-medium text-text">Aucun document pour l’instant</p>
+            <p className="mt-2 text-sm text-slate-600">Créez une facture ou un bulletin pour commencer.</p>
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-center">
+              <Link to="/dashboard/invoice/new?type=invoice">
+                <Button variant="primary" className="h-12 w-full min-w-[12rem] rounded-2xl sm:w-auto">
+                  Nouvelle facture
+                </Button>
+              </Link>
+              <Link to="/dashboard/payslip/new">
+                <Button variant="secondary" className="h-12 w-full min-w-[12rem] rounded-2xl sm:w-auto">
+                  Bulletin de salaire
+                </Button>
+              </Link>
+            </div>
           </div>
         ) : (
-          <ul className="mt-4 divide-y divide-border/60">
+          <ul className="mt-2 divide-y divide-border/60">
             {docs.map((d) => (
               <li key={d.id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -218,24 +253,23 @@ function DashboardHome() {
             ))}
           </ul>
         )}
-        {!loading ? (
-          <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        {!loading && docs.length > 0 ? (
+          <div className="mt-4 rounded-2xl border border-emerald-200/80 bg-gradient-to-r from-emerald-50/90 to-teal-50/50 px-4 py-3 ring-1 ring-emerald-100/80">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <div className="text-sm font-semibold text-emerald-900">Facture rapide e-commerce</div>
-                <div className="text-xs text-emerald-800">
-                  Ventes en ligne : plusieurs lignes TTC, frais de livraison, PDF en un clic.
-                </div>
+                <div className="text-sm font-semibold text-emerald-900">Besoin d’une facture panier / livraison ?</div>
+                <div className="text-xs text-emerald-800">Accès rapide au mode e-commerce.</div>
               </div>
-              <Link to="/dashboard/invoice/express">
-                <Button variant="primary" className="h-10 text-sm">
-                  Ouvrir la facture rapide
+              <Link to="/dashboard/invoice/express" className="shrink-0">
+                <Button variant="primary" className="h-11 w-full rounded-2xl px-5 text-sm sm:w-auto">
+                  Facture e-commerce
                 </Button>
               </Link>
             </div>
           </div>
         ) : null}
-      </div>
+        </div>
+      </DashboardSection>
 
       <div className="mt-8">
         <InlineAdStrip variant="compact" />
@@ -346,32 +380,32 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="min-h-screen bg-surface">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50/90 via-surface to-slate-50/80">
       <ConnectionBanner />
       {auth.error ? (
         <div
           role="status"
-          className="flex flex-col items-center justify-center gap-2 border-b border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-950 sm:flex-row sm:flex-wrap sm:gap-3"
+          className="flex flex-col items-stretch gap-3 border-b border-amber-200/90 bg-gradient-to-b from-amber-50 to-amber-50/70 px-4 py-4 text-sm text-amber-950 sm:items-center sm:px-6"
         >
-          <span className="max-w-2xl text-center">{auth.error}</span>
-          <div className="flex flex-wrap items-center justify-center gap-2">
+          <span className="max-w-2xl text-center text-[15px] font-medium leading-snug sm:text-sm">{auth.error}</span>
+          <div className="flex w-full max-w-md flex-col gap-2 sm:mx-auto sm:w-auto sm:flex-row sm:flex-wrap sm:justify-center">
             <button
               type="button"
               disabled={auth.loading}
               onClick={() => void loadMe()}
-              className="shrink-0 rounded-lg border border-amber-400 bg-white px-3 py-1.5 text-sm font-medium text-amber-950 shadow-sm transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex min-h-[48px] w-full shrink-0 items-center justify-center rounded-2xl border border-amber-400 bg-white px-4 py-2.5 text-sm font-semibold text-amber-950 shadow-sm transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[10rem]"
             >
               {auth.loading ? "Vérification…" : "Réessayer"}
             </button>
             <button
               type="button"
               onClick={() => clearLocalSessionAndRelogin()}
-              className="shrink-0 rounded-lg border border-slate-400 bg-white px-3 py-1.5 text-sm font-medium text-slate-800 shadow-sm transition hover:bg-slate-100"
+              className="inline-flex min-h-[48px] w-full shrink-0 items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-100 sm:w-auto sm:min-w-[10rem]"
             >
               Réinitialiser la session
             </button>
           </div>
-          <p className="w-full text-center text-[11px] text-amber-900/80">
+          <p className="w-full text-center text-[11px] leading-relaxed text-amber-900/75">
             En cas de blocage répété, ce bouton efface le jeton et le cache local (comme une déconnexion forcée).
           </p>
         </div>
@@ -379,29 +413,37 @@ export default function Dashboard() {
 
       {!isDocEditorRoute ? (
         <>
-          <div className="border-b border-emerald-200/90 bg-gradient-to-r from-emerald-50 via-white to-teal-50/80">
-            <div className="mx-auto flex max-w-[1600px] flex-col gap-2 px-3 py-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-900/90">Actions rapides</p>
-              <div className="flex flex-wrap items-center gap-2">
+          <div className="border-b border-emerald-200/60 bg-white/90 backdrop-blur-sm">
+            <div className="scrollbar-none mx-auto flex max-w-[1600px] flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+              <p className="shrink-0 text-[11px] font-semibold uppercase tracking-wider text-emerald-900/80">
+                Raccourcis
+              </p>
+              <div className="flex max-w-full items-center gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible sm:pb-0 [&::-webkit-scrollbar]:hidden">
+                <Link
+                  to="/dashboard/invoice/new?type=invoice"
+                  className="inline-flex shrink-0 items-center justify-center rounded-2xl bg-primary px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:brightness-105 sm:text-sm"
+                >
+                  + Facture
+                </Link>
+                <Link
+                  to="/dashboard/payslip/new"
+                  className="inline-flex shrink-0 items-center justify-center rounded-2xl border border-warning/40 bg-warning/10 px-4 py-2.5 text-xs font-semibold text-amber-950 transition hover:bg-warning/15 sm:text-sm"
+                >
+                  + Bulletin
+                </Link>
                 <Link
                   to="/dashboard/invoice/express"
-                  className="inline-flex min-h-[40px] items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm ring-1 ring-emerald-700/20 transition hover:bg-emerald-700"
+                  className="inline-flex shrink-0 items-center justify-center rounded-2xl bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 sm:text-sm"
                 >
-                  Facture e-commerce (rapide)
+                  E-commerce
                 </Link>
                 <button
                   type="button"
                   onClick={() => clearLocalSessionAndRelogin()}
-                  className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-slate-400 bg-white px-4 py-2 text-sm font-medium text-slate-800 shadow-sm transition hover:bg-slate-50"
+                  className="inline-flex shrink-0 items-center justify-center rounded-2xl border border-slate-300 bg-white px-3 py-2.5 text-xs font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 sm:text-sm"
                 >
-                  Réinitialiser la session
+                  Réinit. session
                 </button>
-                <Link
-                  to="/dashboard"
-                  className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-border bg-surface px-3 py-2 text-sm font-medium text-text hover:bg-bg"
-                >
-                  Tableau de bord
-                </Link>
               </div>
             </div>
           </div>

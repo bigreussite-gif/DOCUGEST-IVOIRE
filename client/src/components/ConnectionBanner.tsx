@@ -20,8 +20,8 @@ export function ConnectionBanner() {
   return (
     <div
       role="status"
-      className="sticky top-0 z-[100] bg-amber-500 px-3 py-2.5 text-center text-sm font-medium text-white"
-      style={{ paddingTop: "max(0.625rem, env(safe-area-inset-top))" }}
+      className="sticky top-0 z-[100] border-b border-amber-600/25 bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-3 text-center text-[13px] font-medium leading-snug text-white shadow-sm sm:text-sm"
+      style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
     >
       Hors ligne — vos documents sont enregistrés sur cet appareil. La mise à jour vers le serveur se fera
       automatiquement dès que la connexion revient.
