@@ -93,18 +93,23 @@ export const useAdSlotsStore = create<AdSlotsState>((set, get) => ({
         const bySlot = buildBySlot(items);
         lastNetworkFetch = Date.now();
         set({ items, bySlot, isFetching: false });
+        // Persistance avec fallbacks progressifs (images lourdes / GIF)
         try {
           localStorage.setItem(AD_SLOTS_LS_KEY, JSON.stringify({ items, t: lastNetworkFetch }));
         } catch {
           try {
-            const slim = items.map((row) => ({
-              ...row,
-              imageDataUrl:
-                row.imageDataUrl && row.imageDataUrl.length < 400_000 ? row.imageDataUrl : ""
+            const slim = items.map((r) => ({
+              ...r,
+              imageDataUrl: r.imageDataUrl && r.imageDataUrl.length < 2_000_000 ? r.imageDataUrl : ""
             }));
             localStorage.setItem(AD_SLOTS_LS_KEY, JSON.stringify({ items: slim, t: lastNetworkFetch }));
           } catch {
-            /* quota : l’app garde les données en mémoire pour la session */
+            try {
+              const noImg = items.map((r) => ({ ...r, imageDataUrl: "" }));
+              localStorage.setItem(AD_SLOTS_LS_KEY, JSON.stringify({ items: noImg, t: lastNetworkFetch }));
+            } catch {
+              /* quota critique : données gardées en mémoire */
+            }
           }
         }
       } catch {

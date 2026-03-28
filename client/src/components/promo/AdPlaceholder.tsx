@@ -5,10 +5,11 @@ import { useAdSlotsStore } from "../../store/adSlotsStore";
 type Props = {
   label: string;
   hint?: string;
-  /** Rôle sémantique pour intégration future AdSense (data-ad-slot) */
   adSlot?: string;
   className?: string;
   minHeight?: string;
+  /** En mode admin, afficher le placeholder vide. Par défaut, les zones vides sont invisibles. */
+  showEmpty?: boolean;
 };
 
 type SlotConfig = {
@@ -44,11 +45,9 @@ const FRAME_BOX: Record<SlotConfig["imageFrame"], string> = {
   square: "aspect-square w-full max-h-[min(280px,45vh)]"
 };
 
-/**
- * Emplacement publicitaire — données partagées via le store (un seul fetch + cache localStorage).
- */
-export function AdPlaceholder({ label, hint, adSlot, className = "", minHeight = "min-h-[72px]" }: Props) {
+export function AdPlaceholder({ label, hint, adSlot, className = "", minHeight = "min-h-[72px]", showEmpty = false }: Props) {
   const raw = useAdSlotsStore((s) => (adSlot ? s.bySlot[adSlot] : undefined));
+  const isFetching = useAdSlotsStore((s) => s.isFetching);
 
   const dynamic = useMemo((): SlotConfig | null => {
     if (!raw) return null;
@@ -71,6 +70,12 @@ export function AdPlaceholder({ label, hint, adSlot, className = "", minHeight =
     trackAdEvent("view", adSlot);
   }, [adSlot]);
 
+  const hasContent = Boolean(dynamic?.imageDataUrl?.trim() || dynamic?.title?.trim() || dynamic?.body?.trim());
+
+  // Si aucun contenu et pas en mode showEmpty : ne rien afficher
+  // (évite les zones vides visibles par les utilisateurs)
+  if (!hasContent && !showEmpty && !isFetching) return null;
+
   const href = dynamic?.ctaUrl ? normalizeHref(dynamic.ctaUrl) : "";
   const linkOk = Boolean(href) && isValidHttpUrl(href);
   const fit = dynamic?.imageFit ?? "cover";
@@ -81,25 +86,20 @@ export function AdPlaceholder({ label, hint, adSlot, className = "", minHeight =
     if (adSlot) trackAdEvent("click", adSlot);
   }
 
-  const hasContent = Boolean(dynamic?.imageDataUrl?.trim() || dynamic?.title?.trim() || dynamic?.body?.trim());
+  const hasImage = Boolean(dynamic?.imageDataUrl?.trim());
 
-  const imageBlock =
-    dynamic?.imageDataUrl ? (
-      <div
-        className={[
-          "relative w-full overflow-hidden rounded-lg bg-slate-200/50 ring-1 ring-slate-200/70",
-          FRAME_BOX[frame]
-        ].join(" ")}
-      >
-        <img
-          src={dynamic.imageDataUrl}
-          alt={dynamic.title || label || "Publicité"}
-          className={`h-full w-full ${imgFitClass} object-center`}
-          loading={adSlot === "top-banner" || adSlot === "top-bar-partners" ? "eager" : "lazy"}
-          decoding="async"
-        />
-      </div>
-    ) : null;
+  const imageBlock = dynamic?.imageDataUrl ? (
+    <div className={["relative w-full overflow-hidden rounded-xl bg-slate-200/50", FRAME_BOX[frame]].join(" ")}>
+      {/* GIF animé : pas de ring pour ne pas couper les bords */}
+      <img
+        src={dynamic.imageDataUrl}
+        alt={dynamic.title || label || "Publicité"}
+        className={`h-full w-full ${imgFitClass} object-center`}
+        loading={adSlot === "top-banner" || adSlot === "top-bar-partners" ? "eager" : "lazy"}
+        decoding="async"
+      />
+    </div>
+  ) : null;
 
   const imageWithLink =
     dynamic?.imageDataUrl && linkOk ? (
@@ -112,24 +112,42 @@ export function AdPlaceholder({ label, hint, adSlot, className = "", minHeight =
       >
         {imageBlock}
       </a>
-    ) : (
-      imageBlock
+    ) : imageBlock;
+
+  // Zone vide pendant le chargement : on réserve l'espace sans afficher le label
+  if (!hasContent && isFetching) {
+    return (
+      <div
+        className={`rounded-xl ${minHeight} ${className} animate-pulse bg-slate-100/70`}
+        data-ad-slot={adSlot}
+        aria-hidden
+      />
     );
+  }
 
-  const hasImage = Boolean(dynamic?.imageDataUrl?.trim());
+  // Zone vide admin (showEmpty=true) : placeholder visible pour les admins
+  if (!hasContent && showEmpty) {
+    return (
+      <div
+        className={`flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300/80 bg-gradient-to-br from-slate-50 to-slate-100/90 px-3 py-2 text-center ${minHeight} ${className}`}
+        data-ad-slot={adSlot}
+      >
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{label}</span>
+        {hint ? <span className="mt-1 text-[10px] text-slate-400">{hint}</span> : null}
+        {adSlot ? <span className="mt-0.5 text-[9px] text-slate-300 font-mono">slot: {adSlot}</span> : null}
+      </div>
+    );
+  }
 
-  const shellClass = hasContent
-    ? "border border-slate-200/90 bg-white/95 shadow-sm"
-    : "border border-dashed border-slate-300/80 bg-gradient-to-br from-slate-50 to-slate-100/90";
-
+  // Contenu réel
   return (
     <div
-      className={`flex flex-col items-center justify-center rounded-xl px-3 py-2 text-center ${minHeight} ${shellClass} ${className}`}
+      className={`flex flex-col items-center justify-center rounded-xl bg-white px-3 py-2 text-center ring-1 ring-slate-200/80 ${minHeight} ${className}`}
       data-ad-slot={adSlot}
     >
       {dynamic?.imageDataUrl ? <div className="w-full">{imageWithLink}</div> : null}
 
-      {dynamic?.imageDataUrl?.trim() ? (
+      {hasImage ? (
         <>
           {dynamic?.title?.trim() ? (
             <span className="mt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
@@ -142,14 +160,12 @@ export function AdPlaceholder({ label, hint, adSlot, className = "", minHeight =
         </>
       ) : (
         <>
-          <span className="mt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">{label}</span>
           {dynamic?.title?.trim() ? (
-            <span className="mt-1 text-[11px] font-semibold text-slate-700">{dynamic.title}</span>
+            <span className="mt-1 text-[12px] font-semibold text-slate-700">{dynamic.title}</span>
           ) : null}
           {dynamic?.body?.trim() ? (
             <span className="mt-1 text-[11px] text-slate-600">{dynamic.body}</span>
           ) : null}
-          {hint ? <span className="mt-1 text-[11px] text-slate-500">{hint}</span> : null}
         </>
       )}
 
@@ -158,10 +174,10 @@ export function AdPlaceholder({ label, hint, adSlot, className = "", minHeight =
           href={href}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-2 inline-flex rounded-md bg-primary px-2 py-1 text-[10px] font-semibold text-white"
+          className="mt-2 inline-flex rounded-xl bg-primary px-3 py-1.5 text-[11px] font-semibold text-white transition hover:brightness-105"
           onClick={onTrackedClick}
         >
-          {dynamic?.ctaLabel?.trim() || "Voir"}
+          {dynamic?.ctaLabel?.trim() || "En savoir plus"}
         </a>
       ) : null}
       {linkOk && hasImage && dynamic?.ctaLabel?.trim() ? (
@@ -169,7 +185,7 @@ export function AdPlaceholder({ label, hint, adSlot, className = "", minHeight =
           href={href}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-2 inline-flex rounded-md bg-primary/90 px-2 py-1 text-[10px] font-semibold text-white"
+          className="mt-2 inline-flex rounded-xl bg-primary/90 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:brightness-105"
           onClick={onTrackedClick}
         >
           {dynamic.ctaLabel}

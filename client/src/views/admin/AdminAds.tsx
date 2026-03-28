@@ -21,15 +21,22 @@ type AdCfg = {
 };
 
 const PRESET_SLOTS = [
+  // Barres globales (visibles sur toutes les pages)
   "top-bar-partners",
   "top-banner",
   "bottom-bar-partners",
   "bottom-bar-adsense",
-  "landing-hero",
+  // Pages d'entrée (login / inscription)
+  "login-inline",
+  "register-inline",
+  // Dashboard
   "dashboard-inline",
-  "invoice-sidebar",
+  // Éditeurs de documents
   "invoice-editor-top",
-  "invoice-editor-before-preview"
+  "invoice-editor-before-preview",
+  "payslip-editor-inline",
+  // Landing
+  "landing-hero"
 ];
 
 const SLOT_LABELS: Record<string, string> = {
@@ -37,11 +44,13 @@ const SLOT_LABELS: Record<string, string> = {
   "top-banner": "Bandeau haut — pub principale",
   "bottom-bar-partners": "Barre bas — partenaires",
   "bottom-bar-adsense": "Barre bas — Ads",
-  "landing-hero": "Landing — héros",
-  "dashboard-inline": "Dashboard — inline",
-  "invoice-sidebar": "Facture — encart (legacy)",
+  "login-inline": "Page connexion — bandeau pub",
+  "register-inline": "Page inscription — bandeau pub",
+  "dashboard-inline": "Dashboard — inline (principal)",
   "invoice-editor-top": "Facture — après type de document",
-  "invoice-editor-before-preview": "Facture — avant aperçu PDF"
+  "invoice-editor-before-preview": "Facture — avant aperçu PDF",
+  "payslip-editor-inline": "Bulletin de salaire — inline",
+  "landing-hero": "Landing — héros"
 };
 
 export function AdminAds() {

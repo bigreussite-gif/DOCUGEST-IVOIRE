@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { InlineAdStrip } from "@/components/promo/InlineAdStrip";
 import { SorobossFooter } from "@/components/promo/SorobossFooter";
 import { TrustModelBanner } from "@/components/trust/TrustModelBanner";
+import { AdSlotsBootstrap } from "@/components/promo/AdSlotsBootstrap";
 import { FRANCOPHONE_AFRICA_COUNTRIES, findCountryByCode } from "@/lib/francophonePolicy";
 import { useAuthStore, type AuthUser } from "@/store/authStore";
 
@@ -88,6 +89,7 @@ export default function RegisterPage() {
       className="min-h-screen bg-gradient-to-b from-slate-50/90 via-bg to-slate-50/85 px-4 py-6 sm:py-10"
       style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
     >
+      <AdSlotsBootstrap />
       <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-md flex-col justify-center">
         <div className="mx-auto mb-6 flex w-full max-w-md items-center justify-between gap-3">
           <div className="rounded-2xl bg-white px-3 py-2 shadow-soft ring-2 ring-slate-200/80">

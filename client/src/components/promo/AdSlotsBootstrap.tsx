@@ -1,23 +1,29 @@
+"use client";
 import { useEffect } from "react";
-import { AD_SLOTS_LS_KEY, useAdSlotsStore } from "@/store/adSlotsStore";
+import { AD_SLOTS_LS_KEY, useAdSlotsStore } from "../../store/adSlotsStore";
 
 /**
- * Charge les pubs une seule fois (cache disque + API), réagit aux changements admin (autre onglet / focus).
- * À monter une fois à la racine de la SPA.
+ * Charge les pubs dès que le composant est monté.
+ * - Premier chargement immédiat (pas de throttle)
+ * - Refresh sur focus fenêtre / changement de visibilité (retour d'onglet)
+ * - Synchronisation entre onglets via StorageEvent + BroadcastChannel
+ *
+ * À monter une fois dans chaque page/layout qui affiche des pubs.
  */
 export function AdSlotsBootstrap() {
   const refresh = useAdSlotsStore((s) => s.refresh);
   const rehydrateFromStorage = useAdSlotsStore((s) => s.rehydrateFromStorage);
 
+  // Chargement immédiat au montage (force=true pour ignorer le throttle 45s)
   useEffect(() => {
-    void refresh();
+    void refresh({ force: true });
   }, [refresh]);
 
+  // Sync multi-onglets + refresh au retour
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
       if (e.key === AD_SLOTS_LS_KEY) rehydrateFromStorage();
     };
-    window.addEventListener("storage", onStorage);
 
     let bc: BroadcastChannel | null = null;
     try {
@@ -27,10 +33,13 @@ export function AdSlotsBootstrap() {
       /* navigateurs sans BroadcastChannel */
     }
 
-    const onFocus = () => void refresh();
+    // Refresh quand l'utilisateur revient sur l'onglet
+    const onFocus = () => void refresh({ force: false });
     const onVis = () => {
-      if (document.visibilityState === "visible") void refresh();
+      if (document.visibilityState === "visible") void refresh({ force: false });
     };
+
+    window.addEventListener("storage", onStorage);
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVis);
 
