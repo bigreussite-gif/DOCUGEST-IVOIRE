@@ -140,28 +140,33 @@ export async function touchLastLogin(userId: string): Promise<void> {
 }
 
 export async function ensureBootstrapAdmin(userId: string): Promise<void> {
-  const email = process.env.ADMIN_BOOTSTRAP_EMAIL;
+  const bootstrapEmail = process.env.ADMIN_BOOTSTRAP_EMAIL?.toLowerCase() ?? null;
   try {
     const pool = getPool();
     const u = await getUserById(userId);
     if (!u) return;
     if (u.role === "super_admin") return;
 
-    // Mode explicite: email bootstrap déclaré.
-    if (email && String(u.email).toLowerCase() === email.toLowerCase()) {
+    const userEmail = String(u.email ?? "").toLowerCase();
+
+    // Mode explicite: si l'email bootstrap est configuré et correspond → toujours promouvoir
+    // (outrepasse la limite "un seul super_admin" : c'est le compte propriétaire).
+    if (bootstrapEmail && userEmail === bootstrapEmail) {
       await pool.query(`UPDATE public.users SET role = 'super_admin' WHERE id = $1`, [userId]);
+      console.log("[serverStore] ensureBootstrapAdmin: promouvoir via ADMIN_BOOTSTRAP_EMAIL", userId);
       return;
     }
 
-    // Mode sécurité terrain: si aucun super_admin n'existe encore, on élève
+    // Mode sécurité terrain: si aucun super_admin n'existe, on élève
     // le premier utilisateur connecté pour débloquer l'accès admin.
     const { rows } = await pool.query(`SELECT COUNT(*)::int AS c FROM public.users WHERE role = 'super_admin'`);
     const count = Number(rows[0]?.c ?? 0);
     if (count === 0) {
       await pool.query(`UPDATE public.users SET role = 'super_admin' WHERE id = $1`, [userId]);
+      console.log("[serverStore] ensureBootstrapAdmin: premier super_admin auto-promu", userId);
     }
   } catch {
-    /* migration non appliquée */
+    /* colonne role non migrée ou connexion DB — ignoré */
   }
 }
 

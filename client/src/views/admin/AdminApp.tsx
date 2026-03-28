@@ -187,12 +187,36 @@ function AdminLogin({
     }
   }, []);
 
+  /** Tente de rafraîchir le token (rôle actuel en base) puis ré-essaie la session admin. */
+  async function tryRefreshThenSession(): Promise<AdminSession | null> {
+    try {
+      const token = localStorage.getItem("docugest_token");
+      if (!token) return null;
+      const res = await fetch("/api/auth/refresh", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) return null;
+      const data = (await res.json().catch(() => ({}))) as { token?: string; user?: unknown };
+      if (data?.token) {
+        localStorage.setItem("docugest_token", data.token);
+      }
+      if (data?.user) {
+        localStorage.setItem("docugest_user_cache", JSON.stringify(data.user));
+      }
+      // Re-tente la session avec le nouveau token
+      const session = await adminFetch<AdminSession>("/session");
+      return session;
+    } catch {
+      return null;
+    }
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
     try {
-      // Force l'auth sur la route Next même origine (évite toute base externe mal configurée).
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -207,19 +231,34 @@ function AdminLogin({
         setError("Connexion réussie mais token absent. Vérifiez la configuration serveur.");
         return;
       }
-      if (data?.token) {
-        localStorage.setItem("docugest_token", data.token);
-      }
+      localStorage.setItem("docugest_token", data.token);
       if (data?.user) {
         localStorage.setItem("docugest_user_cache", JSON.stringify(data.user));
       }
-      const session = await adminFetch<AdminSession>("/session");
-      onLoggedIn(session);
-      navigate("/admin", { replace: true });
+
+      let session: AdminSession | null = null;
+      try {
+        session = await adminFetch<AdminSession>("/session");
+      } catch (e) {
+        if (e instanceof AdminApiError && e.status === 403) {
+          // Token potentiellement stale (rôle promu en base après émission du JWT).
+          // On tente un refresh automatique.
+          session = await tryRefreshThenSession();
+          if (!session) {
+            setError("Compte connecté, mais sans droits admin.");
+            return;
+          }
+        } else {
+          throw e;
+        }
+      }
+
+      if (session) {
+        onLoggedIn(session);
+        navigate("/admin", { replace: true });
+      }
     } catch (e) {
-      if (e instanceof AdminApiError && e.status === 403) {
-        setError("Compte connecté, mais sans droits admin.");
-      } else if (e instanceof AdminApiError && e.status === 401) {
+      if (e instanceof AdminApiError && e.status === 401) {
         localStorage.removeItem("docugest_token");
         localStorage.removeItem("docugest_user_cache");
         setError("Session invalide. Reconnectez-vous.");
@@ -237,7 +276,27 @@ function AdminLogin({
     setActivating(true);
     setError(null);
     try {
-      await adminFetch("/bootstrap-super-admin", { method: "POST" });
+      // Tente le bootstrap (peut échouer si déjà super_admin ou config manquante)
+      try {
+        await adminFetch("/bootstrap-super-admin", { method: "POST" });
+      } catch (bootstrapErr) {
+        // Si le bootstrap dit "already_super_admin" ou "Un super administrateur existe déjà"
+        // on continue quand même avec le refresh du token
+        const msg = bootstrapErr instanceof AdminApiError
+          ? bootstrapErr.message
+          : String((bootstrapErr as { message?: string })?.message ?? "");
+        if (!msg.includes("déjà") && !msg.includes("already")) throw bootstrapErr;
+      }
+
+      // Rafraîchit le token pour inclure le rôle actuel en base
+      const refreshed = await tryRefreshThenSession();
+      if (refreshed) {
+        onLoggedIn(refreshed);
+        navigate("/admin", { replace: true });
+        return;
+      }
+
+      // Fallback : session directe
       const session = await adminFetch<AdminSession>("/session");
       onLoggedIn(session);
       navigate("/admin", { replace: true });
