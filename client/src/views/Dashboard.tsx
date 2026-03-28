@@ -275,41 +275,102 @@ function DashboardHome() {
   );
 }
 
+function closeAccountMenu(root: HTMLElement | null) {
+  const details = root?.closest("details");
+  if (details) details.open = false;
+}
+
 function UserMenu({ compact }: { compact?: boolean }) {
   const auth = useAuthStore();
   const clearLocalSessionAndRelogin = useAuthStore((s) => s.clearLocalSessionAndRelogin);
-  return (
-    <div
-      className={[
-        "flex items-center gap-3",
-        compact ? "flex-row flex-wrap justify-end gap-x-3 gap-y-2" : "flex-col items-stretch"
-      ].join(" ")}
-    >
-      <div className={compact ? "min-w-0 flex-1 text-left sm:flex-none sm:text-right" : ""}>
-        <div className="text-sm font-semibold text-text">{auth.user?.full_name ?? "—"}</div>
-        <div className="truncate text-xs text-slate-600">{auth.user?.company_name ?? "Entreprise"}</div>
-        {auth.user?.role ? (
-          <div className="mt-0.5 text-[11px] font-medium text-primary">{roleLabelFr(auth.user.role)}</div>
-        ) : null}
+  const name = auth.user?.full_name ?? "—";
+  const company = auth.user?.company_name ?? "Entreprise";
+
+  if (!compact) {
+    return (
+      <div className="space-y-3">
+        <div>
+          <p className="text-sm font-semibold text-text">{name}</p>
+          <p className="mt-0.5 truncate text-xs text-slate-600">{company}</p>
+          {auth.user?.role ? (
+            <p className="mt-1 text-[11px] font-medium text-primary">{roleLabelFr(auth.user.role)}</p>
+          ) : null}
+        </div>
+        <div className="flex flex-col gap-1 border-t border-border/60 pt-3">
+          <Link
+            to="/dashboard/profile"
+            className="rounded-lg py-1.5 text-sm font-medium text-primary transition hover:bg-bg hover:underline"
+          >
+            Profil
+          </Link>
+          <button
+            type="button"
+            className="rounded-lg py-1.5 text-left text-sm text-slate-700 transition hover:bg-bg"
+            onClick={() => auth.logout()}
+          >
+            Déconnexion
+          </button>
+          <button
+            type="button"
+            className="rounded-lg py-1.5 text-left text-[11px] text-slate-500 transition hover:bg-bg hover:text-slate-700"
+            onClick={() => clearLocalSessionAndRelogin()}
+          >
+            Réinitialiser la session
+          </button>
+        </div>
       </div>
-      <div className={compact ? "flex shrink-0 flex-wrap items-center justify-end gap-2" : "flex flex-col gap-2"}>
-        <Button
-          variant="secondary"
-          className={compact ? "h-10 shrink-0 rounded-2xl px-4" : "h-11 w-full rounded-2xl"}
+    );
+  }
+
+  return (
+    <details className="relative shrink-0">
+      <summary
+        className="flex cursor-pointer list-none items-center gap-2 rounded-xl border border-border/70 bg-white/90 px-3 py-2 shadow-sm ring-1 ring-border/40 transition hover:bg-surface [&::-webkit-details-marker]:hidden"
+        aria-label="Menu compte"
+      >
+        <div className="min-w-0 max-w-[10rem] text-right sm:max-w-[12rem]">
+          <div className="truncate text-sm font-semibold leading-tight text-text">{name}</div>
+          <div className="truncate text-[11px] leading-tight text-slate-500">{company}</div>
+        </div>
+        <span className="shrink-0 text-[10px] text-slate-400" aria-hidden>
+          ▾
+        </span>
+      </summary>
+      <div
+        className="absolute right-0 z-[60] mt-1 w-56 max-w-[calc(100vw-1.5rem)] rounded-xl border border-border bg-surface py-1 shadow-lg ring-1 ring-slate-200/80"
+        role="menu"
+      >
+        {auth.user?.role ? (
+          <div className="border-b border-border/60 px-3 py-2 text-[11px] font-medium text-primary">
+            {roleLabelFr(auth.user.role)}
+          </div>
+        ) : null}
+        <Link
+          to="/dashboard/profile"
+          role="menuitem"
+          className="block px-3 py-2.5 text-sm text-text transition hover:bg-bg"
+          onClick={(e) => closeAccountMenu(e.currentTarget)}
+        >
+          Profil
+        </Link>
+        <button
           type="button"
+          role="menuitem"
+          className="w-full px-3 py-2.5 text-left text-sm text-text transition hover:bg-bg"
           onClick={() => auth.logout()}
         >
           Déconnexion
-        </Button>
+        </button>
         <button
           type="button"
-          className="text-[11px] font-medium text-slate-500 underline decoration-slate-300 underline-offset-2 transition hover:text-slate-700"
+          role="menuitem"
+          className="w-full border-t border-border/50 px-3 py-2 text-left text-[11px] text-slate-500 transition hover:bg-bg hover:text-slate-700"
           onClick={() => clearLocalSessionAndRelogin()}
         >
           Réinitialiser la session
         </button>
       </div>
-    </div>
+    </details>
   );
 }
 
@@ -405,11 +466,11 @@ export default function Dashboard() {
         <>
           <header
             className={[
-              "z-40 border-b border-border/80 bg-bg/95 shadow-sm backdrop-blur-md",
+              "z-40 overflow-visible border-b border-border/80 bg-bg/95 shadow-sm backdrop-blur-md",
               isDocEditorRoute ? "relative" : "sticky top-0"
             ].join(" ")}
           >
-            <div className="mx-auto flex max-w-[1600px] flex-col gap-3 px-3 py-3 sm:px-4 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
+            <div className="mx-auto flex max-w-[1600px] flex-col gap-3 overflow-visible px-3 py-3 sm:px-4 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
               <div className="flex min-w-0 items-center justify-between gap-3 lg:justify-start">
                 <AppBrand compact={false} />
                 <button
@@ -427,7 +488,7 @@ export default function Dashboard() {
                 <DashboardNav orientation="horizontal" className="justify-center xl:justify-start" />
               </div>
 
-              <div className="hidden items-center gap-2 lg:flex">
+              <div className="hidden items-center gap-2 overflow-visible lg:flex">
                 {isBackofficeRole(auth.user?.role) ? (
                   <Link
                     to="/admin"
@@ -467,8 +528,10 @@ export default function Dashboard() {
             ) : null}
 
             {!mobileOpen ? (
-              <div className="border-t border-border/40 px-3 pb-3 lg:hidden">
-                <UserMenu compact />
+              <div className="border-t border-border/40 px-3 pb-3 lg:hidden overflow-visible">
+                <div className="flex justify-end">
+                  <UserMenu compact />
+                </div>
               </div>
             ) : null}
           </header>
