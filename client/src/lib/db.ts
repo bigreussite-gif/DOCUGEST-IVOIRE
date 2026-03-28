@@ -1,26 +1,67 @@
 /**
- * Connexion PostgreSQL (Insforge / DATABASE_URL) optimisée pour Vercel serverless.
- * Une seule Pool réutilisée entre invocations via globalThis (évite les reconnexions inutiles).
+ * Connexion PostgreSQL (Insforge / Neon / Vercel) optimisée pour Vercel serverless.
+ * Une seule Pool réutilisée entre invocations via globalThis.
  */
-import { Pool, type PoolConfig } from "pg";
+import { Pool as PgPool, type PoolConfig } from "pg";
+import { Pool as NeonPool } from "@neondatabase/serverless";
 
-const globalForPool = globalThis as unknown as { __docugestPgPool?: Pool };
+const globalForPool = globalThis as unknown as { __docugestPgPool?: PgPool | NeonPool };
+
+/** Pool Neon ou pg — même surface `.query()` / `.end()`. */
+export type PgCompatiblePool = PgPool | NeonPool;
 
 /**
- * Chaîne Postgres : ordre aligné sur Vercel (Postgres / Neon / intégrations).
- * Beaucoup de projets n’exposent que POSTGRES_PRISMA_URL ou DATABASE_URL_UNPOOLED.
+ * Chaîne Postgres : sur Vercel, privilégier les URLs **poolées** (Neon pooler, Prisma, POSTGRES_URL).
  */
 export function resolvePostgresConnectionString(): string {
   const env = process.env;
-  return (
-    env.DATABASE_URL ||
-    env.INSFORGE_DATABASE_URL ||
-    env.POSTGRES_URL ||
-    env.POSTGRES_PRISMA_URL ||
-    env.POSTGRES_URL_NON_POOLING ||
-    env.DATABASE_URL_UNPOOLED ||
-    ""
-  );
+  const serverless = Boolean(env.VERCEL || env.AWS_LAMBDA_FUNCTION_NAME);
+
+  const raw = serverless
+    ? // Pool / Prisma d’abord — évite ECONNREFUSED et saturation sur les endpoints « direct » Neon.
+      env.POSTGRES_PRISMA_URL ||
+      env.POSTGRES_URL ||
+      env.DATABASE_URL ||
+      env.INSFORGE_DATABASE_URL ||
+      env.DATABASE_URL_UNPOOLED ||
+      env.POSTGRES_URL_NON_POOLING ||
+      ""
+    : env.DATABASE_URL ||
+      env.INSFORGE_DATABASE_URL ||
+      env.POSTGRES_URL ||
+      env.POSTGRES_PRISMA_URL ||
+      env.POSTGRES_URL_NON_POOLING ||
+      env.DATABASE_URL_UNPOOLED ||
+      "";
+
+  return serverless ? preferNeonPoolerHost(raw) : raw;
+}
+
+/**
+ * Si l’URL pointe sur un endpoint Neon **sans** `-pooler`, on bascule vers l’hôte pooler (recommandé serverless).
+ */
+function preferNeonPoolerHost(url: string): string {
+  if (!url || !/neon\.tech/i.test(url) || /-pooler\./i.test(url)) return url;
+  try {
+    const u = new URL(url);
+    const host = u.hostname;
+    if (!host.includes("neon.tech")) return url;
+    const newHost = host.replace(/^ep-([^.]+)\./, "ep-$1-pooler.");
+    if (newHost === host) return url;
+    u.hostname = newHost;
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
+function useNeonServerlessPool(connectionString: string): boolean {
+  if (process.env.PG_USE_NODE_PG === "1") return false;
+  if (!connectionString) return false;
+  const h = connectionString.toLowerCase();
+  if (h.includes("neon.tech")) return true;
+  if (h.includes("vercel-storage.com") || h.includes("vercel-storage.io")) return true;
+  return process.env.PG_USE_NEON_SERVERLESS === "1";
 }
 
 /** Erreurs fréquentes en serverless (Neon, Vercel) — un retry + reset du pool aide souvent. */
@@ -81,11 +122,10 @@ function sslFromConnectionString(conn: string): PoolConfig["ssl"] | undefined {
   if (/sslmode=require|ssl=true/i.test(conn) || process.env.PGSSL === "1") {
     return { rejectUnauthorized: false };
   }
-  // En prod (Insforge/Vercel), on force SSL par défaut pour éviter les erreurs de handshake.
   return { rejectUnauthorized: false };
 }
 
-function createPool(): Pool {
+function createPool(): PgCompatiblePool {
   const connectionString = resolvePostgresConnectionString();
 
   if (!connectionString) {
@@ -96,10 +136,19 @@ function createPool(): Pool {
 
   const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
 
-  return new Pool({
+  if (useNeonServerlessPool(connectionString)) {
+    return new NeonPool({
+      connectionString,
+      max: isServerless ? SERVERLESS_MAX_POOL : DEV_MAX_POOL,
+      idleTimeoutMillis: isServerless ? 10_000 : 30_000,
+      connectionTimeoutMillis: isServerless ? 20_000 : 12_000,
+      allowExitOnIdle: isServerless
+    });
+  }
+
+  return new PgPool({
     connectionString,
     ssl: sslFromConnectionString(connectionString),
-    // Serverless : une seule connexion par invocation évite la saturation du pooler (Neon / Vercel Postgres).
     max: isServerless ? SERVERLESS_MAX_POOL : DEV_MAX_POOL,
     idleTimeoutMillis: isServerless ? 10_000 : 30_000,
     connectionTimeoutMillis: isServerless ? 20_000 : 12_000,
@@ -108,7 +157,7 @@ function createPool(): Pool {
 }
 
 /** Pool singleton — ne pas fermer manuellement entre requêtes serverless */
-export function getPool(): Pool {
+export function getPool(): PgCompatiblePool {
   if (!globalForPool.__docugestPgPool) {
     globalForPool.__docugestPgPool = createPool();
   }
