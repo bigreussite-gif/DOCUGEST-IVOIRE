@@ -5,7 +5,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createHash } from "node:crypto";
-import { getPool } from "@/lib/db";
+import { getPool, isRetryableConnectionError, runWithDbRetry } from "@/lib/db";
+import { authRouteFailureResponse } from "@/lib/authErrors";
 import { hashPassword, signSessionToken, toPublicUser } from "@/lib/auth";
 import type { UserRow } from "@/models/User";
 
@@ -21,7 +22,6 @@ const bodySchema = z.object({
 
 /** Téléphone provisoire si le formulaire minimal n’en fournit pas (NOT NULL en base). */
 function buildPlaceholderPhone(email: string): string {
-  // 10 chiffres déterministes à partir de l'email (format E.164 court: +225XXXXXXXXXX)
   const hash = createHash("sha256").update(email.toLowerCase()).digest("hex");
   const num = BigInt(`0x${hash.slice(0, 15)}`) % 10_000_000_000n;
   return `+225${num.toString().padStart(10, "0")}`;
@@ -40,29 +40,18 @@ async function ensureBootstrapAdmin(pool: ReturnType<typeof getPool>, userId: st
   }
 }
 
-export async function POST(req: Request) {
-  console.log("[api/auth/register] POST — début");
-  try {
-    let json: unknown;
-    try {
-      json = await req.json();
-    } catch {
-      console.log("[api/auth/register] corps JSON invalide");
-      return NextResponse.json({ message: "Corps JSON invalide" }, { status: 400 });
-    }
+type ParsedBody = z.infer<typeof bodySchema>;
 
-    const parsed = bodySchema.safeParse(json);
-    if (!parsed.success) {
-      console.log("[api/auth/register] validation Zod", parsed.error.flatten());
-      return NextResponse.json(
-        { message: "Champs invalides", details: parsed.error.flatten() },
-        { status: 400 }
-      );
-    }
+async function registerWithDb(parsed: ParsedBody): Promise<NextResponse> {
+  const { name, email, password, whatsapp, country } = parsed;
+  const cleanEmail = email.trim().toLowerCase();
+  const password_hash = await hashPassword(password);
+  const full_name = name.trim();
+  const placeholderPhone = buildPlaceholderPhone(cleanEmail);
+  const cleanWhatsapp = typeof whatsapp === "string" && whatsapp.trim() ? whatsapp.trim() : null;
+  const cleanCountry = typeof country === "string" && country.trim() ? country.trim() : null;
 
-    const { name, email, password, whatsapp, country } = parsed.data;
-    const cleanEmail = email.trim().toLowerCase();
-    console.log("[api/auth/register] email candidat", cleanEmail);
+  return runWithDbRetry(async () => {
     const pool = getPool();
 
     const taken = await pool.query(`SELECT 1 FROM public.users WHERE lower(email) = lower($1) LIMIT 1`, [cleanEmail]);
@@ -70,12 +59,6 @@ export async function POST(req: Request) {
       console.log("[api/auth/register] email déjà pris");
       return NextResponse.json({ message: "Email déjà utilisé" }, { status: 409 });
     }
-
-    const password_hash = await hashPassword(password);
-    const full_name = name.trim();
-    const placeholderPhone = buildPlaceholderPhone(cleanEmail);
-    const cleanWhatsapp = typeof whatsapp === "string" && whatsapp.trim() ? whatsapp.trim() : null;
-    const cleanCountry = typeof country === "string" && country.trim() ? country.trim() : null;
 
     let row: UserRow;
     try {
@@ -103,6 +86,7 @@ export async function POST(req: Request) {
       if (err.code === "23502") {
         return NextResponse.json({ message: "Champ obligatoire manquant côté base de données" }, { status: 500 });
       }
+      if (isRetryableConnectionError(e)) throw e;
       console.error("[register] insert", e);
       return NextResponse.json({ message: "Erreur lors de la création du compte" }, { status: 500 });
     }
@@ -112,16 +96,46 @@ export async function POST(req: Request) {
     const { rows: fresh } = await pool.query(`SELECT * FROM public.users WHERE id = $1 LIMIT 1`, [row.id]);
     const dbUser = fresh[0] ?? row;
     const me = toPublicUser(dbUser);
-    const token = signSessionToken({ userId: me.id, role: String(me.role ?? "user"), rememberMe: true });
+    let token: string;
+    try {
+      token = signSessionToken({ userId: me.id, role: String(me.role ?? "user"), rememberMe: true });
+    } catch (e) {
+      console.error("[api/auth/register] JWT", e);
+      return NextResponse.json({ message: "Configuration serveur : JWT_SECRET manquant ou invalide." }, { status: 503 });
+    }
 
     console.log("[api/auth/register] succès user id=", me.id);
     return NextResponse.json({ token, user: me }, { status: 200 });
-  } catch (e) {
-    console.error("[register]", e);
-    const msg = e instanceof Error ? e.message : "Erreur serveur";
-    if (msg.includes("DATABASE_URL") || msg.includes("JWT_SECRET")) {
-      return NextResponse.json({ message: "Configuration serveur incomplète" }, { status: 503 });
+  }, 4);
+}
+
+export async function POST(req: Request) {
+  console.log("[api/auth/register] POST — début");
+  try {
+    let json: unknown;
+    try {
+      json = await req.json();
+    } catch {
+      console.log("[api/auth/register] corps JSON invalide");
+      return NextResponse.json({ message: "Corps JSON invalide" }, { status: 400 });
     }
-    return NextResponse.json({ message: "Erreur serveur" }, { status: 500 });
+
+    const parsed = bodySchema.safeParse(json);
+    if (!parsed.success) {
+      console.log("[api/auth/register] validation Zod", parsed.error.flatten());
+      return NextResponse.json(
+        { message: "Champs invalides", details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const cleanEmail = parsed.data.email.trim().toLowerCase();
+    console.log("[api/auth/register] email candidat", cleanEmail);
+
+    return await registerWithDb(parsed.data);
+  } catch (e: unknown) {
+    console.error("[register]", e);
+    const { message, status } = authRouteFailureResponse(e);
+    return NextResponse.json({ message }, { status });
   }
 }

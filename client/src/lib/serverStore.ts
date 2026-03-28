@@ -2,7 +2,7 @@
  * Accès données Postgres (Insforge) pour les Route Handlers Next.js.
  * Logique alignée sur server/lib/pgStore.js (sans Express).
  */
-import { getPool, isTransientPgError, resetPool } from "@/lib/db";
+import { getPool, runWithDbRetry } from "@/lib/db";
 import type { PublicUser, UserRow } from "@/models/User";
 
 function iso(d: unknown): string | null {
@@ -34,13 +34,7 @@ export function pickUser(row: UserRow | null): PublicUser | null {
 }
 
 async function withPgRetry<T>(fn: () => Promise<T>): Promise<T> {
-  try {
-    return await fn();
-  } catch (e) {
-    if (!isTransientPgError(e)) throw e;
-    resetPool();
-    return fn();
-  }
+  return runWithDbRetry(fn, 4);
 }
 
 export async function getUserByEmail(email: string): Promise<UserRow | null> {

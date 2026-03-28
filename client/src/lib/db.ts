@@ -36,6 +36,44 @@ export function isTransientPgError(e: unknown): boolean {
   return false;
 }
 
+/**
+ * Erreurs où un nouveau socket + reset du pool peut réussir (première connexion, cold start, DNS).
+ * Inclut ECONNREFUSED / ETIMEDOUT absents de isTransientPgError.
+ */
+export function isRetryableConnectionError(e: unknown): boolean {
+  if (isTransientPgError(e)) return true;
+  const code = (e as { code?: string }).code;
+  if (code && ["ECONNREFUSED", "ETIMEDOUT", "ENOTFOUND", "ECONNRESET", "EAI_AGAIN", "EPIPE"].includes(code)) return true;
+  const m = e instanceof Error ? e.message : String(e ?? "");
+  if (/ECONNREFUSED|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|getaddrinfo|connect ETIMEDOUT|connect ECONNREFUSED/i.test(m))
+    return true;
+  return false;
+}
+
+const SERVERLESS_MAX_POOL = 1;
+const DEV_MAX_POOL = 6;
+
+/**
+ * Retries avec reset du pool entre les essais (auth, serverStore).
+ */
+export async function runWithDbRetry<T>(fn: () => Promise<T>, maxAttempts = 4): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastError = e;
+      if (attempt < maxAttempts - 1 && isRetryableConnectionError(e)) {
+        resetPool();
+        await new Promise((r) => setTimeout(r, 80 * (attempt + 1) * (attempt + 1)));
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw lastError;
+}
+
 function sslFromConnectionString(conn: string): PoolConfig["ssl"] | undefined {
   if (!conn) return undefined;
   if (process.env.PGSSL === "0") return false;
@@ -56,12 +94,16 @@ function createPool(): Pool {
     );
   }
 
+  const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+
   return new Pool({
     connectionString,
     ssl: sslFromConnectionString(connectionString),
-    max: 10,
-    idleTimeoutMillis: 30_000,
-    connectionTimeoutMillis: 10_000
+    // Serverless : une seule connexion par invocation évite la saturation du pooler (Neon / Vercel Postgres).
+    max: isServerless ? SERVERLESS_MAX_POOL : DEV_MAX_POOL,
+    idleTimeoutMillis: isServerless ? 10_000 : 30_000,
+    connectionTimeoutMillis: isServerless ? 20_000 : 12_000,
+    allowExitOnIdle: isServerless
   });
 }
 
