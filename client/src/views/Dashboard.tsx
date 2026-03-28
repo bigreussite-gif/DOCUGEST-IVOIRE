@@ -254,19 +254,12 @@ function DashboardHome() {
           </ul>
         )}
         {!loading && docs.length > 0 ? (
-          <div className="mt-4 rounded-2xl border border-emerald-200/80 bg-gradient-to-r from-emerald-50/90 to-teal-50/50 px-4 py-3 ring-1 ring-emerald-100/80">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="text-sm font-semibold text-emerald-900">Besoin d’une facture panier / livraison ?</div>
-                <div className="text-xs text-emerald-800">Accès rapide au mode e-commerce.</div>
-              </div>
-              <Link to="/dashboard/invoice/express" className="shrink-0">
-                <Button variant="primary" className="h-11 w-full rounded-2xl px-5 text-sm sm:w-auto">
-                  Facture e-commerce
-                </Button>
-              </Link>
-            </div>
-          </div>
+          <p className="mt-4 text-center text-sm text-emerald-900/90 sm:text-left">
+            Vente en ligne ou livraison ?{" "}
+            <Link to="/dashboard/invoice/express" className="font-semibold text-primary underline underline-offset-2">
+              Ouvrir le mode e-commerce
+            </Link>
+          </p>
         ) : null}
         </div>
       </DashboardSection>
@@ -289,38 +282,33 @@ function UserMenu({ compact }: { compact?: boolean }) {
     <div
       className={[
         "flex items-center gap-3",
-        compact ? "flex-row flex-wrap justify-end" : "flex-col items-stretch"
+        compact ? "flex-row flex-wrap justify-end gap-x-3 gap-y-2" : "flex-col items-stretch"
       ].join(" ")}
     >
-      <div className={compact ? "hidden text-right sm:block" : ""}>
+      <div className={compact ? "min-w-0 flex-1 text-left sm:flex-none sm:text-right" : ""}>
         <div className="text-sm font-semibold text-text">{auth.user?.full_name ?? "—"}</div>
-        <div className="text-xs text-slate-600">{auth.user?.company_name ?? "Entreprise"}</div>
+        <div className="truncate text-xs text-slate-600">{auth.user?.company_name ?? "Entreprise"}</div>
         {auth.user?.role ? (
-          <div className="mt-1 text-[11px] font-medium text-primary">{roleLabelFr(auth.user.role)}</div>
+          <div className="mt-0.5 text-[11px] font-medium text-primary">{roleLabelFr(auth.user.role)}</div>
         ) : null}
       </div>
-      <Link
-        to="/dashboard/invoice/express"
-        className={[
-          "inline-flex h-10 items-center justify-center rounded-xl border border-emerald-500/40 bg-emerald-50 px-3 text-xs font-semibold text-emerald-900 transition hover:bg-emerald-100",
-          compact ? "shrink-0" : "w-full"
-        ].join(" ")}
-      >
-        Facture e-commerce
-      </Link>
-      <button
-        type="button"
-        className={[
-          "inline-flex h-10 items-center justify-center rounded-xl border border-amber-300/80 bg-amber-50 px-3 text-xs font-medium text-amber-950 transition hover:bg-amber-100",
-          compact ? "shrink-0" : "w-full"
-        ].join(" ")}
-        onClick={() => clearLocalSessionAndRelogin()}
-      >
-        Réinitialiser la session
-      </button>
-      <Button variant="ghost" className={compact ? "h-10 shrink-0 px-3" : "h-10 w-full"} onClick={() => auth.logout()}>
-        Déconnexion
-      </Button>
+      <div className={compact ? "flex shrink-0 flex-wrap items-center justify-end gap-2" : "flex flex-col gap-2"}>
+        <Button
+          variant="secondary"
+          className={compact ? "h-10 shrink-0 rounded-2xl px-4" : "h-11 w-full rounded-2xl"}
+          type="button"
+          onClick={() => auth.logout()}
+        >
+          Déconnexion
+        </Button>
+        <button
+          type="button"
+          className="text-[11px] font-medium text-slate-500 underline decoration-slate-300 underline-offset-2 transition hover:text-slate-700"
+          onClick={() => clearLocalSessionAndRelogin()}
+        >
+          Réinitialiser la session
+        </button>
+      </div>
     </div>
   );
 }
@@ -411,46 +399,7 @@ export default function Dashboard() {
         </div>
       ) : null}
 
-      {!isDocEditorRoute ? (
-        <>
-          <div className="border-b border-emerald-200/60 bg-white/90 backdrop-blur-sm">
-            <div className="scrollbar-none mx-auto flex max-w-[1600px] flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-              <p className="shrink-0 text-[11px] font-semibold uppercase tracking-wider text-emerald-900/80">
-                Raccourcis
-              </p>
-              <div className="flex max-w-full items-center gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible sm:pb-0 [&::-webkit-scrollbar]:hidden">
-                <Link
-                  to="/dashboard/invoice/new?type=invoice"
-                  className="inline-flex shrink-0 items-center justify-center rounded-2xl bg-primary px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:brightness-105 sm:text-sm"
-                >
-                  + Facture
-                </Link>
-                <Link
-                  to="/dashboard/payslip/new"
-                  className="inline-flex shrink-0 items-center justify-center rounded-2xl border border-warning/40 bg-warning/10 px-4 py-2.5 text-xs font-semibold text-amber-950 transition hover:bg-warning/15 sm:text-sm"
-                >
-                  + Bulletin
-                </Link>
-                <Link
-                  to="/dashboard/invoice/express"
-                  className="inline-flex shrink-0 items-center justify-center rounded-2xl bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 sm:text-sm"
-                >
-                  E-commerce
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => clearLocalSessionAndRelogin()}
-                  className="inline-flex shrink-0 items-center justify-center rounded-2xl border border-slate-300 bg-white px-3 py-2.5 text-xs font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 sm:text-sm"
-                >
-                  Réinit. session
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <MonetizationTopBar />
-        </>
-      ) : null}
+      {!isDocEditorRoute ? <MonetizationTopBar /> : null}
 
       {mode === "top" ? (
         <>

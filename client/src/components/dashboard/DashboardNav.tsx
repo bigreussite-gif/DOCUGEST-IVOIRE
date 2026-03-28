@@ -32,7 +32,7 @@ export function DashboardNav({ orientation = "horizontal", onNavigate, className
 
   const wrap =
     orientation === "horizontal"
-      ? "flex flex-wrap items-center gap-1 sm:gap-2 xl:justify-center"
+      ? "flex flex-nowrap items-center gap-1 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-2 xl:justify-center [&::-webkit-scrollbar]:hidden"
       : "flex flex-col gap-1";
 
   const itemClass = (on: boolean) =>
@@ -59,7 +59,7 @@ export function DashboardNav({ orientation = "horizontal", onNavigate, className
         className={() => itemClass(isExpressEcommerce)}
         onClick={onNavigate}
       >
-        E-commerce rapide
+        E-commerce
       </NavLink>
       <NavLink
         to="/dashboard/invoice/new?type=proforma"

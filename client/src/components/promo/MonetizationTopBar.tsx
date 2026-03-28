@@ -9,22 +9,22 @@ export function MonetizationTopBar() {
           Visibilité partenaires — soutien au modèle gratuit DocuGest Ivoire
         </p>
       </div>
-      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-2 px-3 py-2 sm:grid-cols-2 sm:items-stretch">
-        <div className="flex min-h-[52px] items-center">
+      <div className="mx-auto grid max-w-6xl grid-cols-2 gap-2 px-3 py-2 sm:items-stretch">
+        <div className="flex min-h-[44px] items-center">
           <AdPlaceholder
             label="Partenaires & sponsors"
             hint="Espace réservé — logos partenaires"
             adSlot="top-bar-partners"
-            minHeight="min-h-[52px]"
+            minHeight="min-h-[44px]"
             className="w-full border-amber-200/60 bg-gradient-to-br from-amber-50/50 to-white"
           />
         </div>
-        <div className="flex min-h-[52px] items-center">
+        <div className="flex min-h-[44px] items-center">
           <AdPlaceholder
             label="Publicité"
             hint="Emplacement compatible Google AdSense (728×90 ou responsive)"
             adSlot="top-banner"
-            minHeight="min-h-[52px]"
+            minHeight="min-h-[44px]"
             className="w-full border-emerald-200/50 bg-gradient-to-br from-emerald-50/40 to-white"
           />
         </div>
