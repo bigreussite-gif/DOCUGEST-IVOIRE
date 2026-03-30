@@ -61,6 +61,8 @@ function slugify(str: string) {
 
 export function AdminBlog() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"list" | "edit">("list");
   const [form, setForm] = useState<Partial<BlogPost>>(emptyPost());
   const [busy, setBusy] = useState(false);
@@ -69,8 +71,18 @@ export function AdminBlog() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   async function load() {
-    const res = await adminFetch<{ posts: BlogPost[] }>("/blog");
-    setPosts(res.posts ?? []);
+    setLoadError(null);
+    try {
+      const res = await adminFetch<{ posts: BlogPost[]; degraded?: boolean }>("/blog");
+      setPosts(res.posts ?? []);
+      if (res.degraded && (!res.posts || res.posts.length === 0)) {
+        setLoadError("La base de données est temporairement indisponible. Réessayez dans quelques secondes.");
+      }
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : "Impossible de charger les articles");
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -128,12 +140,13 @@ export function AdminBlog() {
     setMsg(null);
     try {
       const res = await adminFetch<{ seeded: number }>("/blog/seed", { method: "POST" });
-      setMsg(`${res.seeded} articles de démarrage insérés ✓`);
-      await load();
+      setMsg(`${res.seeded} articles de démarrage insérés avec succès ✓`);
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Erreur seed");
+      setMsg(e instanceof Error ? e.message : "Erreur lors de l'insertion des articles");
     } finally {
       setSeeding(false);
+      // Toujours recharger la liste après le seed, succès ou échec
+      await load();
     }
   }
 
@@ -150,11 +163,15 @@ export function AdminBlog() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            {posts.length === 0 && (
-              <Button type="button" variant="secondary" onClick={() => void seedArticles()} disabled={seeding}>
-                {seeding ? "Insertion…" : "✨ Pré-remplir 10 articles de démarrage"}
-              </Button>
-            )}
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => void seedArticles()}
+              disabled={seeding || loading}
+              title={posts.length > 0 ? "Re-insérer / mettre à jour les 10 articles de démarrage" : undefined}
+            >
+              {seeding ? "Insertion…" : "✨ Pré-remplir 10 articles de démarrage"}
+            </Button>
             <Button type="button" onClick={startNew}>
               + Nouvel article
             </Button>
@@ -167,7 +184,24 @@ export function AdminBlog() {
           </p>
         ) : null}
 
-        {posts.length === 0 ? (
+        {loadError ? (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <strong>Impossible de charger les articles :</strong> {loadError}
+            <button
+              type="button"
+              onClick={() => void load()}
+              className="ml-3 underline hover:no-underline"
+            >
+              Réessayer
+            </button>
+          </div>
+        ) : null}
+
+        {loading ? (
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 py-12 text-center text-sm text-slate-400">
+            Chargement des articles…
+          </div>
+        ) : posts.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 py-16 text-center">
             <p className="text-slate-500">Aucun article pour l'instant.</p>
             <p className="mt-2 text-sm text-slate-400">
