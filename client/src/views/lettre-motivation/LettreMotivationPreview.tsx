@@ -18,12 +18,20 @@ export type LettreMotivationData = {
   formule: string;
 };
 
-export default function LettreMotivationPreview({ data }: { data: LettreMotivationData }) {
+export default function LettreMotivationPreview({ data, logoDataUrl, accentColor }: { data: LettreMotivationData; logoDataUrl?: string | null; accentColor?: string | null }) {
+  const accent = accentColor || "#1a6b4a";
   return (
     <div style={{ fontFamily: "Times New Roman, serif", fontSize: 12, color: "#111", background: "#fff", padding: "40px 52px", maxWidth: 794, lineHeight: 1.8 }}>
 
+      {/* Logo si disponible */}
+      {logoDataUrl && (
+        <div style={{ marginBottom: 20 }}>
+          <img src={logoDataUrl} alt="Logo" style={{ height: 44, maxWidth: 160, objectFit: "contain" }} />
+        </div>
+      )}
+
       {/* Expéditeur */}
-      <div style={{ marginBottom: 28 }}>
+      <div style={{ marginBottom: 28, borderLeft: `3px solid ${accent}`, paddingLeft: 12 }}>
         <div style={{ fontWeight: 700, fontSize: 13 }}>{data.nom || "Votre Nom"}</div>
         {data.adresse && <div>{data.adresse}</div>}
         {data.telephone && <div>{data.telephone}</div>}

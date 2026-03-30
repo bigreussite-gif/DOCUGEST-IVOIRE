@@ -11,6 +11,9 @@ import { Textarea } from "../../components/ui/Textarea";
 import { InlineAdStrip } from "../../components/promo/InlineAdStrip";
 import { useAutoSave, readDraft } from "../../hooks/useAutoSave";
 import { fileToDataUrl } from "../../lib/brandColors";
+import { useDocumentBranding } from "../../hooks/useDocumentBranding";
+import BrandingPanel from "../../components/document/BrandingPanel";
+import { generateCVProfile } from "../../utils/aiGenerate";
 import CVPreview from "./CVPreview";
 
 const expSchema = z.object({
@@ -69,8 +72,10 @@ export default function CVEditor() {
   const navigate = useNavigate();
   const [pdfLoading, setPdfLoading] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const draft = readDraft<Values>(DRAFT_KEY);
+  const { brand, uploadLogo, removeLogo, updateBrand } = useDocumentBranding();
 
   const { register, control, watch, handleSubmit, setValue, formState: { errors } } = useForm<Values>({
     resolver: zodResolver(schema) as any,
@@ -129,6 +134,23 @@ export default function CVEditor() {
     }
   }
 
+  function handleGenerateProfil() {
+    setAiLoading(true);
+    setTimeout(() => {
+      const profil = generateCVProfile({
+        nom: values.nom,
+        titre: values.titre,
+        lieuResidence: values.lieuResidence,
+        nationalite: values.nationalite,
+        experiences: values.experiences,
+        formations: values.formations,
+        competences: values.competences,
+      });
+      setValue("profil", profil);
+      setAiLoading(false);
+    }, 600);
+  }
+
   const onSubmit = handleSubmit(() => downloadPDF());
 
   const selectClass = "w-full rounded-xl border border-border/70 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40";
@@ -162,6 +184,14 @@ export default function CVEditor() {
           <form className="space-y-5" onSubmit={onSubmit}>
             <InlineAdStrip variant="compact" />
 
+            {/* Branding */}
+            <BrandingPanel
+              brand={brand}
+              onUploadLogo={uploadLogo}
+              onRemoveLogo={removeLogo}
+              onColorChange={(hex) => updateBrand({ accentColor: hex })}
+            />
+
             {/* Template */}
             <div className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-border/50">
               <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">Choisir un modèle</h3>
@@ -171,8 +201,25 @@ export default function CVEditor() {
                     key={t.id}
                     type="button"
                     onClick={() => setValue("template", t.id)}
-                    className={`rounded-xl border-2 p-3 text-center transition ${values.template === t.id ? "border-primary bg-primary/5" : "border-border/60 hover:border-primary/40"}`}
+                    className={`rounded-xl border-2 p-3 text-center transition ${values.template === t.id ? "border-primary bg-primary/5 shadow-sm" : "border-border/60 hover:border-primary/40"}`}
                   >
+                    <div className={`mx-auto mb-2 h-10 w-14 rounded-lg border border-slate-200 ${t.id === "moderne" ? "flex overflow-hidden" : "bg-white"}`}>
+                      {t.id === "moderne" ? (
+                        <>
+                          <div className="w-5 flex-shrink-0" style={{ background: brand.accentColor }} />
+                          <div className="flex-1 bg-white" />
+                        </>
+                      ) : (
+                        <div className="h-full w-full rounded-lg bg-white p-1">
+                          <div className="mb-1 h-1.5 w-full rounded" style={{ background: brand.accentColor }} />
+                          <div className="space-y-0.5">
+                            {[100, 80, 90, 70].map((w, i) => (
+                              <div key={i} className="rounded-full bg-slate-200" style={{ height: 2, width: `${t.id === "compact" ? w - 10 : w}%` }} />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                     <p className="text-sm font-bold text-text">{t.label}</p>
                     <p className="mt-0.5 text-[10px] text-slate-500">{t.desc}</p>
                   </button>
@@ -249,8 +296,26 @@ export default function CVEditor() {
 
             {/* Profil */}
             <div className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-border/50">
-              <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">Profil / Résumé</h3>
-              <Textarea {...register("profil")} rows={4} placeholder="Ingénieur informaticien avec 5 ans d'expérience... Passionné par la transformation digitale en Afrique." />
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">Profil / Résumé</h3>
+                <button
+                  type="button"
+                  onClick={handleGenerateProfil}
+                  disabled={aiLoading}
+                  className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:from-violet-600 hover:to-purple-700 disabled:opacity-60"
+                >
+                  {aiLoading ? (
+                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  ) : (
+                    <span>✨</span>
+                  )}
+                  {aiLoading ? "Génération…" : "Générer avec l'IA"}
+                </button>
+              </div>
+              <Textarea {...register("profil")} rows={4} placeholder="Cliquez « Générer avec l'IA » pour créer votre profil automatiquement après avoir rempli vos infos personnelles et expériences." />
+              {!values.nom && (
+                <p className="mt-1.5 text-[10px] text-amber-600">💡 Remplissez d'abord votre nom et titre pour que l'IA génère un profil personnalisé.</p>
+              )}
             </div>
 
             {/* Expériences */}
@@ -388,7 +453,11 @@ export default function CVEditor() {
             <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">Aperçu du CV</p>
             <div className="max-h-[calc(100vh-120px)] overflow-y-auto rounded-2xl border border-border/60 bg-white shadow-card">
               <div ref={previewRef} className="bg-white">
-                <CVPreview data={values as import("./CVPreview").CVData} />
+                <CVPreview
+                  data={values as import("./CVPreview").CVData}
+                  accentColor={brand.accentColor}
+                  logoDataUrl={brand.logoDataUrl}
+                />
               </div>
             </div>
           </div>

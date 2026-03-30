@@ -9,6 +9,8 @@ import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
 import { InlineAdStrip } from "../../components/promo/InlineAdStrip";
+import { useDocumentBranding } from "../../hooks/useDocumentBranding";
+import BrandingPanel from "../../components/document/BrandingPanel";
 import { todayISO } from "../../utils/documentNumber";
 import { useAutoSave, readDraft } from "../../hooks/useAutoSave";
 import ContratTravailPreview from "./ContratTravailPreview";
@@ -114,6 +116,7 @@ export default function ContratTravailEditor() {
 
   const values = watch();
   useAutoSave(DRAFT_KEY, values);
+  const { brand, uploadLogo, removeLogo, updateBrand } = useDocumentBranding();
 
   const selectClass = "w-full rounded-xl border border-border/70 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40";
   const totalBrut = (Number(values.salaireBase) || 0) + (Number(values.sursalaire) || 0) + (Number(values.primeTransport) || 0) + (Number(values.primeLogement) || 0) + (Number(values.primePanier) || 0);
@@ -185,6 +188,7 @@ export default function ContratTravailEditor() {
         <div className={showPreview ? "hidden lg:block" : ""}>
           <form className="space-y-5" onSubmit={onSubmit}>
             <InlineAdStrip variant="compact" />
+            <BrandingPanel brand={brand} onUploadLogo={uploadLogo} onRemoveLogo={removeLogo} onColorChange={(hex) => updateBrand({ accentColor: hex })} />
 
             {/* Type contrat */}
             <div className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-border/50">
@@ -545,7 +549,7 @@ export default function ContratTravailEditor() {
             <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">Aperçu du contrat</p>
             <div className="max-h-[calc(100vh-120px)] overflow-y-auto rounded-2xl border border-border/60 bg-white shadow-card">
               <div ref={previewRef} className="bg-white">
-                <ContratTravailPreview data={values as import("./ContratTravailPreview").ContratTravailData} />
+                <ContratTravailPreview data={values as import("./ContratTravailPreview").ContratTravailData} logoDataUrl={brand.logoDataUrl} accentColor={brand.accentColor} />
               </div>
             </div>
           </div>

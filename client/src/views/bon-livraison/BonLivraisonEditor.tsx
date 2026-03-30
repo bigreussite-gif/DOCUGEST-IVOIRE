@@ -9,6 +9,8 @@ import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
 import { InlineAdStrip } from "../../components/promo/InlineAdStrip";
+import { useDocumentBranding } from "../../hooks/useDocumentBranding";
+import BrandingPanel from "../../components/document/BrandingPanel";
 import { nextDocNumber, peekDocNumber, todayISO } from "../../utils/documentNumber";
 import { useAutoSave, readDraft } from "../../hooks/useAutoSave";
 import BonLivraisonPreview from "./BonLivraisonPreview";
@@ -70,6 +72,7 @@ export default function BonLivraisonEditor() {
   const { fields, append, remove } = useFieldArray({ control, name: "lines" });
   const values = watch();
   useAutoSave(DRAFT_KEY, values);
+  const { brand, uploadLogo, removeLogo, updateBrand } = useDocumentBranding();
 
   async function downloadPDF() {
     if (!previewRef.current) return;
@@ -130,6 +133,7 @@ export default function BonLivraisonEditor() {
         <div className={showPreview ? "hidden lg:block" : ""}>
           <form className="space-y-5" onSubmit={onSubmit}>
             <InlineAdStrip variant="compact" />
+            <BrandingPanel brand={brand} onUploadLogo={uploadLogo} onRemoveLogo={removeLogo} onColorChange={(hex) => updateBrand({ accentColor: hex })} />
 
             {/* En-tête */}
             <div className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-border/50">
@@ -311,7 +315,7 @@ export default function BonLivraisonEditor() {
             <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">Aperçu du document</p>
             <div className="max-h-[calc(100vh-120px)] overflow-y-auto rounded-2xl border border-border/60 bg-white shadow-card">
               <div ref={previewRef} className="bg-white">
-                <BonLivraisonPreview data={{ ...values, lines: values.lines ?? [] }} />
+                <BonLivraisonPreview data={{ ...values, lines: values.lines ?? [] }} logoDataUrl={brand.logoDataUrl} accentColor={brand.accentColor} />
               </div>
             </div>
           </div>

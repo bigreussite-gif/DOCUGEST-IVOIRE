@@ -73,8 +73,8 @@ function PeriodText({ debut, fin, actuel }: { debut: string; fin: string; actuel
   return <span>{fmt(debut)}{debut ? " – " : ""}{actuel ? "Présent" : fmt(fin)}</span>;
 }
 
-export default function CVPreview({ data }: { data: CVData }) {
-  const ACCENT = "#1a6b4a";
+export default function CVPreview({ data, accentColor, logoDataUrl }: { data: CVData; accentColor?: string | null; logoDataUrl?: string | null }) {
+  const ACCENT = accentColor || "#1a6b4a";
   const NAVY = "#1e3a5f";
   const accent = data.template === "moderne" ? NAVY : ACCENT;
 
@@ -86,6 +86,11 @@ export default function CVPreview({ data }: { data: CVData }) {
           {data.photoDataUrl && (
             <div style={{ textAlign: "center", marginBottom: 16 }}>
               <img src={data.photoDataUrl} alt="Photo" style={{ width: 90, height: 90, borderRadius: "50%", objectFit: "cover", border: "3px solid rgba(255,255,255,0.3)" }} />
+            </div>
+          )}
+          {logoDataUrl && (
+            <div style={{ textAlign: "center", marginBottom: 12 }}>
+              <img src={logoDataUrl} alt="Logo" style={{ height: 36, maxWidth: 100, objectFit: "contain", margin: "0 auto", opacity: 0.9 }} />
             </div>
           )}
           <div style={{ textAlign: "center", marginBottom: 20 }}>
@@ -215,6 +220,9 @@ export default function CVPreview({ data }: { data: CVData }) {
     <div style={{ fontFamily: "Arial, sans-serif", fontSize: 11, color: "#111", background: "#fff", padding: "28px 36px", maxWidth: 794, lineHeight: 1.5 }}>
       {/* Header */}
       <div style={{ display: "flex", gap: 20, marginBottom: 20, alignItems: "flex-start" }}>
+        {logoDataUrl && !data.photoDataUrl && (
+          <img src={logoDataUrl} alt="Logo" style={{ height: 50, maxWidth: 90, objectFit: "contain", flexShrink: 0 }} />
+        )}
         {data.photoDataUrl && (
           <img src={data.photoDataUrl} alt="Photo" style={{ width: 80, height: 80, borderRadius: "50%", objectFit: "cover", border: `2px solid ${accent}`, flexShrink: 0 }} />
         )}

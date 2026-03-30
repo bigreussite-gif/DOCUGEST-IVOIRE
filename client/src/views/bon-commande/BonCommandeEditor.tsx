@@ -10,6 +10,8 @@ import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
 import { InlineAdStrip } from "../../components/promo/InlineAdStrip";
+import { useDocumentBranding } from "../../hooks/useDocumentBranding";
+import BrandingPanel from "../../components/document/BrandingPanel";
 import { nextDocNumber, peekDocNumber, todayISO } from "../../utils/documentNumber";
 import { useAutoSave, readDraft } from "../../hooks/useAutoSave";
 import BonCommandePreview from "./BonCommandePreview";
@@ -77,8 +79,8 @@ export default function BonCommandeEditor() {
 
   const { fields, append, remove } = useFieldArray({ control, name: "lines" });
   const values = watch();
-
   useAutoSave(DRAFT_KEY, values);
+  const { brand, uploadLogo, removeLogo, updateBrand } = useDocumentBranding();
 
   const totalHT = values.lines?.reduce((s, l) => s + (Number(l.quantity) || 0) * (Number(l.unitPriceHT) || 0), 0) ?? 0;
   const discountAmount = totalHT * ((Number(values.discountPct) || 0) / 100);
@@ -153,6 +155,7 @@ export default function BonCommandeEditor() {
         <div className={showPreview ? "hidden lg:block" : ""}>
           <form className="space-y-5" onSubmit={onSubmit}>
             <InlineAdStrip variant="compact" />
+            <BrandingPanel brand={brand} onUploadLogo={uploadLogo} onRemoveLogo={removeLogo} onColorChange={(hex) => updateBrand({ accentColor: hex })} />
 
             {/* Numéro + Date */}
             <div className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-border/50">
@@ -413,7 +416,7 @@ export default function BonCommandeEditor() {
                   discountPct: Number(values.discountPct) || 0,
                   vatPct: Number(values.vatPct) || 18,
                   observations: values.observations,
-                }} />
+                }} logoDataUrl={brand.logoDataUrl} accentColor={brand.accentColor} />
               </div>
             </div>
           </div>

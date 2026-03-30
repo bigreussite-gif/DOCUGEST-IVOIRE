@@ -9,6 +9,8 @@ import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
 import { InlineAdStrip } from "../../components/promo/InlineAdStrip";
+import { useDocumentBranding } from "../../hooks/useDocumentBranding";
+import BrandingPanel from "../../components/document/BrandingPanel";
 import { nextDocNumber, peekDocNumber, todayISO } from "../../utils/documentNumber";
 import { useAutoSave, readDraft } from "../../hooks/useAutoSave";
 import { amountToWordsFCFA } from "../../utils/formatters";
@@ -64,6 +66,7 @@ export default function RecuPaiementEditor() {
 
   const values = watch();
   useAutoSave(DRAFT_KEY, values);
+  const { brand, uploadLogo, removeLogo, updateBrand } = useDocumentBranding();
 
   const isMobileMoney = MOBILE_MONEY_MODES.includes(values.paymentMode);
   const isCheque = CHEQUE_MODES.includes(values.paymentMode);
@@ -117,6 +120,7 @@ export default function RecuPaiementEditor() {
         <div className={showPreview ? "hidden lg:block" : ""}>
           <form className="space-y-5" onSubmit={onSubmit}>
             <InlineAdStrip variant="compact" />
+            <BrandingPanel brand={brand} onUploadLogo={uploadLogo} onRemoveLogo={removeLogo} onColorChange={(hex) => updateBrand({ accentColor: hex })} />
 
             {/* En-tête */}
             <div className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-border/50">
@@ -274,7 +278,7 @@ export default function RecuPaiementEditor() {
             <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">Aperçu du document</p>
             <div className="max-h-[calc(100vh-120px)] overflow-y-auto rounded-2xl border border-border/60 bg-white shadow-card">
               <div ref={previewRef} className="bg-white">
-                <RecuPaiementPreview data={values as import("./RecuPaiementPreview").RecuPaiementData} />
+                <RecuPaiementPreview data={values as import("./RecuPaiementPreview").RecuPaiementData} logoDataUrl={brand.logoDataUrl} accentColor={brand.accentColor} />
               </div>
             </div>
           </div>

@@ -43,9 +43,8 @@ export type ContratPrestationData = {
   tribunal: string;
 };
 
-const ACCENT = "#7c3aed";
-
-export default function ContratPrestationPreview({ data }: { data: ContratPrestationData }) {
+export default function ContratPrestationPreview({ data, logoDataUrl, accentColor }: { data: ContratPrestationData; logoDataUrl?: string | null; accentColor?: string | null }) {
+  const ACCENT = accentColor || "#7c3aed";
   const montantTTC = data.montantHT * (1 + data.vatPct / 100);
   const vatAmount = data.montantHT * (data.vatPct / 100);
 
@@ -57,6 +56,12 @@ export default function ContratPrestationPreview({ data }: { data: ContratPresta
 
   return (
     <div style={{ fontFamily: "Times New Roman, serif", fontSize: 11, color: "#111", background: "#fff", padding: "36px 40px", maxWidth: 794, lineHeight: 1.6 }}>
+      {/* Logo */}
+      {logoDataUrl && (
+        <div style={{ marginBottom: 20, display: "flex", justifyContent: "flex-end" }}>
+          <img src={logoDataUrl} alt="Logo" style={{ height: 48, maxWidth: 140, objectFit: "contain" }} />
+        </div>
+      )}
       {/* Titre */}
       <div style={{ textAlign: "center", marginBottom: 28 }}>
         <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: 1, color: ACCENT, textTransform: "uppercase" }}>

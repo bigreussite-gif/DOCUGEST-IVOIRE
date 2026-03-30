@@ -11,6 +11,9 @@ import { Textarea } from "../../components/ui/Textarea";
 import { InlineAdStrip } from "../../components/promo/InlineAdStrip";
 import { nextDocNumber, peekDocNumber, todayISO } from "../../utils/documentNumber";
 import { useAutoSave, readDraft } from "../../hooks/useAutoSave";
+import { useDocumentBranding } from "../../hooks/useDocumentBranding";
+import BrandingPanel from "../../components/document/BrandingPanel";
+import { generateContratObligations } from "../../utils/aiGenerate";
 import ContratPrestationPreview from "./ContratPrestationPreview";
 
 const DEFAULT_OBLIGATIONS_PRESTATAIRE = `Le Prestataire s'engage à :
@@ -82,7 +85,7 @@ export default function ContratPrestationEditor() {
   const previewRef = useRef<HTMLDivElement>(null);
   const draft = readDraft<Values>(DRAFT_KEY);
 
-  const { register, watch, handleSubmit, formState: { errors } } = useForm<Values>({
+  const { register, watch, handleSubmit, setValue, formState: { errors } } = useForm<Values>({
     resolver: zodResolver(schema) as any,
     defaultValues: draft ?? {
       cpsNumber: peekDocNumber("CPS"),
@@ -101,6 +104,22 @@ export default function ContratPrestationEditor() {
 
   const values = watch();
   useAutoSave(DRAFT_KEY, values);
+  const { brand, uploadLogo, removeLogo, updateBrand } = useDocumentBranding();
+  const [aiLoading, setAiLoading] = useState(false);
+
+  function handleGenerateObligations() {
+    setAiLoading(true);
+    setTimeout(() => {
+      const { obligationsPrestataire, obligationsClient } = generateContratObligations({
+        titrePrestation: values.titrePrestation,
+        descriptionPrestation: values.descriptionPrestation,
+        lieuExecution: values.lieuExecution,
+      });
+      setValue("obligationsPrestataire", obligationsPrestataire);
+      setValue("obligationsClient", obligationsClient);
+      setAiLoading(false);
+    }, 600);
+  }
 
   const montantTTC = (Number(values.montantHT) || 0) * (1 + (Number(values.vatPct) || 0) / 100);
 
@@ -163,6 +182,14 @@ export default function ContratPrestationEditor() {
         <div className={showPreview ? "hidden lg:block" : ""}>
           <form className="space-y-5" onSubmit={onSubmit}>
             <InlineAdStrip variant="compact" />
+
+            {/* Branding */}
+            <BrandingPanel
+              brand={brand}
+              onUploadLogo={uploadLogo}
+              onRemoveLogo={removeLogo}
+              onColorChange={(hex) => updateBrand({ accentColor: hex })}
+            />
 
             {/* En-tête */}
             <div className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-border/50">
@@ -375,7 +402,18 @@ export default function ContratPrestationEditor() {
 
             {/* Obligations */}
             <div className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-border/50">
-              <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">Obligations des parties</h3>
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">Obligations des parties</h3>
+                <button
+                  type="button"
+                  onClick={handleGenerateObligations}
+                  disabled={aiLoading}
+                  className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:from-violet-600 hover:to-purple-700 disabled:opacity-60"
+                >
+                  {aiLoading ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" /> : <span>✨</span>}
+                  {aiLoading ? "Génération…" : "Générer avec l'IA"}
+                </button>
+              </div>
               <div className="space-y-3">
                 <div>
                   <label className="mb-1 block text-xs font-semibold text-slate-700">Obligations du Prestataire</label>
@@ -434,7 +472,11 @@ export default function ContratPrestationEditor() {
             <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">Aperçu du document</p>
             <div className="max-h-[calc(100vh-120px)] overflow-y-auto rounded-2xl border border-border/60 bg-white shadow-card">
               <div ref={previewRef} className="bg-white">
-                <ContratPrestationPreview data={values as import("./ContratPrestationPreview").ContratPrestationData} />
+                <ContratPrestationPreview
+                  data={values as import("./ContratPrestationPreview").ContratPrestationData}
+                  logoDataUrl={brand.logoDataUrl}
+                  accentColor={brand.accentColor}
+                />
               </div>
             </div>
           </div>

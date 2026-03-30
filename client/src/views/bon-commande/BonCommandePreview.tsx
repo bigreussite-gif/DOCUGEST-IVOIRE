@@ -37,9 +37,8 @@ export type BonCommandeData = {
   observations: string;
 };
 
-const ACCENT = "#1e40af";
-
-export default function BonCommandePreview({ data }: { data: BonCommandeData }) {
+export default function BonCommandePreview({ data, logoDataUrl, accentColor }: { data: BonCommandeData; logoDataUrl?: string | null; accentColor?: string | null }) {
+  const ACCENT = accentColor || "#1e40af";
   const totalHT = data.lines.reduce((sum, l) => sum + l.quantity * l.unitPriceHT, 0);
   const discountAmount = totalHT * (data.discountPct / 100);
   const netHT = totalHT - discountAmount;
@@ -51,6 +50,7 @@ export default function BonCommandePreview({ data }: { data: BonCommandeData }) 
       {/* En-tête */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
         <div>
+          {logoDataUrl && <img src={logoDataUrl} alt="Logo" style={{ height: 40, maxWidth: 120, objectFit: "contain", marginBottom: 8 }} />}
           <div style={{ fontSize: 22, fontWeight: 800, color: ACCENT, letterSpacing: -0.5 }}>BON DE COMMANDE</div>
           <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginTop: 4 }}>N° {data.bcNumber}</div>
           <div style={{ color: "#6b7280", marginTop: 2 }}>Date : {formatDateFR(data.bcDate)}</div>

@@ -26,9 +26,8 @@ export type RecuPaiementData = {
   notes: string;
 };
 
-const ACCENT = "#0f766e";
-
-export default function RecuPaiementPreview({ data }: { data: RecuPaiementData }) {
+export default function RecuPaiementPreview({ data, logoDataUrl, accentColor }: { data: RecuPaiementData; logoDataUrl?: string | null; accentColor?: string | null }) {
+  const ACCENT = accentColor || "#0f766e";
   const amountInWords = amountToWordsFCFA(data.amount || 0);
   const remaining = (data.totalDue || 0) - (data.amount || 0);
   const showBalance = data.paymentType !== "Paiement intégral" && data.totalDue > 0;
@@ -39,6 +38,7 @@ export default function RecuPaiementPreview({ data }: { data: RecuPaiementData }
       <div style={{ border: `3px solid ${ACCENT}`, borderRadius: 8, padding: "16px 20px", marginBottom: 20 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
+            {logoDataUrl && <img src={logoDataUrl} alt="Logo" style={{ height: 36, maxWidth: 110, objectFit: "contain", marginBottom: 6 }} />}
             <div style={{ fontSize: 20, fontWeight: 800, color: ACCENT, letterSpacing: -0.3 }}>REÇU DE PAIEMENT</div>
             <div style={{ marginTop: 6, fontWeight: 700 }}>{data.emitterName}</div>
             {data.emitterActivity && <div style={{ color: "#6b7280", fontSize: 10 }}>{data.emitterActivity}</div>}

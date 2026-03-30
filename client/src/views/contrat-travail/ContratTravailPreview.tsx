@@ -57,9 +57,8 @@ export type ContratTravailData = {
   signaturePlace: string;
 };
 
-const ACCENT = "#1e3a5f";
-
-export default function ContratTravailPreview({ data }: { data: ContratTravailData }) {
+export default function ContratTravailPreview({ data, logoDataUrl, accentColor }: { data: ContratTravailData; logoDataUrl?: string | null; accentColor?: string | null }) {
+  const ACCENT = accentColor || "#1e3a5f";
   const totalBrut = (data.salaireBase || 0) + (data.sursalaire || 0) + (data.primeTransport || 0) + (data.primeLogement || 0) + (data.primePanier || 0);
 
   const preavis = () => {
@@ -74,6 +73,11 @@ export default function ContratTravailPreview({ data }: { data: ContratTravailDa
 
   return (
     <div style={{ fontFamily: "Times New Roman, serif", fontSize: 11, color: "#111", background: "#fff", padding: "32px 40px", maxWidth: 794, lineHeight: 1.7 }}>
+      {logoDataUrl && (
+        <div style={{ marginBottom: 16, display: "flex", justifyContent: "flex-end" }}>
+          <img src={logoDataUrl} alt="Logo" style={{ height: 46, maxWidth: 140, objectFit: "contain" }} />
+        </div>
+      )}
       {/* Titre */}
       <div style={{ textAlign: "center", marginBottom: 28, borderBottom: `3px solid ${ACCENT}`, paddingBottom: 16 }}>
         <div style={{ fontSize: 15, fontWeight: 900, color: ACCENT, textTransform: "uppercase", letterSpacing: 1.5 }}>

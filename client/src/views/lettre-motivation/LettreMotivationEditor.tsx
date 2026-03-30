@@ -10,6 +10,9 @@ import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
 import { InlineAdStrip } from "../../components/promo/InlineAdStrip";
 import { useAutoSave, readDraft } from "../../hooks/useAutoSave";
+import { useDocumentBranding } from "../../hooks/useDocumentBranding";
+import BrandingPanel from "../../components/document/BrandingPanel";
+import { generateLettreParagraphs } from "../../utils/aiGenerate";
 import LettreMotivationPreview from "./LettreMotivationPreview";
 
 const FORMULES = [
@@ -66,6 +69,26 @@ export default function LettreMotivationEditor() {
 
   const values = watch();
   useAutoSave(DRAFT_KEY, values);
+  const { brand, uploadLogo, removeLogo, updateBrand } = useDocumentBranding();
+  const [aiLoading, setAiLoading] = useState(false);
+
+  function handleGenerateLettre() {
+    setAiLoading(true);
+    setTimeout(() => {
+      const result = generateLettreParagraphs({
+        nom: values.nom,
+        entrepriseNom: values.entrepriseNom,
+        objet: values.objet,
+        typeCandidat: values.typeCandidat,
+        recruteurNom: values.recruteurNom,
+      });
+      setValue("accroche", result.accroche);
+      setValue("paragrapheVous", result.paragrapheVous);
+      setValue("paragrapheMoi", result.paragrapheMoi);
+      setValue("paragrapheNous", result.paragrapheNous);
+      setAiLoading(false);
+    }, 800);
+  }
 
   async function downloadPDF() {
     if (!previewRef.current) return;
@@ -131,6 +154,14 @@ export default function LettreMotivationEditor() {
         <div className={showPreview ? "hidden lg:block" : ""}>
           <form className="space-y-5" onSubmit={onSubmit}>
             <InlineAdStrip variant="compact" />
+
+            {/* Branding */}
+            <BrandingPanel
+              brand={brand}
+              onUploadLogo={uploadLogo}
+              onRemoveLogo={removeLogo}
+              onColorChange={(hex) => updateBrand({ accentColor: hex })}
+            />
 
             {/* Vos coordonnées */}
             <div className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-border/50">
@@ -214,7 +245,27 @@ export default function LettreMotivationEditor() {
 
             {/* Corps de la lettre */}
             <div className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-border/50">
-              <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">Corps de la lettre</h3>
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">Corps de la lettre</h3>
+                <button
+                  type="button"
+                  onClick={handleGenerateLettre}
+                  disabled={aiLoading}
+                  className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:from-violet-600 hover:to-purple-700 disabled:opacity-60"
+                >
+                  {aiLoading ? (
+                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  ) : (
+                    <span>✨</span>
+                  )}
+                  {aiLoading ? "Génération…" : "Générer toute la lettre avec l'IA"}
+                </button>
+              </div>
+              {!values.entrepriseNom && (
+                <div className="mb-3 rounded-xl bg-amber-50 px-3 py-2 text-[10px] text-amber-700 ring-1 ring-amber-200">
+                  💡 Remplissez d'abord l'entreprise et l'objet pour que l'IA génère une lettre personnalisée.
+                </div>
+              )}
               <div className="space-y-4">
                 {(["accroche", "paragrapheVous", "paragrapheMoi", "paragrapheNous"] as const).map((field) => {
                   const labels: Record<string, string> = {
@@ -272,7 +323,11 @@ export default function LettreMotivationEditor() {
             <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">Aperçu de la lettre</p>
             <div className="max-h-[calc(100vh-120px)] overflow-y-auto rounded-2xl border border-border/60 bg-white shadow-card">
               <div ref={previewRef} className="bg-white">
-                <LettreMotivationPreview data={values as import("./LettreMotivationPreview").LettreMotivationData} />
+                <LettreMotivationPreview
+                  data={values as import("./LettreMotivationPreview").LettreMotivationData}
+                  logoDataUrl={brand.logoDataUrl}
+                  accentColor={brand.accentColor}
+                />
               </div>
             </div>
           </div>
