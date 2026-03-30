@@ -1,25 +1,94 @@
 /**
- * Connexion PostgreSQL (Insforge / Neon / Vercel) optimisée pour Vercel serverless.
- * Une seule Pool réutilisée entre invocations via globalThis.
+ * Connexion PostgreSQL optimisée pour Vercel serverless.
+ *
+ * Sur Vercel (INSFORGE_PROXY_URL défini) : utilise un proxy HTTP Insforge
+ * qui contourne les limites de connexion TCP des fonctions serverless.
+ *
+ * En dev local : utilise pg directement via TCP.
  */
 import { Pool as PgPool, type PoolConfig } from "pg";
 import { Pool as NeonPool } from "@neondatabase/serverless";
 
-const globalForPool = globalThis as unknown as { __docugestPgPool?: PgPool | NeonPool };
+// ─── Types ───────────────────────────────────────────────────────────────────
 
-/** Pool Neon ou pg — même surface `.query()` / `.end()`. */
-export type PgCompatiblePool = PgPool | NeonPool;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type QueryResult<R = any> = {
+  rows: R[];
+  rowCount: number;
+  fields?: { name: string; dataTypeID?: number }[];
+};
 
-/**
- * Chaîne Postgres : sur Vercel, privilégier les URLs **poolées** (Neon pooler, Prisma, POSTGRES_URL).
- */
+export type PgCompatiblePool = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  query<R = any>(sql: string, params?: unknown[]): Promise<QueryResult<R>>;
+  end(): Promise<void>;
+};
+
+// ─── HTTP Proxy Pool (Insforge edge function) ─────────────────────────────────
+
+const PROXY_SECRET = "docugest_sql_proxy_2026_x7k9p2m4";
+
+class InsforgeHttpPool implements PgCompatiblePool {
+  private readonly proxyUrl: string;
+
+  constructor(proxyUrl: string) {
+    this.proxyUrl = proxyUrl;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async query<R = any>(sql: string, params?: unknown[]): Promise<QueryResult<R>> {
+    const resp = await fetch(this.proxyUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Proxy-Secret": PROXY_SECRET,
+      },
+      body: JSON.stringify({ query: sql, params: params ?? [] }),
+    });
+
+    if (!resp.ok) {
+      let errMsg = `HTTP ${resp.status}`;
+      try {
+        const body = await resp.json() as { error?: string; message?: string };
+        errMsg = body.error ?? body.message ?? errMsg;
+      } catch { /* ignore parse error */ }
+      throw new Error(`SQL proxy error: ${errMsg}`);
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await resp.json() as any;
+
+    if (result.error || (result.message && !result.rows)) {
+      throw new Error(`SQL proxy error: ${result.error ?? result.message ?? "Unknown DB error"}`);
+    }
+
+    return {
+      rows: (result.rows ?? []) as R[],
+      rowCount: result.rowCount ?? (result.rows?.length ?? 0),
+      fields: result.fields,
+    };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/require-await
+  async end(): Promise<void> {
+    // No connection to close in HTTP mode
+  }
+}
+
+// ─── Globals ─────────────────────────────────────────────────────────────────
+
+const globalForPool = globalThis as unknown as {
+  __docugestPgPool?: PgCompatiblePool;
+};
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
 export function resolvePostgresConnectionString(): string {
   const env = process.env;
   const serverless = Boolean(env.VERCEL || env.AWS_LAMBDA_FUNCTION_NAME);
 
   const raw = serverless
-    ? // Pool / Prisma d’abord — évite ECONNREFUSED et saturation sur les endpoints « direct » Neon.
-      env.POSTGRES_PRISMA_URL ||
+    ? env.POSTGRES_PRISMA_URL ||
       env.POSTGRES_URL ||
       env.DATABASE_URL ||
       env.INSFORGE_DATABASE_URL ||
@@ -37,9 +106,6 @@ export function resolvePostgresConnectionString(): string {
   return serverless ? preferNeonPoolerHost(raw) : raw;
 }
 
-/**
- * Si l’URL pointe sur un endpoint Neon **sans** `-pooler`, on bascule vers l’hôte pooler (recommandé serverless).
- */
 function preferNeonPoolerHost(url: string): string {
   if (!url || !/neon\.tech/i.test(url) || /-pooler\./i.test(url)) return url;
   try {
@@ -55,11 +121,6 @@ function preferNeonPoolerHost(url: string): string {
   }
 }
 
-/**
- * Supprime les paramètres SSL de l'URL de connexion (sslmode, ssl, uselibpqcompat…).
- * Depuis pg ≥ 8.12, sslmode=require est traité comme verify-full (rupture SSL si certificat auto-signé).
- * On passe SSL uniquement via l'objet de config { ssl: { rejectUnauthorized: false } }.
- */
 function stripSslParams(url: string): string {
   if (!url) return url;
   try {
@@ -87,7 +148,15 @@ function useNeonServerlessPool(connectionString: string): boolean {
   return process.env.PG_USE_NEON_SERVERLESS === "1";
 }
 
-/** Erreurs fréquentes en serverless (Neon, Vercel) — un retry + reset du pool aide souvent. */
+function sslFromConnectionString(conn: string): PoolConfig["ssl"] | undefined {
+  if (!conn) return undefined;
+  if (process.env.PGSSL === "0") return false;
+  if (/localhost|127\.0\.0\.1/i.test(conn)) return undefined;
+  return { rejectUnauthorized: false };
+}
+
+// ─── Error helpers ────────────────────────────────────────────────────────────
+
 export function isTransientPgError(e: unknown): boolean {
   const m = e instanceof Error ? e.message : String(e ?? "");
   const code = (e as { code?: string }).code;
@@ -100,26 +169,15 @@ export function isTransientPgError(e: unknown): boolean {
   return false;
 }
 
-/**
- * Erreurs où un nouveau socket + reset du pool peut réussir (première connexion, cold start, DNS).
- * Inclut ECONNREFUSED / ETIMEDOUT absents de isTransientPgError.
- */
 export function isRetryableConnectionError(e: unknown): boolean {
   if (isTransientPgError(e)) return true;
   const code = (e as { code?: string }).code;
   if (code && ["ECONNREFUSED", "ETIMEDOUT", "ENOTFOUND", "ECONNRESET", "EAI_AGAIN", "EPIPE"].includes(code)) return true;
   const m = e instanceof Error ? e.message : String(e ?? "");
-  if (/ECONNREFUSED|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|getaddrinfo|connect ETIMEDOUT|connect ECONNREFUSED/i.test(m))
-    return true;
+  if (/ECONNREFUSED|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|getaddrinfo|connect ETIMEDOUT|connect ECONNREFUSED/i.test(m)) return true;
   return false;
 }
 
-const SERVERLESS_MAX_POOL = 1;
-const DEV_MAX_POOL = 6;
-
-/**
- * Retries avec reset du pool entre les essais (auth, serverStore).
- */
 export async function runWithDbRetry<T>(fn: () => Promise<T>, maxAttempts = 4): Promise<T> {
   let lastError: unknown;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -138,53 +196,50 @@ export async function runWithDbRetry<T>(fn: () => Promise<T>, maxAttempts = 4): 
   throw lastError;
 }
 
-function sslFromConnectionString(conn: string): PoolConfig["ssl"] | undefined {
-  if (!conn) return undefined;
-  if (process.env.PGSSL === "0") return false;
-  if (/localhost|127\.0\.0\.1/i.test(conn)) return undefined;
-  if (/sslmode=require|ssl=true/i.test(conn) || process.env.PGSSL === "1") {
-    return { rejectUnauthorized: false };
-  }
-  return { rejectUnauthorized: false };
-}
+// ─── Pool factory ─────────────────────────────────────────────────────────────
 
 function createPool(): PgCompatiblePool {
+  // ── HTTP proxy (Vercel / serverless avec Insforge) ───────────────────────
+  const proxyUrl = process.env.INSFORGE_PROXY_URL;
+  if (proxyUrl) {
+    console.log("[db] Using Insforge HTTP proxy:", proxyUrl);
+    return new InsforgeHttpPool(proxyUrl);
+  }
+
+  // ── TCP direct (dev local ou autre hébergeur) ────────────────────────────
   const raw = resolvePostgresConnectionString();
 
   if (!raw) {
     throw new Error(
-      "DATABASE_URL (ou POSTGRES_URL / POSTGRES_PRISMA_URL) manquant : configurez la chaîne Postgres sur Vercel."
+      "DATABASE_URL (ou POSTGRES_URL / INSFORGE_PROXY_URL) manquant : configurez la chaîne Postgres ou le proxy Insforge."
     );
   }
 
-  // Supprimer sslmode/ssl de l'URL — pg ≥ 8.12 traite sslmode=require comme verify-full,
-  // ce qui casse les connexions sur certificats auto-signés (Insforge, PlanetScale…).
-  // On gère le SSL uniquement via l'objet de config ci-dessous.
   const connectionString = stripSslParams(raw);
-
   const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
 
   if (useNeonServerlessPool(connectionString)) {
     return new NeonPool({
       connectionString,
-      max: isServerless ? SERVERLESS_MAX_POOL : DEV_MAX_POOL,
+      max: isServerless ? 1 : 6,
       idleTimeoutMillis: isServerless ? 10_000 : 30_000,
       connectionTimeoutMillis: isServerless ? 20_000 : 12_000,
-      allowExitOnIdle: isServerless
-    });
+      allowExitOnIdle: isServerless,
+    }) as unknown as PgCompatiblePool;
   }
 
   return new PgPool({
     connectionString,
     ssl: sslFromConnectionString(raw),
-    max: isServerless ? SERVERLESS_MAX_POOL : DEV_MAX_POOL,
+    max: isServerless ? 1 : 6,
     idleTimeoutMillis: isServerless ? 10_000 : 30_000,
     connectionTimeoutMillis: isServerless ? 20_000 : 12_000,
-    allowExitOnIdle: isServerless
-  });
+    allowExitOnIdle: isServerless,
+  }) as unknown as PgCompatiblePool;
 }
 
-/** Pool singleton — ne pas fermer manuellement entre requêtes serverless */
+// ─── Exported singletons ──────────────────────────────────────────────────────
+
 export function getPool(): PgCompatiblePool {
   if (!globalForPool.__docugestPgPool) {
     globalForPool.__docugestPgPool = createPool();
@@ -192,13 +247,10 @@ export function getPool(): PgCompatiblePool {
   return globalForPool.__docugestPgPool;
 }
 
-/** Réinitialise explicitement le pool (utile après rupture réseau côté DB). */
 export function resetPool(): void {
   const p = globalForPool.__docugestPgPool;
   globalForPool.__docugestPgPool = undefined;
   if (p) {
-    void p.end().catch(() => {
-      /* noop */
-    });
+    void p.end().catch(() => { /* noop */ });
   }
 }

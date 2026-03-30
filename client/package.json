@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "@insforge/sdk": "^1.2.2",
     "@neondatabase/serverless": "^1.0.2",
     "@types/nodemailer": "^7.0.11",
     "bcryptjs": "^2.4.3",
