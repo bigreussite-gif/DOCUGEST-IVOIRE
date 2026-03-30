@@ -55,6 +55,29 @@ function preferNeonPoolerHost(url: string): string {
   }
 }
 
+/**
+ * Supprime les paramètres SSL de l'URL de connexion (sslmode, ssl, uselibpqcompat…).
+ * Depuis pg ≥ 8.12, sslmode=require est traité comme verify-full (rupture SSL si certificat auto-signé).
+ * On passe SSL uniquement via l'objet de config { ssl: { rejectUnauthorized: false } }.
+ */
+function stripSslParams(url: string): string {
+  if (!url) return url;
+  try {
+    const u = new URL(url);
+    const SSL_PARAMS = ["sslmode", "ssl", "uselibpqcompat", "sslrootcert", "sslcert", "sslkey", "sslinline"];
+    let changed = false;
+    for (const p of SSL_PARAMS) {
+      if (u.searchParams.has(p)) {
+        u.searchParams.delete(p);
+        changed = true;
+      }
+    }
+    return changed ? u.toString() : url;
+  } catch {
+    return url.replace(/[?&]sslmode=[^&]*/gi, "").replace(/[?&]ssl=[^&]*/gi, "");
+  }
+}
+
 function useNeonServerlessPool(connectionString: string): boolean {
   if (process.env.PG_USE_NODE_PG === "1") return false;
   if (!connectionString) return false;
@@ -126,13 +149,18 @@ function sslFromConnectionString(conn: string): PoolConfig["ssl"] | undefined {
 }
 
 function createPool(): PgCompatiblePool {
-  const connectionString = resolvePostgresConnectionString();
+  const raw = resolvePostgresConnectionString();
 
-  if (!connectionString) {
+  if (!raw) {
     throw new Error(
       "DATABASE_URL (ou POSTGRES_URL / POSTGRES_PRISMA_URL) manquant : configurez la chaîne Postgres sur Vercel."
     );
   }
+
+  // Supprimer sslmode/ssl de l'URL — pg ≥ 8.12 traite sslmode=require comme verify-full,
+  // ce qui casse les connexions sur certificats auto-signés (Insforge, PlanetScale…).
+  // On gère le SSL uniquement via l'objet de config ci-dessous.
+  const connectionString = stripSslParams(raw);
 
   const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
 
@@ -148,7 +176,7 @@ function createPool(): PgCompatiblePool {
 
   return new PgPool({
     connectionString,
-    ssl: sslFromConnectionString(connectionString),
+    ssl: sslFromConnectionString(raw),
     max: isServerless ? SERVERLESS_MAX_POOL : DEV_MAX_POOL,
     idleTimeoutMillis: isServerless ? 10_000 : 30_000,
     connectionTimeoutMillis: isServerless ? 20_000 : 12_000,
