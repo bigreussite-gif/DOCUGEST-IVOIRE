@@ -13,7 +13,6 @@ import { ConnectionBanner } from "../components/ConnectionBanner";
 import { AppBrand } from "../components/dashboard/AppBrand";
 import { DashboardNav } from "../components/dashboard/DashboardNav";
 import { DashboardSection } from "../components/dashboard/DashboardSection";
-import { QuickActionCard } from "../components/dashboard/QuickActionCard";
 import { MobileBottomNav } from "../components/dashboard/MobileBottomNav";
 import Profile from "./Profile";
 import { isBackofficeRole, roleLabelFr } from "../lib/roles";
@@ -21,6 +20,13 @@ import { isBackofficeRole, roleLabelFr } from "../lib/roles";
 const InvoiceEditor = lazy(() => import("./invoice/InvoiceEditor"));
 const QuickInvoiceEditor = lazy(() => import("./invoice/QuickInvoiceEditor"));
 const PayslipEditor = lazy(() => import("./payslip/PayslipEditor"));
+const CVEditor = lazy(() => import("./cv/CVEditor"));
+const LettreMotivationEditor = lazy(() => import("./lettre-motivation/LettreMotivationEditor"));
+const ContratTravailEditor = lazy(() => import("./contrat-travail/ContratTravailEditor"));
+const BonCommandeEditor = lazy(() => import("./bon-commande/BonCommandeEditor"));
+const BonLivraisonEditor = lazy(() => import("./bon-livraison/BonLivraisonEditor"));
+const RecuPaiementEditor = lazy(() => import("./recu-paiement/RecuPaiementEditor"));
+const ContratPrestationEditor = lazy(() => import("./contrat-prestation/ContratPrestationEditor"));
 
 function EditorFallback() {
   return (
@@ -56,6 +62,64 @@ function typeBadgeStyle(t: string) {
   if (t === "payslip") return "bg-amber-100 text-amber-800";
   if (t === "proforma" || t === "devis") return "bg-blue-100 text-blue-700";
   return "bg-slate-100 text-slate-600";
+}
+
+type ModuleCardProps = {
+  to: string;
+  icon: string;
+  title: string;
+  description: string;
+  isNew?: boolean;
+  accentClass?: string;
+};
+
+function ModuleCard({ to, icon, title, description, isNew, accentClass = "bg-blue-50 text-blue-600" }: ModuleCardProps) {
+  return (
+    <Link
+      to={to}
+      className="group relative flex items-start gap-3 rounded-2xl bg-white p-4 shadow-card ring-1 ring-border/50 transition-all duration-200 hover:shadow-soft hover:-translate-y-0.5 active:scale-[0.98]"
+    >
+      {isNew && (
+        <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-emerald-500 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white shadow-sm">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
+          Nouveau
+        </span>
+      )}
+      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg ${accentClass}`}>
+        {icon}
+      </div>
+      <div className="min-w-0 flex-1 pr-10">
+        <p className="text-sm font-semibold text-text group-hover:text-primary transition-colors">{title}</p>
+        <p className="mt-0.5 text-xs leading-relaxed text-slate-500">{description}</p>
+      </div>
+    </Link>
+  );
+}
+
+function CategorySection({
+  title,
+  icon,
+  accentBg,
+  children,
+  className = "",
+}: {
+  title: string;
+  icon: string;
+  accentBg: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={className}>
+      <div className={`mb-3 flex items-center gap-2.5 rounded-xl px-3 py-2.5 ${accentBg}`}>
+        <span className="text-base">{icon}</span>
+        <h2 className="text-sm font-bold tracking-tight text-text">{title}</h2>
+      </div>
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+        {children}
+      </div>
+    </section>
+  );
 }
 
 function DashboardHome() {
@@ -114,7 +178,7 @@ function DashboardHome() {
               Bonjour, {firstName} 👋
             </p>
             <p className="mt-1.5 text-sm leading-relaxed text-white/80">
-              Vos documents prêts en quelques gestes.
+              Vos documents professionnels, gratuits et en quelques gestes.
             </p>
           </div>
           <div className="shrink-0 rounded-2xl bg-white/15 px-4 py-3 text-sm ring-1 ring-white/20 backdrop-blur sm:text-right">
@@ -127,7 +191,6 @@ function DashboardHome() {
             )}
           </div>
         </div>
-        {/* Décorations */}
         <div className="pointer-events-none absolute -right-8 -top-8 h-36 w-36 rounded-full bg-white/8" aria-hidden />
         <div className="pointer-events-none absolute -bottom-6 right-12 h-24 w-24 rounded-full bg-white/5" aria-hidden />
       </div>
@@ -154,46 +217,123 @@ function DashboardHome() {
         <TrustModelBanner />
       </div>
 
-      {/* ─── Actions ─── */}
-      <DashboardSection
-        title="Créer un document"
-        kicker="Actions rapides"
-        className="mt-7"
-      >
-        <div className="animate-cards grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3.5">
-          <QuickActionCard
-            to="/dashboard/invoice/new?type=invoice"
-            variant="primary"
-            emoji="📄"
-            title="Nouvelle facture"
-            description="TVA, lignes, PDF — le flux standard."
-          />
-          <QuickActionCard
-            to="/dashboard/payslip/new"
-            variant="warm"
-            emoji="🧾"
-            title="Bulletin de salaire"
-            description="Salaire, retenues, net à payer."
-          />
-          <QuickActionCard
-            to="/dashboard/invoice/new?type=proforma"
-            variant="secondary"
-            emoji="📋"
-            title="Proforma / Devis"
-            description="Même éditeur, type adapté."
-          />
-          <QuickActionCard
-            to="/dashboard/invoice/express"
-            variant="accent"
-            emoji="🛒"
-            title="Facture e-commerce"
-            description="Lignes TTC, livraison en ligne."
-          />
-        </div>
-      </DashboardSection>
-
       <div className="mt-5">
         <InlineAdStrip />
+      </div>
+
+      {/* ─── CATÉGORIE 1 : Documents Commerciaux ─── */}
+      <CategorySection
+        title="Documents Commerciaux"
+        icon="🛍️"
+        accentBg="bg-blue-50/80"
+        className="mt-7"
+      >
+        <ModuleCard
+          to="/dashboard/invoice/new?type=invoice"
+          icon="📄"
+          title="Facture normalisée"
+          description="Facture avec TVA, lignes et PDF professionnel."
+          accentClass="bg-blue-100 text-blue-700"
+        />
+        <ModuleCard
+          to="/dashboard/invoice/new?type=proforma"
+          icon="📋"
+          title="Proforma / Devis"
+          description="Proforma ou devis, même éditeur puissant."
+          accentClass="bg-blue-100 text-blue-700"
+        />
+        <ModuleCard
+          to="/dashboard/bon-commande/new"
+          icon="📝"
+          title="Bon de commande"
+          description="Créez vos bons de commande en FCFA."
+          isNew
+          accentClass="bg-blue-100 text-blue-700"
+        />
+        <ModuleCard
+          to="/dashboard/bon-livraison/new"
+          icon="🚚"
+          title="Bon de livraison"
+          description="Éditez un BL avec état de conformité."
+          isNew
+          accentClass="bg-blue-100 text-blue-700"
+        />
+        <ModuleCard
+          to="/dashboard/recu-paiement/new"
+          icon="🧾"
+          title="Reçu de paiement"
+          description="Émettez un reçu avec montant en lettres."
+          isNew
+          accentClass="bg-blue-100 text-blue-700"
+        />
+        <ModuleCard
+          to="/dashboard/invoice/express"
+          icon="🛒"
+          title="Facture e-commerce"
+          description="Vente en ligne rapide, lignes TTC."
+          accentClass="bg-blue-100 text-blue-700"
+        />
+      </CategorySection>
+
+      {/* ─── CATÉGORIE 2 : Emploi & RH ─── */}
+      <CategorySection
+        title="Emploi & Ressources Humaines"
+        icon="👥"
+        accentBg="bg-emerald-50/80"
+        className="mt-7"
+      >
+        <ModuleCard
+          to="/dashboard/payslip/new"
+          icon="💼"
+          title="Bulletin de salaire"
+          description="Salaire brut, retenues CNPS/IGR, net à payer."
+          accentClass="bg-emerald-100 text-emerald-700"
+        />
+        <ModuleCard
+          to="/dashboard/contrat-travail/new"
+          icon="🤝"
+          title="Contrat de travail CDD/CDI"
+          description="Conforme au Code du travail ivoirien."
+          isNew
+          accentClass="bg-emerald-100 text-emerald-700"
+        />
+        <ModuleCard
+          to="/dashboard/cv/new"
+          icon="👤"
+          title="CV Professionnel"
+          description="Créez un CV prêt à l'emploi en 3 templates."
+          isNew
+          accentClass="bg-emerald-100 text-emerald-700"
+        />
+        <ModuleCard
+          to="/dashboard/lettre-motivation/new"
+          icon="✉️"
+          title="Lettre de motivation"
+          description="Rédigez une lettre percutante et structurée."
+          isNew
+          accentClass="bg-emerald-100 text-emerald-700"
+        />
+      </CategorySection>
+
+      {/* ─── CATÉGORIE 3 : Juridique ─── */}
+      <CategorySection
+        title="Documents Juridiques"
+        icon="⚖️"
+        accentBg="bg-amber-50/80"
+        className="mt-7"
+      >
+        <ModuleCard
+          to="/dashboard/contrat-prestation/new"
+          icon="📜"
+          title="Contrat de prestation"
+          description="Contrat de services complet et juridique."
+          isNew
+          accentClass="bg-amber-100 text-amber-700"
+        />
+      </CategorySection>
+
+      <div className="mt-6">
+        <InlineAdStrip variant="compact" />
       </div>
 
       {/* ─── Historique ─── */}
@@ -436,7 +576,7 @@ export default function Dashboard() {
     }
   }, [authReady, auth.loading, auth.user]);
 
-  const isDocEditorRoute = /^\/dashboard\/(invoice|payslip)(\/|$)/.test(location.pathname);
+  const isDocEditorRoute = /^\/dashboard\/(invoice|payslip|cv|lettre-motivation|contrat-travail|bon-commande|bon-livraison|recu-paiement|contrat-prestation)(\/|$)/.test(location.pathname);
 
   const dashboardRoutes = (
     <Suspense fallback={<EditorFallback />}>
@@ -448,6 +588,20 @@ export default function Dashboard() {
         <Route path="invoice/:id" element={<InvoiceEditor />} />
         <Route path="payslip/new" element={<PayslipEditor />} />
         <Route path="payslip/:id" element={<PayslipEditor />} />
+        <Route path="cv/new" element={<CVEditor />} />
+        <Route path="cv/:id" element={<CVEditor />} />
+        <Route path="lettre-motivation/new" element={<LettreMotivationEditor />} />
+        <Route path="lettre-motivation/:id" element={<LettreMotivationEditor />} />
+        <Route path="contrat-travail/new" element={<ContratTravailEditor />} />
+        <Route path="contrat-travail/:id" element={<ContratTravailEditor />} />
+        <Route path="bon-commande/new" element={<BonCommandeEditor />} />
+        <Route path="bon-commande/:id" element={<BonCommandeEditor />} />
+        <Route path="bon-livraison/new" element={<BonLivraisonEditor />} />
+        <Route path="bon-livraison/:id" element={<BonLivraisonEditor />} />
+        <Route path="recu-paiement/new" element={<RecuPaiementEditor />} />
+        <Route path="recu-paiement/:id" element={<RecuPaiementEditor />} />
+        <Route path="contrat-prestation/new" element={<ContratPrestationEditor />} />
+        <Route path="contrat-prestation/:id" element={<ContratPrestationEditor />} />
       </Routes>
     </Suspense>
   );

@@ -1,0 +1,399 @@
+import { useRef, useState } from "react";
+import { useForm, useFieldArray } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useNavigate } from "react-router-dom";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
+import { Button } from "../../components/ui/Button";
+import { Input } from "../../components/ui/Input";
+import { Textarea } from "../../components/ui/Textarea";
+import { InlineAdStrip } from "../../components/promo/InlineAdStrip";
+import { useAutoSave, readDraft } from "../../hooks/useAutoSave";
+import { fileToDataUrl } from "../../lib/brandColors";
+import CVPreview from "./CVPreview";
+
+const expSchema = z.object({
+  poste: z.string().default(""),
+  entreprise: z.string().default(""),
+  localisation: z.string().default(""),
+  dateDebut: z.string().default(""),
+  dateFin: z.string().default(""),
+  actuel: z.boolean().default(false),
+  missions: z.string().default(""),
+});
+
+const formationSchema = z.object({
+  diplome: z.string().default(""),
+  etablissement: z.string().default(""),
+  localisation: z.string().default(""),
+  annee: z.string().default(""),
+  mention: z.string().default("Aucune"),
+});
+
+const schema = z.object({
+  template: z.enum(["classique", "moderne", "compact"]).default("classique"),
+  nom: z.string().min(1, "Nom requis"),
+  titre: z.string().min(1, "Titre requis"),
+  dateNaissance: z.string().default(""),
+  lieuResidence: z.string().default(""),
+  telephone: z.string().default(""),
+  email: z.string().default(""),
+  linkedin: z.string().default(""),
+  permis: z.string().default("Aucun"),
+  situation: z.string().default(""),
+  nationalite: z.string().default("Ivoirienne"),
+  profil: z.string().default(""),
+  experiences: z.array(expSchema).default([]),
+  formations: z.array(formationSchema).default([]),
+  competences: z.array(z.object({ nom: z.string().default(""), niveau: z.string().default("Intermédiaire") })).default([]),
+  langues: z.array(z.object({ langue: z.string().default(""), niveau: z.string().default("Courant") })).default([]),
+  interets: z.string().default(""),
+  referencesDisponibles: z.boolean().default(false),
+  photoDataUrl: z.string().default(""),
+});
+
+type Values = z.infer<typeof schema>;
+const DRAFT_KEY = "cv_draft";
+
+const TEMPLATES = [
+  { id: "classique", label: "Classique", desc: "Sobre, une colonne" },
+  { id: "moderne", label: "Moderne", desc: "Deux colonnes colorées" },
+  { id: "compact", label: "Compact", desc: "Tout en 1 page" },
+] as const;
+
+const NIVEAUX_COMP = ["Débutant", "Intermédiaire", "Avancé", "Expert"];
+const NIVEAUX_LANG = ["Notions", "Intermédiaire", "Courant", "Bilingue", "Langue maternelle"];
+
+export default function CVEditor() {
+  const navigate = useNavigate();
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const previewRef = useRef<HTMLDivElement>(null);
+  const draft = readDraft<Values>(DRAFT_KEY);
+
+  const { register, control, watch, handleSubmit, setValue, formState: { errors } } = useForm<Values>({
+    resolver: zodResolver(schema) as any,
+    defaultValues: draft ?? {
+      template: "classique",
+      nationalite: "Ivoirienne",
+      permis: "Aucun",
+      experiences: [{ poste: "", entreprise: "", localisation: "", dateDebut: "", dateFin: "", actuel: false, missions: "" }],
+      formations: [{ diplome: "", etablissement: "", localisation: "", annee: "", mention: "Aucune" }],
+      competences: [{ nom: "", niveau: "Intermédiaire" }],
+      langues: [{ langue: "Français", niveau: "Langue maternelle" }],
+    },
+  });
+
+  const expFields = useFieldArray({ control, name: "experiences" });
+  const formFields = useFieldArray({ control, name: "formations" });
+  const compFields = useFieldArray({ control, name: "competences" });
+  const langFields = useFieldArray({ control, name: "langues" });
+  const values = watch();
+  useAutoSave(DRAFT_KEY, values);
+
+  async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      setValue("photoDataUrl", dataUrl);
+    } catch { /* ignore */ }
+  }
+
+  async function downloadPDF() {
+    if (!previewRef.current) return;
+    setPdfLoading(true);
+    try {
+      const canvas = await html2canvas(previewRef.current, { scale: 2, useCORS: true });
+      const imgData = canvas.toDataURL("image/jpeg", 0.92);
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageW = 210;
+      const imgH = (canvas.height * pageW) / canvas.width;
+      let y = 0;
+      const pageH = 297;
+      if (imgH <= pageH) {
+        pdf.addImage(imgData, "JPEG", 0, 0, pageW, imgH);
+      } else {
+        let remaining = imgH;
+        while (remaining > 0) {
+          pdf.addImage(imgData, "JPEG", 0, -y, pageW, imgH);
+          remaining -= pageH;
+          y += pageH;
+          if (remaining > 0) pdf.addPage();
+        }
+      }
+      pdf.save(`CV-${values.nom.replace(/\s+/g, "-") || "cv"}.pdf`);
+    } finally {
+      setPdfLoading(false);
+    }
+  }
+
+  const onSubmit = handleSubmit(() => downloadPDF());
+
+  const selectClass = "w-full rounded-xl border border-border/70 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40";
+
+  return (
+    <div className="min-h-screen bg-surface">
+      <title>CV Professionnel Gratuit — DocuGest Ivoire</title>
+
+      <div className="sticky top-0 z-30 border-b border-border/60 bg-white/95 px-4 py-3 backdrop-blur-sm shadow-xs">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={() => navigate(-1)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface ring-1 ring-border/70 text-slate-500 hover:bg-white transition active:scale-95">←</button>
+            <div>
+              <p className="text-sm font-bold text-text">CV Professionnel</p>
+              <p className="text-xs text-slate-500">{values.nom || "Nouveau CV"}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={() => setShowPreview(!showPreview)} className="rounded-xl border border-border/70 bg-surface px-3 py-2 text-xs font-medium text-slate-600 hover:bg-white transition lg:hidden">
+              {showPreview ? "Formulaire" : "Aperçu"}
+            </button>
+            <Button variant="primary" loading={pdfLoading} onClick={onSubmit} className="h-9 px-4 text-sm">
+              Télécharger PDF
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-7xl px-3 py-5 sm:px-4 lg:grid lg:grid-cols-2 lg:gap-6 lg:py-6">
+        <div className={showPreview ? "hidden lg:block" : ""}>
+          <form className="space-y-5" onSubmit={onSubmit}>
+            <InlineAdStrip variant="compact" />
+
+            {/* Template */}
+            <div className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-border/50">
+              <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">Choisir un modèle</h3>
+              <div className="grid grid-cols-3 gap-2">
+                {TEMPLATES.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setValue("template", t.id)}
+                    className={`rounded-xl border-2 p-3 text-center transition ${values.template === t.id ? "border-primary bg-primary/5" : "border-border/60 hover:border-primary/40"}`}
+                  >
+                    <p className="text-sm font-bold text-text">{t.label}</p>
+                    <p className="mt-0.5 text-[10px] text-slate-500">{t.desc}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Infos personnelles */}
+            <div className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-border/50">
+              <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">Informations personnelles</h3>
+              <div className="space-y-3">
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-slate-700">Nom complet *</label>
+                  <Input {...register("nom")} placeholder="KOUASSI Jean-Baptiste" />
+                  {errors.nom && <p className="mt-1 text-xs text-red-500">{errors.nom.message}</p>}
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-slate-700">Titre professionnel / Poste recherché *</label>
+                  <Input {...register("titre")} placeholder="Développeur Web Full-Stack" />
+                  {errors.titre && <p className="mt-1 text-xs text-red-500">{errors.titre.message}</p>}
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-slate-700">Photo (optionnel)</label>
+                  <input type="file" accept="image/*" onChange={handlePhotoUpload} className="w-full rounded-xl border border-border/70 bg-white px-3 py-2 text-sm" />
+                  {values.photoDataUrl && <img src={values.photoDataUrl} alt="Aperçu" className="mt-2 h-16 w-16 rounded-full object-cover ring-2 ring-primary/30" />}
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-700">Lieu de résidence</label>
+                    <Input {...register("lieuResidence")} placeholder="Cocody, Abidjan" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-700">Date de naissance</label>
+                    <Input type="date" {...register("dateNaissance")} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-700">Téléphone</label>
+                    <Input {...register("telephone")} placeholder="+225 07 XX XX XX XX" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-700">Email</label>
+                    <Input {...register("email")} type="email" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-700">LinkedIn</label>
+                    <Input {...register("linkedin")} placeholder="linkedin.com/in/..." />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-700">Nationalité</label>
+                    <Input {...register("nationalite")} defaultValue="Ivoirienne" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-700">Permis de conduire</label>
+                    <select {...register("permis")} className={selectClass}>
+                      {["Aucun", "Permis A", "Permis B", "Permis C", "Permis D"].map((v) => <option key={v}>{v}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-700">Situation matrimoniale</label>
+                    <select {...register("situation")} className={selectClass}>
+                      <option value="">—</option>
+                      {["Célibataire", "Marié(e)", "Autre"].map((v) => <option key={v}>{v}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Profil */}
+            <div className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-border/50">
+              <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">Profil / Résumé</h3>
+              <Textarea {...register("profil")} rows={4} placeholder="Ingénieur informaticien avec 5 ans d'expérience... Passionné par la transformation digitale en Afrique." />
+            </div>
+
+            {/* Expériences */}
+            <div className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-border/50">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">Expériences</h3>
+                <button type="button" onClick={() => expFields.append({ poste: "", entreprise: "", localisation: "", dateDebut: "", dateFin: "", actuel: false, missions: "" })} className="rounded-xl bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/15 transition">+ Ajouter</button>
+              </div>
+              {expFields.fields.map((f, i) => (
+                <div key={f.id} className="mb-3 rounded-xl border border-border/60 p-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-500">Expérience {i + 1}</span>
+                    {expFields.fields.length > 1 && <button type="button" onClick={() => expFields.remove(i)} className="text-xs text-red-400 hover:text-red-600">Supprimer</button>}
+                  </div>
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="mb-1 block text-xs text-slate-500">Poste</label>
+                        <Input {...register(`experiences.${i}.poste`)} placeholder="Développeur Full-Stack" />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs text-slate-500">Entreprise</label>
+                        <Input {...register(`experiences.${i}.entreprise`)} placeholder="SOGECI" />
+                      </div>
+                    </div>
+                    <Input {...register(`experiences.${i}.localisation`)} placeholder="Abidjan, CI" />
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="mb-1 block text-xs text-slate-500">Début (AAAA-MM)</label>
+                        <Input type="month" {...register(`experiences.${i}.dateDebut`)} />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs text-slate-500">Fin</label>
+                        <Input type="month" {...register(`experiences.${i}.dateFin`)} disabled={watch(`experiences.${i}.actuel`)} />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input type="checkbox" id={`actuel-${i}`} {...register(`experiences.${i}.actuel`)} className="h-4 w-4 rounded border-border" />
+                      <label htmlFor={`actuel-${i}`} className="text-xs text-slate-600">Poste actuel</label>
+                    </div>
+                    <Textarea {...register(`experiences.${i}.missions`)} rows={3} placeholder="• Mission 1&#10;• Mission 2&#10;• Mission 3" />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Formations */}
+            <div className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-border/50">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">Formations</h3>
+                <button type="button" onClick={() => formFields.append({ diplome: "", etablissement: "", localisation: "", annee: "", mention: "Aucune" })} className="rounded-xl bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/15 transition">+ Ajouter</button>
+              </div>
+              {formFields.fields.map((f, i) => (
+                <div key={f.id} className="mb-3 rounded-xl border border-border/60 p-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-500">Formation {i + 1}</span>
+                    {formFields.fields.length > 1 && <button type="button" onClick={() => formFields.remove(i)} className="text-xs text-red-400 hover:text-red-600">Supprimer</button>}
+                  </div>
+                  <div className="space-y-2">
+                    <Input {...register(`formations.${i}.diplome`)} placeholder="Licence en Gestion" />
+                    <Input {...register(`formations.${i}.etablissement`)} placeholder="UVCI Abidjan" />
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="mb-1 block text-xs text-slate-500">Localisation</label>
+                        <Input {...register(`formations.${i}.localisation`)} placeholder="Abidjan" />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs text-slate-500">Année</label>
+                        <Input {...register(`formations.${i}.annee`)} placeholder="2022" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs text-slate-500">Mention</label>
+                      <select {...register(`formations.${i}.mention`)} className={selectClass}>
+                        {["Aucune", "Passable", "Assez Bien", "Bien", "Très Bien"].map((v) => <option key={v}>{v}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Compétences */}
+            <div className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-border/50">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">Compétences</h3>
+                <button type="button" onClick={() => compFields.append({ nom: "", niveau: "Intermédiaire" })} className="rounded-xl bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/15 transition">+ Ajouter</button>
+              </div>
+              {compFields.fields.map((f, i) => (
+                <div key={f.id} className="mb-2 flex items-center gap-2">
+                  <Input {...register(`competences.${i}.nom`)} placeholder="React, Comptabilité…" className="flex-1" />
+                  <select {...register(`competences.${i}.niveau`)} className="w-36 rounded-xl border border-border/70 bg-white px-2 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40">
+                    {NIVEAUX_COMP.map((v) => <option key={v}>{v}</option>)}
+                  </select>
+                  {compFields.fields.length > 1 && <button type="button" onClick={() => compFields.remove(i)} className="text-xs text-red-400">✕</button>}
+                </div>
+              ))}
+            </div>
+
+            {/* Langues */}
+            <div className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-border/50">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">Langues</h3>
+                <button type="button" onClick={() => langFields.append({ langue: "", niveau: "Courant" })} className="rounded-xl bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/15 transition">+ Ajouter</button>
+              </div>
+              {langFields.fields.map((f, i) => (
+                <div key={f.id} className="mb-2 flex items-center gap-2">
+                  <Input {...register(`langues.${i}.langue`)} placeholder="Dioula, Anglais…" className="flex-1" />
+                  <select {...register(`langues.${i}.niveau`)} className="w-44 rounded-xl border border-border/70 bg-white px-2 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40">
+                    {NIVEAUX_LANG.map((v) => <option key={v}>{v}</option>)}
+                  </select>
+                  {langFields.fields.length > 1 && <button type="button" onClick={() => langFields.remove(i)} className="text-xs text-red-400">✕</button>}
+                </div>
+              ))}
+            </div>
+
+            {/* Intérêts */}
+            <div className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-border/50">
+              <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">Centres d'intérêt (optionnel)</h3>
+              <Textarea {...register("interets")} rows={2} placeholder="Football, Lecture, Voyage, Musique gospel" />
+              <div className="mt-3 flex items-center gap-2">
+                <input type="checkbox" id="refs" {...register("referencesDisponibles")} className="h-4 w-4 rounded border-border" />
+                <label htmlFor="refs" className="text-sm text-slate-700">Références disponibles sur demande</label>
+              </div>
+            </div>
+
+            <Button variant="primary" loading={pdfLoading} type="submit" className="h-12 w-full text-base font-semibold">
+              Télécharger le CV en PDF
+            </Button>
+          </form>
+        </div>
+
+        <div className={`${showPreview ? "" : "hidden"} lg:block`}>
+          <div className="sticky top-[73px]">
+            <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">Aperçu du CV</p>
+            <div className="max-h-[calc(100vh-120px)] overflow-y-auto rounded-2xl border border-border/60 bg-white shadow-card">
+              <div ref={previewRef} className="bg-white">
+                <CVPreview data={values as import("./CVPreview").CVData} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
