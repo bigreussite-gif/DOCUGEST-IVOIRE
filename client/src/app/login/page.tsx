@@ -68,7 +68,7 @@ export default function LoginPage() {
       <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-md flex-col justify-center">
         <div className="mx-auto mb-6 flex w-full max-w-md items-center justify-between gap-3">
           <div className="rounded-2xl bg-white px-3 py-2 shadow-soft ring-2 ring-primary/15">
-            <img src="/logo-docugest-ivoire.png" alt="DocuGest Ivoire" className="h-10 w-auto object-contain drop-shadow" />
+            <img src="/logo-docugest-ivoire.png" alt="DocuGestIvoire" className="h-14 w-auto object-contain drop-shadow" />
           </div>
           <Link
             href="/"
@@ -84,7 +84,7 @@ export default function LoginPage() {
               Connexion
             </p>
             <h1 className="mt-3 text-2xl font-bold tracking-tight text-text sm:text-[1.75rem]">Bienvenue</h1>
-            <p className="mt-2 text-sm text-slate-600">Accédez à votre espace DocuGest.</p>
+            <p className="mt-2 text-sm text-slate-600">Accédez à votre espace DocuGestIvoire.</p>
             <p className="mt-2 text-xs leading-relaxed text-slate-500">
               Espace professionnel pour l’Afrique francophone — factures, devis, bulletins.
             </p>
@@ -120,9 +120,14 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-text">
-                Mot de passe
-              </label>
+              <div className="mb-1.5 flex items-center justify-between">
+                <label htmlFor="password" className="text-sm font-medium text-text">
+                  Mot de passe
+                </label>
+                <Link href="/forgot-password" className="text-xs font-medium text-primary underline-offset-4 hover:underline">
+                  Mot de passe oublié ?
+                </Link>
+              </div>
               <input
                 id="password"
                 name="password"
