@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { runWithDbRetry } from "@/lib/db";
 import * as store from "@/lib/serverStore";
 import type { BlogPost } from "@/lib/serverStore";
+import { BlogAdBanner } from "@/components/promo/BlogAdBanner";
+import { ShareButtons } from "@/components/blog/ShareButtons";
 
 export const runtime = "nodejs";
 
@@ -45,9 +47,9 @@ async function getRelated(category: string, excludeSlug: string): Promise<BlogPo
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const post = await getPost(slug);
-  if (!post) return { title: "Article introuvable | DocuGest Ivoire" };
+  if (!post) return { title: "Article introuvable | DocuGestIvoire" };
   return {
-    title: post.meta_title || `${post.title} | DocuGest Ivoire`,
+    title: post.meta_title || `${post.title} | DocuGestIvoire`,
     description: post.meta_description || post.excerpt,
     openGraph: {
       title: post.meta_title || post.title,
@@ -74,7 +76,7 @@ export default async function BlogArticlePage({ params }: { params: Promise<{ sl
       <header className="border-b border-slate-200/70 bg-white/90 backdrop-blur sticky top-0 z-20">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
           <Link href="/" className="flex items-center gap-2">
-            <img src="/logo-docugest-ivoire.png" alt="DocuGest Ivoire" className="h-8 w-auto" />
+            <img src="/logo-docugest-ivoire.png" alt="DocuGestIvoire" className="h-11 w-auto" />
           </Link>
           <nav className="flex items-center gap-4 text-sm">
             <Link href="/blog" className="text-slate-600 hover:text-primary transition">Blog</Link>
@@ -131,7 +133,7 @@ export default async function BlogArticlePage({ params }: { params: Promise<{ sl
               </div>
               <div>
                 <div className="text-sm font-semibold text-slate-800">{post.author_name}</div>
-                <div className="text-xs text-slate-400">DocuGest Ivoire · Équipe éditoriale</div>
+                <div className="text-xs text-slate-400">DocuGestIvoire · Équipe éditoriale</div>
               </div>
             </div>
 
@@ -151,43 +153,34 @@ export default async function BlogArticlePage({ params }: { params: Promise<{ sl
               dangerouslySetInnerHTML={{ __html: post.content }}
             />
 
+            {/* Pub milieu article */}
+            <BlogAdBanner adSlot="blog-article-mid" label="Sponsorisé" className="mt-10" minHeight="min-h-[80px]" />
+
             {/* CTA */}
-            <div className="mt-10 rounded-2xl bg-gradient-to-br from-primary/10 to-emerald-50 p-6 text-center">
+            <div className="mt-6 rounded-2xl bg-gradient-to-br from-primary/10 to-emerald-50 p-6 text-center">
               <p className="font-semibold text-slate-800">Prêt à mettre en pratique ?</p>
-              <p className="mt-1 text-sm text-slate-600">Créez vos documents professionnels gratuitement sur DocuGest Ivoire.</p>
+              <p className="mt-1 text-sm text-slate-600">Créez vos documents professionnels gratuitement sur DocuGestIvoire.</p>
               <Link href="/dashboard" className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow hover:brightness-105 transition">
                 Accéder à la plateforme →
               </Link>
             </div>
 
             {/* Share */}
-            <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-6">
-              <span className="text-sm font-medium text-slate-600">Partager :</span>
-              <a
-                href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`https://docugest-ivoire.vercel.app/blog/${post.slug}`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
-              >
-                LinkedIn
-              </a>
-              <a
-                href={`https://wa.me/?text=${encodeURIComponent(`${post.title} — https://docugest-ivoire.vercel.app/blog/${post.slug}`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-medium text-emerald-700 hover:bg-emerald-100 transition"
-              >
-                WhatsApp
-              </a>
-            </div>
+            <ShareButtons
+              url={`https://docugest-ivoire.vercel.app/blog/${post.slug}`}
+              title={post.title}
+            />
           </article>
 
           {/* Sidebar */}
           <aside className="mt-6 space-y-6 lg:mt-0 lg:pt-6">
-            {/* About DocuGest */}
+            {/* Pub sidebar */}
+            <BlogAdBanner adSlot="blog-sidebar" label="Publicité" minHeight="min-h-[120px]" />
+
+            {/* About DocuGestIvoire */}
             <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
               <div className="flex items-center gap-3">
-                <img src="/logo-docugest-ivoire.png" alt="DocuGest Ivoire" className="h-10 w-auto" />
+                <img src="/logo-docugest-ivoire.png" alt="DocuGestIvoire" className="h-12 w-auto" />
               </div>
               <p className="mt-3 text-sm leading-relaxed text-slate-600">
                 La plateforme gratuite de génération de documents professionnels pour les entrepreneurs ivoiriens.
@@ -218,6 +211,9 @@ export default async function BlogArticlePage({ params }: { params: Promise<{ sl
               </div>
             )}
 
+            {/* Pub bas de sidebar */}
+            <BlogAdBanner adSlot="blog-sidebar-bottom" label="Publicité" minHeight="min-h-[100px]" />
+
             {/* Categories */}
             <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
               <h3 className="text-sm font-bold text-slate-900">Catégories</h3>
@@ -242,7 +238,7 @@ export default async function BlogArticlePage({ params }: { params: Promise<{ sl
 
       {/* Footer */}
       <footer className="mt-16 border-t border-slate-200/60 py-6 text-center text-xs text-slate-400">
-        © {new Date().getFullYear()} DocuGest Ivoire ·{" "}
+        © {new Date().getFullYear()} DocuGestIvoire ·{" "}
         <Link href="/blog" className="hover:text-primary">Blog</Link> ·{" "}
         <Link href="/" className="hover:text-primary">Accueil</Link>
       </footer>
