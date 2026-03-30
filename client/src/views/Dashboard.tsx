@@ -167,7 +167,9 @@ function DashboardHome() {
   const firstName = auth.user?.full_name?.split(" ")[0] ?? "—";
 
   return (
-    <div className="min-w-0 px-3 py-5 sm:p-6">
+    <div className="min-w-0 w-full">
+      {/* Cadre intérieur : marges latérales + max-width centré */}
+      <div className="mx-auto w-full max-w-[58rem] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
 
       {/* ─── Hero ─── */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-primary-dark p-5 text-white shadow-primary-glow sm:p-7">
@@ -197,27 +199,27 @@ function DashboardHome() {
 
       {/* ─── Stats rapides ─── */}
       {!loading && docs.length > 0 ? (
-        <div className="mt-4 grid grid-cols-3 gap-2.5 sm:gap-3">
-          <div className="flex flex-col rounded-2xl bg-white p-3.5 shadow-card ring-1 ring-border/60 sm:p-4">
+        <div className="mt-5 grid grid-cols-3 gap-3 sm:gap-4">
+          <div className="flex flex-col rounded-2xl bg-white p-4 shadow-card ring-1 ring-border/60 sm:p-5">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Documents</span>
-            <span className="mt-1.5 text-2xl font-bold text-text">{docs.length}</span>
+            <span className="mt-2 text-2xl font-bold text-text">{docs.length}</span>
           </div>
-          <div className="flex flex-col rounded-2xl bg-white p-3.5 shadow-card ring-1 ring-border/60 sm:p-4">
+          <div className="flex flex-col rounded-2xl bg-white p-4 shadow-card ring-1 ring-border/60 sm:p-5">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Factures</span>
-            <span className="mt-1.5 text-2xl font-bold text-text">{docs.filter((d) => d.type === "invoice").length}</span>
+            <span className="mt-2 text-2xl font-bold text-text">{docs.filter((d) => d.type === "invoice").length}</span>
           </div>
-          <div className="flex flex-col rounded-2xl bg-white p-3.5 shadow-card ring-1 ring-border/60 sm:p-4">
+          <div className="flex flex-col rounded-2xl bg-white p-4 shadow-card ring-1 ring-border/60 sm:p-5">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Bulletins</span>
-            <span className="mt-1.5 text-2xl font-bold text-text">{docs.filter((d) => d.type === "payslip").length}</span>
+            <span className="mt-2 text-2xl font-bold text-text">{docs.filter((d) => d.type === "payslip").length}</span>
           </div>
         </div>
       ) : null}
 
-      <div className="mt-5">
+      <div className="mt-6">
         <TrustModelBanner />
       </div>
 
-      <div className="mt-5">
+      <div className="mt-6">
         <InlineAdStrip />
       </div>
 
@@ -226,7 +228,7 @@ function DashboardHome() {
         title="Documents Commerciaux"
         icon="🛍️"
         accentBg="bg-blue-50/80"
-        className="mt-7"
+        className="mt-9"
       >
         <ModuleCard
           to="/dashboard/invoice/new?type=invoice"
@@ -280,7 +282,7 @@ function DashboardHome() {
         title="Emploi & Ressources Humaines"
         icon="👥"
         accentBg="bg-emerald-50/80"
-        className="mt-7"
+        className="mt-9"
       >
         <ModuleCard
           to="/dashboard/payslip/new"
@@ -320,7 +322,7 @@ function DashboardHome() {
         title="Documents Juridiques"
         icon="⚖️"
         accentBg="bg-amber-50/80"
-        className="mt-7"
+        className="mt-9"
       >
         <ModuleCard
           to="/dashboard/contrat-prestation/new"
@@ -332,7 +334,7 @@ function DashboardHome() {
         />
       </CategorySection>
 
-      <div className="mt-6">
+      <div className="mt-8">
         <InlineAdStrip variant="compact" />
       </div>
 
@@ -341,7 +343,7 @@ function DashboardHome() {
         id="documents"
         title="Historique"
         kicker="Mes documents"
-        className="mt-8"
+        className="mt-10"
       >
         {loading ? (
           <div className="flex items-center gap-3 rounded-2xl bg-white p-5 shadow-card ring-1 ring-border/60">
@@ -441,13 +443,14 @@ function DashboardHome() {
         ) : null}
       </DashboardSection>
 
-      <div className="mt-6">
+      <div className="mt-8">
         <InlineAdStrip variant="compact" />
       </div>
 
-      <div className="mt-6 pb-2">
+      <div className="mt-8 pb-4">
         <SorobossFooter />
       </div>
+      </div>{/* fin max-w wrapper */}
     </div>
   );
 }
@@ -640,11 +643,11 @@ export default function Dashboard() {
       {!isDocEditorRoute ? <MonetizationTopBar /> : null}
 
       {/* ─── Layout Desktop (sidebar) + Mobile (top header) ─── */}
-      <div className="lg:grid lg:grid-cols-[260px_1fr] lg:min-h-screen">
+      <div className="lg:grid lg:grid-cols-[272px_1fr] lg:min-h-screen">
 
         {/* Sidebar Desktop */}
-        <aside className="hidden lg:flex lg:flex-col lg:border-r lg:border-border/70 lg:bg-white lg:shadow-xs">
-          <div className="sticky top-0 flex flex-col gap-4 overflow-y-auto p-5" style={{ maxHeight: "100vh" }}>
+        <aside className="hidden lg:flex lg:flex-col lg:border-r-2 lg:border-border/50 lg:bg-white lg:shadow-sm">
+          <div className="sticky top-0 flex flex-col gap-4 overflow-y-auto px-4 py-5" style={{ maxHeight: "100vh" }}>
             <AppBrand />
 
             <div className="rounded-2xl bg-gradient-to-br from-primary/8 to-primary/4 p-3.5 ring-1 ring-primary/15">
@@ -700,7 +703,7 @@ export default function Dashboard() {
 
           {/* Header Mobile / Top bar */}
           <header className="glass sticky top-0 z-40 border-b border-border/60 shadow-xs lg:hidden">
-            <div className="flex items-center justify-between px-3 py-3">
+            <div className="flex items-center justify-between px-4 py-3">
               <AppBrand compact />
               <div className="flex items-center gap-2 overflow-visible">
                 {isBackofficeRole(auth.user?.role) ? (
@@ -717,14 +720,14 @@ export default function Dashboard() {
               </div>
             </div>
             {!isDocEditorRoute ? (
-              <div className="border-t border-border/40 px-3 pb-2">
+              <div className="border-t border-border/40 px-4 pb-2">
                 <DashboardNav orientation="horizontal" />
               </div>
             ) : null}
           </header>
 
           {/* Header Desktop */}
-          <header className="hidden lg:flex lg:items-center lg:justify-between lg:border-b lg:border-border/50 lg:bg-white/80 lg:px-6 lg:py-3.5 lg:backdrop-blur">
+          <header className="hidden lg:flex lg:items-center lg:justify-between lg:border-b-2 lg:border-border/40 lg:bg-white lg:px-8 lg:py-4 lg:shadow-xs">
             {!isDocEditorRoute ? (
               <DashboardNav orientation="horizontal" className="flex-1" />
             ) : (
@@ -745,7 +748,7 @@ export default function Dashboard() {
             </div>
           </header>
 
-          <main className="min-w-0 flex-1 pb-24 lg:pb-8">
+          <main className="min-w-0 flex-1 pb-28 lg:pb-10 bg-slate-50/60">
             {dashboardRoutes}
           </main>
         </div>
