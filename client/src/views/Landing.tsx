@@ -193,7 +193,7 @@ export default function Landing() {
 
           {/* ─── Zone publicitaire milieu hero ─── */}
           <div className="mt-8">
-            <InlineAdStrip />
+            <InlineAdStrip adSlot="landing-hero" />
           </div>
 
           {/* ─── Section Modules ─── */}
@@ -251,7 +251,7 @@ export default function Landing() {
 
           {/* ─── Zone pub après les modules ─── */}
           <div className="mt-8">
-            <InlineAdStrip variant="compact" />
+            <InlineAdStrip variant="compact" adSlot="landing-after-modules" />
           </div>
 
           {/* ─── Section Comment ça marche ─── */}
@@ -295,7 +295,7 @@ export default function Landing() {
 
           {/* ─── Zone pub entre sections ─── */}
           <div className="mt-8">
-            <InlineAdStrip />
+            <InlineAdStrip adSlot="landing-cta" />
           </div>
 
           {/* ─── Section FNE ─── */}
@@ -353,7 +353,7 @@ export default function Landing() {
 
       {/* ─── Zones publicitaires bas de page ─── */}
       <div className="mx-auto max-w-6xl px-4 py-6">
-        <InlineAdStrip variant="compact" />
+        <InlineAdStrip variant="compact" adSlot="landing-bottom" />
       </div>
 
       <BottomAdZone />

@@ -11,6 +11,8 @@ export type AdSlotItem = {
   imageDataUrl?: string;
   imageFit?: string;
   imageFrame?: string;
+  /** Code HTML brut (AdSense, bannière partenaire, script JS…) */
+  htmlEmbed?: string;
 };
 
 function buildBySlot(items: AdSlotItem[]): Record<string, AdSlotItem> {

@@ -20,6 +20,7 @@ type SlotConfig = {
   imageDataUrl: string;
   imageFit: "cover" | "contain";
   imageFrame: "banner" | "photo" | "square";
+  htmlEmbed: string;
 };
 
 function isValidHttpUrl(normalizedHref: string): boolean {
@@ -61,7 +62,8 @@ export function AdPlaceholder({ label, hint, adSlot, className = "", minHeight =
       imageFrame:
         raw.imageFrame === "banner" || raw.imageFrame === "square"
           ? (raw.imageFrame as "banner" | "square")
-          : "photo"
+          : "photo",
+      htmlEmbed: String(raw.htmlEmbed ?? ""),
     };
   }, [raw]);
 
@@ -70,7 +72,9 @@ export function AdPlaceholder({ label, hint, adSlot, className = "", minHeight =
     trackAdEvent("view", adSlot);
   }, [adSlot]);
 
-  const hasContent = Boolean(dynamic?.imageDataUrl?.trim() || dynamic?.title?.trim() || dynamic?.body?.trim());
+  const hasContent = Boolean(
+    dynamic?.imageDataUrl?.trim() || dynamic?.title?.trim() || dynamic?.body?.trim() || dynamic?.htmlEmbed?.trim()
+  );
 
   // Si aucun contenu et pas en mode showEmpty : ne rien afficher
   // (évite les zones vides visibles par les utilisateurs)
@@ -139,7 +143,19 @@ export function AdPlaceholder({ label, hint, adSlot, className = "", minHeight =
     );
   }
 
-  // Contenu réel
+  // Contenu réel — HTML embed (AdSense, script partenaire, etc.)
+  if (dynamic?.htmlEmbed?.trim()) {
+    return (
+      <div
+        className={`w-full overflow-hidden ${minHeight} ${className}`}
+        data-ad-slot={adSlot}
+        // biome-ignore lint: HTML embed intentionnel (AdSense, partenaires)
+        dangerouslySetInnerHTML={{ __html: dynamic.htmlEmbed }}
+      />
+    );
+  }
+
+  // Contenu réel — image / texte
   return (
     <div
       className={`flex flex-col items-center justify-center rounded-xl bg-white px-3 py-2 text-center ring-1 ring-slate-200/80 ${minHeight} ${className}`}

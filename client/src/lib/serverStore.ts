@@ -559,6 +559,8 @@ type AdSlotConfig = {
   imageFit: "cover" | "contain";
   /** Proportions du cadre affiché sur le site */
   imageFrame: "banner" | "photo" | "square";
+  /** Code HTML brut injecté (AdSense, bannière partenaire…) */
+  htmlEmbed: string;
   active: boolean;
   updated_at: string | null;
 };
@@ -575,6 +577,7 @@ export async function upsertAdSlotConfig({
   imageDataUrl,
   imageFit,
   imageFrame,
+  htmlEmbed,
   active
 }: {
   actorId: string;
@@ -588,6 +591,7 @@ export async function upsertAdSlotConfig({
   imageDataUrl?: string;
   imageFit?: "cover" | "contain";
   imageFrame?: "banner" | "photo" | "square";
+  htmlEmbed?: string;
   active: boolean;
 }) {
   await appendAuditLog({
@@ -606,6 +610,7 @@ export async function upsertAdSlotConfig({
       imageDataUrl: imageDataUrl ?? "",
       imageFit: imageFit ?? "cover",
       imageFrame: imageFrame ?? "photo",
+      htmlEmbed: htmlEmbed ?? "",
       active
     },
     ip: null
@@ -640,6 +645,7 @@ export async function listAdSlotsConfig(): Promise<AdSlotConfig[]> {
       imageFit: m.imageFit === "contain" ? "contain" : "cover",
       imageFrame:
         m.imageFrame === "banner" || m.imageFrame === "square" ? (m.imageFrame as "banner" | "square") : "photo",
+      htmlEmbed: String(m.htmlEmbed ?? ""),
       active: Boolean(m.active ?? true),
       updated_at: iso(row.created_at)
     });

@@ -27,6 +27,14 @@ export const metadata: Metadata = {
   creator: SITE_NAME,
   publisher: SITE_NAME,
   formatDetection: { telephone: true, email: true, address: true },
+  icons: {
+    icon: [
+      { url: "/favicon.png", type: "image/png" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    apple: "/favicon.png",
+    shortcut: "/favicon.png",
+  },
   manifest: "/manifest.webmanifest",
   alternates: {
     canonical: "/",

@@ -17,6 +17,8 @@ const schema = z.object({
   imageDataUrl: z.string().max(4_000_000).optional().default(""),
   imageFit: z.enum(["cover", "contain"]).optional().default("cover"),
   imageFrame: z.enum(["banner", "photo", "square"]).optional().default("photo"),
+  /** Code HTML brut : balise <script> AdSense, iframe partenaire, bannière HTML… */
+  htmlEmbed: z.string().max(20_000).optional().default(""),
   active: z.boolean()
 });
 

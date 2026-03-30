@@ -16,41 +16,53 @@ type AdCfg = {
   imageDataUrl: string;
   imageFit: "cover" | "contain";
   imageFrame: "banner" | "photo" | "square";
+  htmlEmbed: string;
   active: boolean;
   updated_at: string | null;
 };
 
-const PRESET_SLOTS = [
-  // Barres globales (visibles sur toutes les pages)
-  "top-bar-partners",
-  "top-banner",
-  "bottom-bar-partners",
-  "bottom-bar-adsense",
-  // Pages d'entrée (login / inscription)
-  "login-inline",
-  "register-inline",
-  // Dashboard
-  "dashboard-inline",
-  // Éditeurs de documents
-  "invoice-editor-top",
-  "invoice-editor-before-preview",
-  "payslip-editor-inline",
-  // Landing
-  "landing-hero"
-];
+const PRESET_SLOTS_BY_GROUP: Record<string, string[]> = {
+  "🌍 Barres globales": [
+    "top-bar-partners",
+    "top-banner",
+    "bottom-bar-partners",
+    "bottom-bar-adsense",
+  ],
+  "🏠 Landing page": [
+    "landing-hero",
+    "landing-after-modules",
+    "landing-cta",
+    "landing-bottom",
+  ],
+  "🔐 Authentification": [
+    "login-inline",
+    "register-inline",
+  ],
+  "📊 Application": [
+    "dashboard-inline",
+    "invoice-editor-top",
+    "invoice-editor-before-preview",
+    "payslip-editor-inline",
+  ],
+};
+
+const PRESET_SLOTS = Object.values(PRESET_SLOTS_BY_GROUP).flat();
 
 const SLOT_LABELS: Record<string, string> = {
   "top-bar-partners": "Barre haut — partenaires",
   "top-banner": "Bandeau haut — pub principale",
   "bottom-bar-partners": "Barre bas — partenaires",
-  "bottom-bar-adsense": "Barre bas — Ads",
+  "bottom-bar-adsense": "Barre bas — Ads / partenaires",
   "login-inline": "Page connexion — bandeau pub",
   "register-inline": "Page inscription — bandeau pub",
   "dashboard-inline": "Dashboard — inline (principal)",
   "invoice-editor-top": "Facture — après type de document",
   "invoice-editor-before-preview": "Facture — avant aperçu PDF",
   "payslip-editor-inline": "Bulletin de salaire — inline",
-  "landing-hero": "Landing — héros"
+  "landing-hero": "Landing — section héros",
+  "landing-after-modules": "Landing — après les modules",
+  "landing-cta": "Landing — section CTA / appel à l'action",
+  "landing-bottom": "Landing — pied de page",
 };
 
 export function AdminAds() {
@@ -65,6 +77,8 @@ export function AdminAds() {
   const [imageDataUrl, setImageDataUrl] = useState("");
   const [imageFit, setImageFit] = useState<"cover" | "contain">("cover");
   const [imageFrame, setImageFrame] = useState<"banner" | "photo" | "square">("photo");
+  const [htmlEmbed, setHtmlEmbed] = useState("");
+  const [adMode, setAdMode] = useState<"image" | "html">("image");
   const [active, setActive] = useState(true);
   const [busy, setBusy] = useState(false);
   const [compressing, setCompressing] = useState(false);
@@ -93,6 +107,8 @@ export function AdminAds() {
       setImageDataUrl("");
       setImageFit("cover");
       setImageFrame("photo");
+      setHtmlEmbed("");
+      setAdMode("image");
       setPage("global");
       setCategory("general");
       setActive(true);
@@ -105,6 +121,8 @@ export function AdminAds() {
     setImageDataUrl(c.imageDataUrl ?? "");
     setImageFit(c.imageFit === "contain" ? "contain" : "cover");
     setImageFrame(c.imageFrame === "banner" || c.imageFrame === "square" ? c.imageFrame : "photo");
+    setHtmlEmbed(c.htmlEmbed ?? "");
+    setAdMode(c.htmlEmbed?.trim() ? "html" : "image");
     setPage(c.page);
     setCategory(c.category);
     setActive(c.active);
@@ -128,8 +146,8 @@ export function AdminAds() {
   }
 
   async function save() {
-    if (!imageDataUrl.trim() && !title.trim() && !body.trim()) {
-      setMsg("Ajoutez une image ou un titre / texte.");
+    if (!imageDataUrl.trim() && !title.trim() && !body.trim() && !htmlEmbed.trim()) {
+      setMsg("Ajoutez une image, un code HTML ou un titre / texte.");
       return;
     }
     setBusy(true);
@@ -137,7 +155,7 @@ export function AdminAds() {
     try {
       await adminFetch("/ads", {
         method: "POST",
-        json: { slot, page, category, title, body, ctaLabel, ctaUrl, imageDataUrl, imageFit, imageFrame, active }
+        json: { slot, page, category, title, body, ctaLabel, ctaUrl, imageDataUrl, imageFit, imageFrame, htmlEmbed: adMode === "html" ? htmlEmbed : "", active }
       });
       setMsg("Publicité enregistrée.");
       await load();
@@ -161,105 +179,161 @@ export function AdminAds() {
       </header>
 
       <section className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm ring-1 ring-slate-100">
-        <h2 className="text-sm font-semibold text-slate-800">Emplacements</h2>
-        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {PRESET_SLOTS.map((s) => {
-            const occ = occupiedSlots.has(s);
-            return (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setSlot(s)}
-                className={[
-                  "flex flex-col rounded-xl border px-3 py-3 text-left text-sm transition",
-                  slot === s
-                    ? "border-primary bg-primary/5 ring-1 ring-primary/25"
-                    : "border-slate-200 bg-slate-50/80 hover:border-slate-300"
-                ].join(" ")}
-              >
-                <span className="font-medium text-slate-800">{SLOT_LABELS[s] ?? s}</span>
-                <span className="mt-1 font-mono text-[11px] text-slate-500">{s}</span>
-                <span
-                  className={[
-                    "mt-2 inline-flex w-fit rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase",
-                    occ ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-600"
-                  ].join(" ")}
-                >
-                  {occ ? "Occupé" : "Libre"}
-                </span>
-              </button>
-            );
-          })}
+        <h2 className="text-sm font-semibold text-slate-800">Emplacements publicitaires</h2>
+        <p className="mt-1 text-xs text-slate-500">Sélectionnez un emplacement pour le configurer. Les emplacements verts sont actifs.</p>
+        <div className="mt-4 space-y-4">
+          {Object.entries(PRESET_SLOTS_BY_GROUP).map(([groupLabel, slots]) => (
+            <div key={groupLabel}>
+              <p className="mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">{groupLabel}</p>
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                {slots.map((s) => {
+                  const occ = occupiedSlots.has(s);
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setSlot(s)}
+                      className={[
+                        "flex flex-col rounded-xl border px-3 py-3 text-left text-sm transition",
+                        slot === s
+                          ? "border-primary bg-primary/5 ring-1 ring-primary/25"
+                          : "border-slate-200 bg-slate-50/80 hover:border-slate-300"
+                      ].join(" ")}
+                    >
+                      <span className="font-medium text-slate-800 text-xs leading-tight">{SLOT_LABELS[s] ?? s}</span>
+                      <span className="mt-1 font-mono text-[10px] text-slate-400">{s}</span>
+                      <span
+                        className={[
+                          "mt-2 inline-flex w-fit rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase",
+                          occ ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-600"
+                        ].join(" ")}
+                      >
+                        {occ ? "Actif" : "Libre"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
         <section className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm ring-1 ring-slate-100">
-          <h2 className="text-sm font-semibold text-slate-800">Ajouter une publicité</h2>
+          <h2 className="text-sm font-semibold text-slate-800">
+            Configurer : <span className="text-primary">{SLOT_LABELS[slot] ?? slot}</span>
+          </h2>
           <p className="mt-1 text-xs text-slate-500">
-            Image + lien : le clic sur le visuel ouvre l’URL (https://…). Ajustez le cadre et le remplissage pour un rendu
-            net sans bandes vides.
+            Emplacement : <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-[10px]">{slot}</code>
           </p>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <label className="block sm:col-span-2">
-              <span className="mb-1 block text-sm font-medium text-text">Visuel</span>
-              <input
-                type="file"
-                accept="image/*"
-                className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white"
-                onChange={(e) => void onPickImage(e.target.files?.[0] ?? null)}
-              />
-            </label>
-            {compressing ? <p className="text-sm text-slate-500 sm:col-span-2">Traitement image…</p> : null}
-            <p className="text-[11px] text-slate-400 sm:col-span-2">PNG, JPG, WebP, SVG → optimisé WebP · GIF → conservé tel quel (animation préservée)</p>
-
-            <Input label="Titre (court)" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex. Promo livraison" />
-            <Input label="Texte (optionnel)" value={body} onChange={(e) => setBody(e.target.value)} placeholder="Sous-titre" />
-            <Input label="Libellé bouton (optionnel)" value={ctaLabel} onChange={(e) => setCtaLabel(e.target.value)} />
-            <Input
-              label="Lien de destination (URL)"
-              value={ctaUrl}
-              onChange={(e) => setCtaUrl(e.target.value)}
-              placeholder="https://votre-offre.com"
-            />
-            <label className="block sm:col-span-2">
-              <span className="mb-1 block text-sm font-medium text-text">Forme du cadre sur le site</span>
-              <select
-                value={imageFrame}
-                onChange={(e) => setImageFrame(e.target.value as "banner" | "photo" | "square")}
-                className="min-h-[48px] w-full rounded-xl border border-border bg-white px-4 py-3 text-sm"
-              >
-                <option value="banner">Bandeau large (21:9)</option>
-                <option value="photo">Photo / carte (4:3)</option>
-                <option value="square">Carré (1:1)</option>
-              </select>
-            </label>
-            <label className="block sm:col-span-2">
-              <span className="mb-1 block text-sm font-medium text-text">Remplissage du cadre</span>
-              <select
-                value={imageFit}
-                onChange={(e) => setImageFit(e.target.value as "cover" | "contain")}
-                className="min-h-[48px] w-full rounded-xl border border-border bg-white px-4 py-3 text-sm"
-              >
-                <option value="cover">Couvrir tout l’espace (recadre si besoin, sans vide)</option>
-                <option value="contain">Voir toute l’image (bandes possibles)</option>
-              </select>
-            </label>
-            <Input label="Page cible" value={page} onChange={(e) => setPage(e.target.value)} />
-            <Input label="Catégorie" value={category} onChange={(e) => setCategory(e.target.value)} />
-            <label className="block sm:col-span-2">
-              <span className="mb-1 block text-sm font-medium text-text">Visibilité</span>
-              <select
-                value={active ? "1" : "0"}
-                onChange={(e) => setActive(e.target.value === "1")}
-                className="min-h-[48px] w-full rounded-xl border border-border bg-white px-4 py-3 text-sm"
-              >
-                <option value="1">Active</option>
-                <option value="0">Masquée</option>
-              </select>
-            </label>
+          {/* Mode */}
+          <div className="mt-4 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setAdMode("image")}
+              className={["rounded-xl px-4 py-2 text-sm font-medium transition", adMode === "image" ? "bg-primary text-white shadow" : "bg-slate-100 text-slate-600 hover:bg-slate-200"].join(" ")}
+            >
+              Image / bannière
+            </button>
+            <button
+              type="button"
+              onClick={() => setAdMode("html")}
+              className={["rounded-xl px-4 py-2 text-sm font-medium transition", adMode === "html" ? "bg-primary text-white shadow" : "bg-slate-100 text-slate-600 hover:bg-slate-200"].join(" ")}
+            >
+              Code HTML (AdSense…)
+            </button>
           </div>
+
+          {adMode === "html" ? (
+            <div className="mt-4 space-y-3">
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+                <strong>Code HTML brut</strong> — collez ici votre balise AdSense, un iframe partenaire ou tout code HTML de bannière. Il sera injecté tel quel sur le site.
+              </div>
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-text">Code HTML / AdSense</span>
+                <textarea
+                  value={htmlEmbed}
+                  onChange={(e) => setHtmlEmbed(e.target.value)}
+                  rows={9}
+                  className="w-full rounded-xl border border-border bg-slate-50 px-4 py-3 font-mono text-xs leading-relaxed text-slate-700 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="<ins class=&quot;adsbygoogle&quot; ...></ins>"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-text">Visibilité</span>
+                <select
+                  value={active ? "1" : "0"}
+                  onChange={(e) => setActive(e.target.value === "1")}
+                  className="min-h-[48px] w-full rounded-xl border border-border bg-white px-4 py-3 text-sm"
+                >
+                  <option value="1">Active</option>
+                  <option value="0">Masquée</option>
+                </select>
+              </label>
+            </div>
+          ) : (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <label className="block sm:col-span-2">
+                <span className="mb-1 block text-sm font-medium text-text">Visuel</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white"
+                  onChange={(e) => void onPickImage(e.target.files?.[0] ?? null)}
+                />
+              </label>
+              {compressing ? <p className="text-sm text-slate-500 sm:col-span-2">Traitement image…</p> : null}
+              <p className="text-[11px] text-slate-400 sm:col-span-2">PNG, JPG, WebP, SVG → WebP optimisé · GIF → conservé (animation préservée)</p>
+
+              <Input label="Titre (court)" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex. Promo livraison" />
+              <Input label="Texte (optionnel)" value={body} onChange={(e) => setBody(e.target.value)} placeholder="Sous-titre" />
+              <Input label="Libellé bouton (optionnel)" value={ctaLabel} onChange={(e) => setCtaLabel(e.target.value)} />
+              <Input
+                label="Lien de destination (URL)"
+                value={ctaUrl}
+                onChange={(e) => setCtaUrl(e.target.value)}
+                placeholder="https://votre-offre.com"
+              />
+              <label className="block sm:col-span-2">
+                <span className="mb-1 block text-sm font-medium text-text">Forme du cadre sur le site</span>
+                <select
+                  value={imageFrame}
+                  onChange={(e) => setImageFrame(e.target.value as "banner" | "photo" | "square")}
+                  className="min-h-[48px] w-full rounded-xl border border-border bg-white px-4 py-3 text-sm"
+                >
+                  <option value="banner">Bandeau large (21:9)</option>
+                  <option value="photo">Photo / carte (4:3)</option>
+                  <option value="square">Carré (1:1)</option>
+                </select>
+              </label>
+              <label className="block sm:col-span-2">
+                <span className="mb-1 block text-sm font-medium text-text">Remplissage du cadre</span>
+                <select
+                  value={imageFit}
+                  onChange={(e) => setImageFit(e.target.value as "cover" | "contain")}
+                  className="min-h-[48px] w-full rounded-xl border border-border bg-white px-4 py-3 text-sm"
+                >
+                  <option value="cover">Couvrir tout l'espace (recadre si besoin, sans vide)</option>
+                  <option value="contain">Voir toute l'image (bandes possibles)</option>
+                </select>
+              </label>
+              <Input label="Page cible" value={page} onChange={(e) => setPage(e.target.value)} />
+              <Input label="Catégorie" value={category} onChange={(e) => setCategory(e.target.value)} />
+              <label className="block sm:col-span-2">
+                <span className="mb-1 block text-sm font-medium text-text">Visibilité</span>
+                <select
+                  value={active ? "1" : "0"}
+                  onChange={(e) => setActive(e.target.value === "1")}
+                  className="min-h-[48px] w-full rounded-xl border border-border bg-white px-4 py-3 text-sm"
+                >
+                  <option value="1">Active</option>
+                  <option value="0">Masquée</option>
+                </select>
+              </label>
+            </div>
+          )}
 
           <div className="mt-5 flex flex-wrap items-center gap-3">
             <Button type="button" onClick={() => void save()} disabled={busy || compressing}>
