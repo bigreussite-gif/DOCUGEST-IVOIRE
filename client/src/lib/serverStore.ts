@@ -955,3 +955,137 @@ export async function adminAnalyticsSnapshot(range?: AdminAnalyticsRange | null)
     topCountriesByLogin
   };
 }
+
+// ─────────────────────────────────────────────
+// BLOG
+// ─────────────────────────────────────────────
+
+export type BlogPost = {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  content: string;
+  cover_image_url: string;
+  category: string;
+  author_name: string;
+  published: boolean;
+  published_at: string | null;
+  meta_title: string;
+  meta_description: string;
+  reading_time_min: number;
+  created_at: string;
+  updated_at: string;
+};
+
+async function ensureBlogTable(): Promise<void> {
+  const pool = getPool();
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS public.blog_posts (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      slug TEXT UNIQUE NOT NULL,
+      title TEXT NOT NULL,
+      excerpt TEXT DEFAULT '',
+      content TEXT DEFAULT '',
+      cover_image_url TEXT DEFAULT '',
+      category TEXT DEFAULT 'general',
+      author_name TEXT DEFAULT 'DocuGest Ivoire',
+      published BOOLEAN DEFAULT false,
+      published_at TIMESTAMPTZ,
+      meta_title TEXT DEFAULT '',
+      meta_description TEXT DEFAULT '',
+      reading_time_min INTEGER DEFAULT 3,
+      created_at TIMESTAMPTZ DEFAULT now(),
+      updated_at TIMESTAMPTZ DEFAULT now()
+    )
+  `);
+}
+
+function blogRowToPost(row: Record<string, unknown>): BlogPost {
+  return {
+    id: String(row.id ?? ""),
+    slug: String(row.slug ?? ""),
+    title: String(row.title ?? ""),
+    excerpt: String(row.excerpt ?? ""),
+    content: String(row.content ?? ""),
+    cover_image_url: String(row.cover_image_url ?? ""),
+    category: String(row.category ?? "general"),
+    author_name: String(row.author_name ?? "DocuGest Ivoire"),
+    published: Boolean(row.published),
+    published_at: iso(row.published_at),
+    meta_title: String(row.meta_title ?? ""),
+    meta_description: String(row.meta_description ?? ""),
+    reading_time_min: Number(row.reading_time_min ?? 3),
+    created_at: iso(row.created_at) ?? new Date().toISOString(),
+    updated_at: iso(row.updated_at) ?? new Date().toISOString(),
+  };
+}
+
+export async function listBlogPosts(opts?: { publishedOnly?: boolean }): Promise<BlogPost[]> {
+  await runWithDbRetry(() => ensureBlogTable(), 3);
+  const pool = getPool();
+  const where = opts?.publishedOnly ? "WHERE published = true" : "";
+  const { rows } = await pool.query(
+    `SELECT * FROM public.blog_posts ${where} ORDER BY COALESCE(published_at, created_at) DESC`
+  );
+  return (rows as Record<string, unknown>[]).map(blogRowToPost);
+}
+
+export async function getBlogPostBySlug(slug: string): Promise<BlogPost | null> {
+  await runWithDbRetry(() => ensureBlogTable(), 3);
+  const pool = getPool();
+  const { rows } = await pool.query("SELECT * FROM public.blog_posts WHERE slug = $1 LIMIT 1", [slug]);
+  return rows.length > 0 ? blogRowToPost(rows[0] as Record<string, unknown>) : null;
+}
+
+export async function upsertBlogPost(
+  post: Partial<BlogPost> & { slug: string; title: string }
+): Promise<BlogPost> {
+  await runWithDbRetry(() => ensureBlogTable(), 3);
+  const pool = getPool();
+  const {
+    id, slug, title,
+    excerpt = "", content = "", cover_image_url = "",
+    category = "general", author_name = "DocuGest Ivoire",
+    published = false, published_at,
+    meta_title = "", meta_description = "", reading_time_min = 3,
+  } = post;
+
+  const publishedAt = published && !published_at ? new Date().toISOString() : (published_at ?? null);
+
+  if (id) {
+    const { rows } = await pool.query(
+      `UPDATE public.blog_posts SET
+        slug=$2, title=$3, excerpt=$4, content=$5, cover_image_url=$6,
+        category=$7, author_name=$8, published=$9, published_at=$10,
+        meta_title=$11, meta_description=$12, reading_time_min=$13, updated_at=now()
+       WHERE id=$1 RETURNING *`,
+      [id, slug, title, excerpt, content, cover_image_url, category, author_name,
+       published, publishedAt, meta_title, meta_description, reading_time_min]
+    );
+    return blogRowToPost(rows[0] as Record<string, unknown>);
+  }
+
+  const { rows } = await pool.query(
+    `INSERT INTO public.blog_posts
+       (slug,title,excerpt,content,cover_image_url,category,author_name,published,published_at,meta_title,meta_description,reading_time_min)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+     ON CONFLICT (slug) DO UPDATE SET
+       title=EXCLUDED.title, excerpt=EXCLUDED.excerpt, content=EXCLUDED.content,
+       cover_image_url=EXCLUDED.cover_image_url, category=EXCLUDED.category,
+       author_name=EXCLUDED.author_name, published=EXCLUDED.published,
+       published_at=EXCLUDED.published_at, meta_title=EXCLUDED.meta_title,
+       meta_description=EXCLUDED.meta_description, reading_time_min=EXCLUDED.reading_time_min,
+       updated_at=now()
+     RETURNING *`,
+    [slug, title, excerpt, content, cover_image_url, category, author_name,
+     published, publishedAt, meta_title, meta_description, reading_time_min]
+  );
+  return blogRowToPost(rows[0] as Record<string, unknown>);
+}
+
+export async function deleteBlogPost(id: string): Promise<void> {
+  await runWithDbRetry(() => ensureBlogTable(), 3);
+  const pool = getPool();
+  await pool.query("DELETE FROM public.blog_posts WHERE id=$1", [id]);
+}

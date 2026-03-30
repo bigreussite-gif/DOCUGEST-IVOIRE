@@ -7,6 +7,7 @@ import { AdminUsers } from "./AdminUsers";
 import { AdminAudit } from "./AdminAudit";
 import { AdminDocuments } from "./AdminDocuments";
 import { AdminAds } from "./AdminAds";
+import { AdminBlog } from "./AdminBlog";
 import { AdminComingSoon } from "./AdminComingSoon";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
@@ -120,6 +121,7 @@ export default function AdminApp() {
       <Route element={<AdminLayout session={session} />}>
         <Route index element={<AdminDashboard />} />
         <Route path="documents" element={<AdminDocuments />} />
+        <Route path="blog" element={<AdminBlog />} />
         <Route path="ads" element={<AdminAds />} />
         <Route path="users" element={<AdminUsers />} />
         <Route path="audit" element={<AdminAudit />} />

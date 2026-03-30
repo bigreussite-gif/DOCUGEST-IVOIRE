@@ -98,6 +98,9 @@ export default function Landing() {
             </div>
           </div>
           <div className="flex flex-wrap gap-3">
+            <a href="/blog" className="hidden items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 sm:inline-flex">
+              📝 Blog
+            </a>
             <Link to="/login">
               <Button variant="secondary">Me connecter</Button>
             </Link>
