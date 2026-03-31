@@ -64,7 +64,7 @@ export default function AdminApp() {
       <div className="mx-auto max-w-lg px-6 py-20 text-center">
         <h1 className="text-xl font-bold text-text">Accès réservé</h1>
         <p className="mt-3 text-slate-600">
-          Votre compte n’a pas les droits pour accéder à l’administration DocuGest. Contactez un administrateur
+          Votre compte n’a pas les droits pour accéder à l’administration DocuGestIvoire. Contactez un administrateur
           général.
         </p>
         <button
@@ -322,7 +322,7 @@ function AdminLogin({
               Espace administration securise
             </div>
             <h1 className="mt-4 text-3xl font-extrabold leading-tight text-text sm:text-4xl">
-              Pilotez DocuGest avec une
+              Pilotez DocuGestIvoire avec une
               <span className="bg-gradient-to-r from-primary to-emerald-600 bg-clip-text text-transparent"> vision claire </span>
               et fiable.
             </h1>
@@ -349,7 +349,7 @@ function AdminLogin({
           <div className="w-full rounded-3xl border border-slate-200 bg-white p-6 shadow-soft sm:p-8">
             <div className="mb-5">
               <h2 className="text-xl font-bold text-text">Connexion administrateur</h2>
-              <p className="mt-1 text-sm text-slate-600">Accès au tableau de bord admin DocuGest.</p>
+              <p className="mt-1 text-sm text-slate-600">Accès au tableau de bord admin DocuGestIvoire.</p>
             </div>
             {cachedIdentity ? (
               <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
@@ -379,6 +379,17 @@ function AdminLogin({
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
+              <div className="flex flex-col gap-2 pt-1">
+                <a
+                  href="/forgot-password"
+                  className="inline-flex min-h-[44px] w-full items-center justify-center rounded-2xl border border-primary/20 bg-primary/5 px-4 py-2.5 text-center text-sm font-semibold text-primary transition hover:bg-primary/10"
+                >
+                  Mot de passe oublié — réinitialiser par e-mail
+                </a>
+                <p className="text-center text-[11px] leading-relaxed text-slate-500">
+                  Même procédure que pour un compte utilisateur : vous recevez un lien sur l’adresse e-mail du compte admin.
+                </p>
+              </div>
               {error ? <p className="text-sm text-error">{error}</p> : null}
               {error === "Compte connecté, mais sans droits admin." ? (
                 <Button type="button" variant="secondary" className="w-full" disabled={activating} onClick={tryActivateSuperAdmin}>
@@ -393,7 +404,7 @@ function AdminLogin({
         </div>
 
         <footer className="mt-8 border-t border-slate-200/80 pt-4 text-center text-xs text-slate-500">
-          DocuGest Ivoire · Administration · by Soroboss · +225 07 57 22 87 31 · soroboss.bossimpact@gmail.com
+          DocuGestIvoire · Administration · by Soroboss · +225 07 57 22 87 31 · soroboss.bossimpact@gmail.com
         </footer>
       </div>
     </div>
