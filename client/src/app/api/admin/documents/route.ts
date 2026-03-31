@@ -2,16 +2,14 @@
  * GET /api/admin/documents
  */
 import { NextResponse } from "next/server";
-import { requireBackoffice, requireSessionAuth } from "@/lib/serverAuth";
+import { requireBackofficeRequest } from "@/lib/serverAuth";
 import * as store from "@/lib/serverStore";
 
 export const runtime = "nodejs";
 
 export async function GET(req: Request) {
-  const auth = await requireSessionAuth(req);
-  if (auth instanceof NextResponse) return auth;
-  const denied = requireBackoffice(auth);
-  if (denied) return denied;
+  const ctx = await requireBackofficeRequest(req);
+  if (ctx instanceof NextResponse) return ctx;
 
   const url = new URL(req.url);
   const page = Math.max(1, Number(url.searchParams.get("page") || 1));

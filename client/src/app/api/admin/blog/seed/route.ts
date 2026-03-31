@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireBackoffice, requireSessionAuth } from "@/lib/serverAuth";
+import { requireBackofficeRequest } from "@/lib/serverAuth";
 import { runWithDbRetry } from "@/lib/db";
 import * as store from "@/lib/serverStore";
 import { BLOG_SEED_ARTICLES } from "@/lib/blogSeedData";
@@ -7,10 +7,8 @@ import { BLOG_SEED_ARTICLES } from "@/lib/blogSeedData";
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
-  const auth = await requireSessionAuth(req);
-  if (auth instanceof NextResponse) return auth;
-  const denied = requireBackoffice(auth);
-  if (denied) return denied;
+  const ctx = await requireBackofficeRequest(req);
+  if (ctx instanceof NextResponse) return ctx;
   try {
     const results: string[] = [];
     for (const article of BLOG_SEED_ARTICLES) {

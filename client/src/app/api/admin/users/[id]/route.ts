@@ -4,7 +4,7 @@
  */
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { clientIp, requireBackoffice, requireSessionAuth, requireUserManager } from "@/lib/serverAuth";
+import { clientIp, requireBackofficeRequest, requireUserManager } from "@/lib/serverAuth";
 import * as store from "@/lib/serverStore";
 
 export const runtime = "nodejs";
@@ -25,10 +25,9 @@ type Ctx = { params: Promise<{ id: string }> };
 export async function PATCH(req: Request, context: Ctx) {
   const { id } = await context.params;
   console.log("[api/admin/users/:id] PATCH", id);
-  const auth = await requireSessionAuth(req);
-  if (auth instanceof NextResponse) return auth;
-  const denied = requireBackoffice(auth);
-  if (denied) return denied;
+  const ctx = await requireBackofficeRequest(req);
+  if (ctx instanceof NextResponse) return ctx;
+  const { auth } = ctx;
   const needMgr = requireUserManager(auth);
   if (needMgr) return needMgr;
 
@@ -74,10 +73,9 @@ export async function PATCH(req: Request, context: Ctx) {
 export async function DELETE(req: Request, context: Ctx) {
   const { id } = await context.params;
   console.log("[api/admin/users/:id] DELETE", id);
-  const auth = await requireSessionAuth(req);
-  if (auth instanceof NextResponse) return auth;
-  const denied = requireBackoffice(auth);
-  if (denied) return denied;
+  const ctx = await requireBackofficeRequest(req);
+  if (ctx instanceof NextResponse) return ctx;
+  const { auth } = ctx;
   const needMgr = requireUserManager(auth);
   if (needMgr) return needMgr;
 

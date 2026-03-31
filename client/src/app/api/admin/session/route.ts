@@ -2,8 +2,7 @@
  * GET /api/admin/session
  */
 import { NextResponse } from "next/server";
-import { requireBackoffice, requireSessionAuth } from "@/lib/serverAuth";
-import * as store from "@/lib/serverStore";
+import { requireBackofficeRequest } from "@/lib/serverAuth";
 
 export const runtime = "nodejs";
 
@@ -20,13 +19,10 @@ function roleLabelFr(role: string) {
 
 export async function GET(req: Request) {
   console.log("[api/admin/session] GET");
-  const auth = await requireSessionAuth(req);
-  if (auth instanceof NextResponse) return auth;
-  const denied = requireBackoffice(auth);
-  if (denied) return denied;
+  const ctx = await requireBackofficeRequest(req);
+  if (ctx instanceof NextResponse) return ctx;
 
-  const me = await store.getMe(auth.sub);
-  if (!me) return NextResponse.json({ message: "Introuvable" }, { status: 404 });
+  const { me } = ctx;
   return NextResponse.json({
     user: me,
     roleLabel: roleLabelFr(String(me.role)),

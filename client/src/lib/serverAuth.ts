@@ -4,6 +4,8 @@
  */
 import jwt from "jsonwebtoken";
 import { NextResponse } from "next/server";
+import type { PublicUser } from "@/models/User";
+import * as store from "@/lib/serverStore";
 
 export function getBearerToken(req: Request): string | null {
   const auth = req.headers.get("authorization");
@@ -59,12 +61,37 @@ export function roleRank(role: string): number {
   return r[role] ?? 0;
 }
 
-/** Back-office : operator et au-dessus */
+/** Back-office : operator et au-dessus (rôle issu du JWT — peut être périmé). */
 export function requireBackoffice(auth: SessionAuth): NextResponse | null {
   if (roleRank(auth.role) < 1) {
-    return NextResponse.json({ message: "Accès réservé à l’équipe DocuGest." }, { status: 403 });
+    return NextResponse.json({ message: "Accès réservé à l’équipe DocuGestIvoire." }, { status: 403 });
   }
   return null;
+}
+
+export type BackofficeContext = { auth: SessionAuth; me: PublicUser };
+
+/**
+ * Vérifie l’accès back-office à partir du rôle **en base** (pas seulement le JWT).
+ * Appelle ensureBootstrapAdmin pour débloquer le 1er super admin / email bootstrap.
+ */
+export async function requireBackofficeRequest(req: Request): Promise<BackofficeContext | NextResponse> {
+  const auth = await requireSessionAuth(req);
+  if (auth instanceof NextResponse) return auth;
+  try {
+    await store.ensureBootstrapAdmin(auth.sub);
+  } catch {
+    /* DB / migration */
+  }
+  const me = await store.getMe(auth.sub);
+  if (!me) {
+    return NextResponse.json({ message: "Utilisateur introuvable" }, { status: 404 });
+  }
+  const dbRole = String(me.role ?? "user");
+  if (roleRank(dbRole) < 1) {
+    return NextResponse.json({ message: "Accès réservé à l’équipe DocuGestIvoire." }, { status: 403 });
+  }
+  return { auth: { sub: auth.sub, role: dbRole }, me };
 }
 
 export function requireUserManager(auth: SessionAuth): NextResponse | null {

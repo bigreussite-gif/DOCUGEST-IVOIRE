@@ -1,15 +1,13 @@
 import { NextResponse } from "next/server";
-import { requireBackoffice, requireSessionAuth } from "@/lib/serverAuth";
+import { requireBackofficeRequest } from "@/lib/serverAuth";
 import { runWithDbRetry } from "@/lib/db";
 import * as store from "@/lib/serverStore";
 
 export const runtime = "nodejs";
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireSessionAuth(req);
-  if (auth instanceof NextResponse) return auth;
-  const denied = requireBackoffice(auth);
-  if (denied) return denied;
+  const ctx = await requireBackofficeRequest(req);
+  if (ctx instanceof NextResponse) return ctx;
   const { id } = await params;
   try {
     await runWithDbRetry(() => store.deleteBlogPost(id), 4);

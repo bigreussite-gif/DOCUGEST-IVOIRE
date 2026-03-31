@@ -1,16 +1,14 @@
 import { NextResponse } from "next/server";
 import { parseAnalyticsRangeFromRequest } from "@/lib/adminAnalyticsQuery";
-import { requireBackoffice, requireSessionAuth } from "@/lib/serverAuth";
+import { requireBackofficeRequest } from "@/lib/serverAuth";
 import * as store from "@/lib/serverStore";
 
 export const runtime = "nodejs";
 
 export async function GET(req: Request) {
   console.log("[api/admin/analytics/overview] GET");
-  const auth = await requireSessionAuth(req);
-  if (auth instanceof NextResponse) return auth;
-  const denied = requireBackoffice(auth);
-  if (denied) return denied;
+  const ctx = await requireBackofficeRequest(req);
+  if (ctx instanceof NextResponse) return ctx;
 
   const url = new URL(req.url);
   const range = parseAnalyticsRangeFromRequest(req);

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireBackoffice, requireSessionAuth } from "@/lib/serverAuth";
+import { requireBackofficeRequest } from "@/lib/serverAuth";
 import { runWithDbRetry } from "@/lib/db";
 import * as store from "@/lib/serverStore";
 
@@ -14,7 +14,7 @@ const schema = z.object({
   content: z.string().max(200_000).optional().default(""),
   cover_image_url: z.string().max(2_000).optional().default(""),
   category: z.string().max(80).optional().default("general"),
-  author_name: z.string().max(120).optional().default("DocuGest Ivoire"),
+  author_name: z.string().max(120).optional().default("DocuGestIvoire"),
   published: z.boolean().optional().default(false),
   published_at: z.string().nullable().optional(),
   meta_title: z.string().max(300).optional().default(""),
@@ -23,10 +23,8 @@ const schema = z.object({
 });
 
 export async function GET(req: Request) {
-  const auth = await requireSessionAuth(req);
-  if (auth instanceof NextResponse) return auth;
-  const denied = requireBackoffice(auth);
-  if (denied) return denied;
+  const ctx = await requireBackofficeRequest(req);
+  if (ctx instanceof NextResponse) return ctx;
   try {
     const posts = await runWithDbRetry(() => store.listBlogPosts(), 4);
     return NextResponse.json({ posts });
@@ -37,10 +35,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const auth = await requireSessionAuth(req);
-  if (auth instanceof NextResponse) return auth;
-  const denied = requireBackoffice(auth);
-  if (denied) return denied;
+  const ctx = await requireBackofficeRequest(req);
+  if (ctx instanceof NextResponse) return ctx;
   const parsed = schema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ message: "Payload invalide", details: parsed.error.flatten() }, { status: 400 });

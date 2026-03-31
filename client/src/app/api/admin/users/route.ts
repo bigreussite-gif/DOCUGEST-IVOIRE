@@ -5,7 +5,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { clientIp, requireBackoffice, requireSessionAuth, requireUserManager } from "@/lib/serverAuth";
+import { clientIp, requireBackofficeRequest, requireUserManager } from "@/lib/serverAuth";
 import * as store from "@/lib/serverStore";
 
 export const runtime = "nodejs";
@@ -23,10 +23,9 @@ const createUserSchema = z.object({
 
 export async function GET(req: Request) {
   console.log("[api/admin/users] GET");
-  const auth = await requireSessionAuth(req);
-  if (auth instanceof NextResponse) return auth;
-  const denied = requireBackoffice(auth);
-  if (denied) return denied;
+  const ctx = await requireBackofficeRequest(req);
+  if (ctx instanceof NextResponse) return ctx;
+  const { auth } = ctx;
   const needMgr = requireUserManager(auth);
   if (needMgr) return needMgr;
 
@@ -41,10 +40,9 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   console.log("[api/admin/users] POST");
-  const auth = await requireSessionAuth(req);
-  if (auth instanceof NextResponse) return auth;
-  const denied = requireBackoffice(auth);
-  if (denied) return denied;
+  const ctx = await requireBackofficeRequest(req);
+  if (ctx instanceof NextResponse) return ctx;
+  const { auth } = ctx;
   const needMgr = requireUserManager(auth);
   if (needMgr) return needMgr;
 

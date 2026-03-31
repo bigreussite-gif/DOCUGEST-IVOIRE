@@ -31,6 +31,27 @@ export default function AdminApp() {
       } catch (e) {
         if (!cancelled) {
           if (e instanceof AdminApiError && e.status === 403) {
+            const t = localStorage.getItem("docugest_token");
+            if (t) {
+              try {
+                const ref = await fetch("/api/auth/refresh", {
+                  method: "POST",
+                  headers: { Authorization: `Bearer ${t}` },
+                });
+                if (ref.ok) {
+                  const r = (await ref.json()) as { token?: string; user?: unknown };
+                  if (r.token) localStorage.setItem("docugest_token", r.token);
+                  if (r.user) localStorage.setItem("docugest_user_cache", JSON.stringify(r.user));
+                  const s2 = await adminFetch<AdminSession>("/session");
+                  if (!cancelled) {
+                    setSession(s2);
+                    return;
+                  }
+                }
+              } catch {
+                /* ignore */
+              }
+            }
             setSession("forbidden");
           } else {
             if (e instanceof AdminApiError && e.status === 401) {
@@ -236,6 +257,20 @@ function AdminLogin({
       localStorage.setItem("docugest_token", data.token);
       if (data?.user) {
         localStorage.setItem("docugest_user_cache", JSON.stringify(data.user));
+      }
+
+      try {
+        const ref = await fetch("/api/auth/refresh", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${data.token}` },
+        });
+        if (ref.ok) {
+          const r = (await ref.json()) as { token?: string; user?: unknown };
+          if (r.token) localStorage.setItem("docugest_token", r.token);
+          if (r.user) localStorage.setItem("docugest_user_cache", JSON.stringify(r.user));
+        }
+      } catch {
+        /* ignore */
       }
 
       let session: AdminSession | null = null;
