@@ -636,23 +636,31 @@ export async function deleteAdSlotConfig({
 
 export async function listAdSlotsConfig(): Promise<AdSlotConfig[]> {
   const pool = getPool();
+  /**
+   * Dernier événement par emplacement (upsert ou delete).
+   * Évite le bug LIMIT 500 + ORDER BY global : une suppression récente pouvait sortir
+   * du « top 500 » mondial alors qu’un ancien upsert du même slot restait inclus → la pub « revenait ».
+   */
   const { rows } = await pool.query(
-    `SELECT action, target_id, metadata, created_at
+    `SELECT DISTINCT ON (target_id)
+        action,
+        target_id,
+        metadata,
+        created_at
      FROM public.admin_audit_logs
      WHERE action IN ('ads.config.upsert', 'ads.config.delete')
-     ORDER BY created_at DESC
-     LIMIT 500`
+       AND target_id IS NOT NULL
+       AND btrim(target_id::text) <> ''
+     ORDER BY target_id, created_at DESC`
   );
 
-  const seen = new Set<string>();
   const out: AdSlotConfig[] = [];
   for (const row of rows as { action: string; target_id: string | null; metadata: unknown; created_at: unknown }[]) {
-    const slot = String(row.target_id ?? "");
-    if (!slot || seen.has(slot)) continue;
-    if (row.action === "ads.config.delete") {
-      seen.add(slot);
-      continue;
-    }
+    const slot = String(row.target_id ?? "").trim();
+    if (!slot) continue;
+    const action = String(row.action ?? "").trim();
+    if (action === "ads.config.delete") continue;
+    if (action !== "ads.config.upsert") continue;
     const m = (row.metadata ?? {}) as Record<string, unknown>;
     out.push({
       slot,
@@ -670,7 +678,6 @@ export async function listAdSlotsConfig(): Promise<AdSlotConfig[]> {
       active: Boolean(m.active ?? true),
       updated_at: iso(row.created_at)
     });
-    seen.add(slot);
   }
   return out.sort((a, b) => a.slot.localeCompare(b.slot));
 }
