@@ -46,11 +46,11 @@ export default function BonCommandePreview({ data, logoDataUrl, accentColor }: {
   const totalTTC = netHT + vatAmount;
 
   return (
-    <div style={{ fontFamily: "Arial, sans-serif", fontSize: 11, color: "#1a1a2e", background: "#fff", padding: 32, maxWidth: 794 }}>
+    <div style={{ fontFamily: "Arial, sans-serif", fontSize: 11, color: "#1a1a2e", background: "#fff", padding: 32, maxWidth: 794, minHeight: "297mm", display: "flex", flexDirection: "column" }}>
       {/* En-tête */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
         <div>
-          {logoDataUrl && <img src={logoDataUrl} alt="Logo" style={{ height: 40, maxWidth: 120, objectFit: "contain", marginBottom: 8 }} />}
+          {logoDataUrl && <img src={logoDataUrl} alt="Logo" style={{ height: 56, maxWidth: 160, objectFit: "contain", marginBottom: 8 }} />}
           <div style={{ fontSize: 22, fontWeight: 800, color: ACCENT, letterSpacing: -0.5 }}>BON DE COMMANDE</div>
           <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginTop: 4 }}>N° {data.bcNumber}</div>
           <div style={{ color: "#6b7280", marginTop: 2 }}>Date : {formatDateFR(data.bcDate)}</div>
@@ -181,7 +181,7 @@ export default function BonCommandePreview({ data, logoDataUrl, accentColor }: {
       </div>
 
       {/* Footer */}
-      <div style={{ marginTop: 32, borderTop: "1px solid #e5e7eb", paddingTop: 10, textAlign: "center", fontSize: 9, color: "#9ca3af" }}>
+      <div style={{ marginTop: "auto", borderTop: "1px solid #e5e7eb", paddingTop: 10, textAlign: "center", fontSize: 9, color: "#9ca3af" }}>
         Document généré par DocuGestIvoire — docugest-ivoire.vercel.app
       </div>
     </div>

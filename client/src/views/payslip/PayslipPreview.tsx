@@ -62,11 +62,11 @@ export default function PayslipPreview({ data }: { data: PayslipPreviewData }) {
               <img
                 src={data.logoDataUrl}
                 alt=""
-                className="h-16 w-16 shrink-0 rounded-lg border border-slate-100 object-contain p-1"
+                className="h-20 w-20 shrink-0 rounded-lg border border-slate-100 object-contain p-1"
               />
             ) : (
               <div
-                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold text-white"
+                className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold text-white"
                 style={{ backgroundColor: accent }}
               >
                 LOGO

@@ -98,9 +98,9 @@ export default function InvoicePreview({ docTypeLabel, themeColor, customAccentH
           </div>
           <div className="flex max-w-[55%] items-start gap-3 text-right sm:max-w-none">
             {data.sender.logoDataUrl ? (
-              <img src={data.sender.logoDataUrl} alt="" className="h-12 w-12 shrink-0 rounded-lg object-contain ring-1 ring-slate-100" />
+              <img src={data.sender.logoDataUrl} alt="" className="h-16 w-16 shrink-0 rounded-lg object-contain ring-1 ring-slate-100" />
             ) : (
-              <div className="h-12 w-12 shrink-0 rounded-lg bg-gradient-to-br from-teal-50 to-slate-100 ring-1 ring-slate-200" />
+              <div className="h-16 w-16 shrink-0 rounded-lg bg-gradient-to-br from-teal-50 to-slate-100 ring-1 ring-slate-200" />
             )}
             <div className="min-w-0 text-right">
               <div className="text-[12px] font-bold leading-tight" style={{ color: navyTitle }}>

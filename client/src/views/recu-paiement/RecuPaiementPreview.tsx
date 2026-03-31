@@ -33,12 +33,12 @@ export default function RecuPaiementPreview({ data, logoDataUrl, accentColor }: 
   const showBalance = data.paymentType !== "Paiement intégral" && data.totalDue > 0;
 
   return (
-    <div style={{ fontFamily: "Arial, sans-serif", fontSize: 11, color: "#1a1a2e", background: "#fff", padding: 32, maxWidth: 680 }}>
+    <div style={{ fontFamily: "Arial, sans-serif", fontSize: 11, color: "#1a1a2e", background: "#fff", padding: 32, maxWidth: 680, minHeight: "297mm", display: "flex", flexDirection: "column" }}>
       {/* En-tête */}
       <div style={{ border: `3px solid ${ACCENT}`, borderRadius: 8, padding: "16px 20px", marginBottom: 20 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
-            {logoDataUrl && <img src={logoDataUrl} alt="Logo" style={{ height: 36, maxWidth: 110, objectFit: "contain", marginBottom: 6 }} />}
+            {logoDataUrl && <img src={logoDataUrl} alt="Logo" style={{ height: 56, maxWidth: 160, objectFit: "contain", marginBottom: 6 }} />}
             <div style={{ fontSize: 20, fontWeight: 800, color: ACCENT, letterSpacing: -0.3 }}>REÇU DE PAIEMENT</div>
             <div style={{ marginTop: 6, fontWeight: 700 }}>{data.emitterName}</div>
             {data.emitterActivity && <div style={{ color: "#6b7280", fontSize: 10 }}>{data.emitterActivity}</div>}
@@ -156,7 +156,7 @@ export default function RecuPaiementPreview({ data, logoDataUrl, accentColor }: 
         Ce reçu atteste du paiement effectif de la somme indiquée.
       </div>
 
-      <div style={{ marginTop: 20, borderTop: "1px solid #e5e7eb", paddingTop: 10, textAlign: "center", fontSize: 9, color: "#9ca3af" }}>
+      <div style={{ marginTop: "auto", borderTop: "1px solid #e5e7eb", paddingTop: 10, textAlign: "center", fontSize: 9, color: "#9ca3af" }}>
         Document généré par DocuGestIvoire — docugest-ivoire.vercel.app
       </div>
     </div>

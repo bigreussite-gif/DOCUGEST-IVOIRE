@@ -36,10 +36,10 @@ export type BonLivraisonData = {
 export default function BonLivraisonPreview({ data, logoDataUrl, accentColor }: { data: BonLivraisonData; logoDataUrl?: string | null; accentColor?: string | null }) {
   const ACCENT = accentColor || "#0f766e";
   return (
-    <div style={{ fontFamily: "Arial, sans-serif", fontSize: 11, color: "#1a1a2e", background: "#fff", padding: 32, maxWidth: 794 }}>
+    <div style={{ fontFamily: "Arial, sans-serif", fontSize: 11, color: "#1a1a2e", background: "#fff", padding: 32, maxWidth: 794, minHeight: "297mm", display: "flex", flexDirection: "column" }}>
       {/* En-tête */}
       <div style={{ borderBottom: `3px solid ${ACCENT}`, paddingBottom: 16, marginBottom: 20 }}>
-        {logoDataUrl && <img src={logoDataUrl} alt="Logo" style={{ height: 38, maxWidth: 110, objectFit: "contain", marginBottom: 8 }} />}
+        {logoDataUrl && <img src={logoDataUrl} alt="Logo" style={{ height: 56, maxWidth: 160, objectFit: "contain", marginBottom: 8 }} />}
         <div style={{ fontSize: 22, fontWeight: 800, color: ACCENT, letterSpacing: -0.5 }}>BON DE LIVRAISON</div>
         <div style={{ display: "flex", gap: 24, marginTop: 8, flexWrap: "wrap" }}>
           <div>
@@ -136,7 +136,7 @@ export default function BonLivraisonPreview({ data, logoDataUrl, accentColor }: 
         Ce bon de livraison vaut accusé de réception de la marchandise.
       </div>
 
-      <div style={{ marginTop: 20, borderTop: "1px solid #e5e7eb", paddingTop: 10, textAlign: "center", fontSize: 9, color: "#9ca3af" }}>
+      <div style={{ marginTop: "auto", borderTop: "1px solid #e5e7eb", paddingTop: 10, textAlign: "center", fontSize: 9, color: "#9ca3af" }}>
         Document généré par DocuGestIvoire — docugest-ivoire.vercel.app
       </div>
     </div>

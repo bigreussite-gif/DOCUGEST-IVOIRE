@@ -55,11 +55,11 @@ export default function ContratPrestationPreview({ data, logoDataUrl, accentColo
   }
 
   return (
-    <div style={{ fontFamily: "Times New Roman, serif", fontSize: 11, color: "#111", background: "#fff", padding: "36px 40px", maxWidth: 794, lineHeight: 1.6 }}>
+    <div style={{ fontFamily: "Times New Roman, serif", fontSize: 11, color: "#111", background: "#fff", padding: "36px 40px", maxWidth: 794, lineHeight: 1.6, minHeight: "297mm", display: "flex", flexDirection: "column" }}>
       {/* Logo */}
       {logoDataUrl && (
         <div style={{ marginBottom: 20, display: "flex", justifyContent: "flex-end" }}>
-          <img src={logoDataUrl} alt="Logo" style={{ height: 48, maxWidth: 140, objectFit: "contain" }} />
+          <img src={logoDataUrl} alt="Logo" style={{ height: 60, maxWidth: 170, objectFit: "contain" }} />
         </div>
       )}
       {/* Titre */}
@@ -223,7 +223,7 @@ export default function ContratPrestationPreview({ data, logoDataUrl, accentColo
         </div>
       </div>
 
-      <div style={{ marginTop: 24, borderTop: "1px solid #e5e7eb", paddingTop: 10, textAlign: "center", fontSize: 9, color: "#9ca3af" }}>
+      <div style={{ marginTop: "auto", borderTop: "1px solid #e5e7eb", paddingTop: 10, textAlign: "center", fontSize: 9, color: "#9ca3af" }}>
         Document généré par DocuGestIvoire — docugest-ivoire.vercel.app
       </div>
     </div>

@@ -140,7 +140,7 @@ function CVClassique({ data, accent, logoDataUrl }: { data: CVData; accent: stri
           <img src={data.photoDataUrl} alt="Photo" style={{ width: 100, height: 100, borderRadius: "50%", objectFit: "cover", border: `3px solid ${accent}`, flexShrink: 0 }} />
         )}
         {logoDataUrl && !data.photoDataUrl && (
-          <img src={logoDataUrl} alt="Logo" style={{ height: 54, maxWidth: 100, objectFit: "contain", flexShrink: 0 }} />
+          <img src={logoDataUrl} alt="Logo" style={{ height: 64, maxWidth: 140, objectFit: "contain", flexShrink: 0 }} />
         )}
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 22, fontWeight: 900, color: accent, letterSpacing: "-0.5px" }}>{data.nom || "Votre Nom"}</div>
@@ -299,7 +299,7 @@ function CVModerne({ data, accent, logoDataUrl }: { data: CVData; accent: string
         )}
         {logoDataUrl && (
           <div style={{ textAlign: "center", marginBottom: 12 }}>
-            <img src={logoDataUrl} alt="Logo" style={{ height: 34, maxWidth: 96, objectFit: "contain", margin: "0 auto", opacity: 0.9 }} />
+            <img src={logoDataUrl} alt="Logo" style={{ height: 46, maxWidth: 130, objectFit: "contain", margin: "0 auto", opacity: 0.9 }} />
           </div>
         )}
         <div style={{ textAlign: "center", marginBottom: 22, borderBottom: `1px solid ${onDarkMuted}`, paddingBottom: 18 }}>
@@ -544,7 +544,7 @@ function CVCompact({ data, accent, logoDataUrl }: { data: CVData; accent: string
         )}
         {logoDataUrl && !data.photoDataUrl && (
           <div style={{ textAlign: "center", marginBottom: 10 }}>
-            <img src={logoDataUrl} alt="Logo" style={{ height: 36, maxWidth: 100, objectFit: "contain", opacity: 0.92 }} />
+            <img src={logoDataUrl} alt="Logo" style={{ height: 48, maxWidth: 140, objectFit: "contain", opacity: 0.92 }} />
           </div>
         )}
 

@@ -21,12 +21,12 @@ export type LettreMotivationData = {
 export default function LettreMotivationPreview({ data, logoDataUrl, accentColor }: { data: LettreMotivationData; logoDataUrl?: string | null; accentColor?: string | null }) {
   const accent = accentColor || "#1a6b4a";
   return (
-    <div style={{ fontFamily: "Times New Roman, serif", fontSize: 12, color: "#111", background: "#fff", padding: "40px 52px", maxWidth: 794, lineHeight: 1.8 }}>
+    <div style={{ fontFamily: "Times New Roman, serif", fontSize: 12, color: "#111", background: "#fff", padding: "40px 52px", maxWidth: 794, lineHeight: 1.8, minHeight: "297mm", display: "flex", flexDirection: "column" }}>
 
       {/* Logo si disponible */}
       {logoDataUrl && (
         <div style={{ marginBottom: 20 }}>
-          <img src={logoDataUrl} alt="Logo" style={{ height: 44, maxWidth: 160, objectFit: "contain" }} />
+          <img src={logoDataUrl} alt="Logo" style={{ height: 58, maxWidth: 180, objectFit: "contain" }} />
         </div>
       )}
 
@@ -94,7 +94,7 @@ export default function LettreMotivationPreview({ data, logoDataUrl, accentColor
         <div style={{ fontWeight: 700 }}>{data.nom}</div>
       </div>
 
-      <div style={{ marginTop: 32, borderTop: "1px solid #e5e7eb", paddingTop: 10, textAlign: "center", fontSize: 9, color: "#9ca3af" }}>
+      <div style={{ marginTop: "auto", borderTop: "1px solid #e5e7eb", paddingTop: 10, textAlign: "center", fontSize: 9, color: "#9ca3af" }}>
         Document généré sur DocuGestIvoire — docugest-ivoire.vercel.app
       </div>
     </div>
