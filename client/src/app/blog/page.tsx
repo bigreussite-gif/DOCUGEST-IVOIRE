@@ -5,6 +5,8 @@ import * as store from "@/lib/serverStore";
 import type { BlogPost } from "@/lib/serverStore";
 import { BlogAdBanner } from "@/components/promo/BlogAdBanner";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Blog — Conseils Documents & Gestion | DocuGestIvoire",
   description:
