@@ -150,14 +150,20 @@ export function AdPlaceholder({ label, hint, adSlot, className = "", minHeight =
   }
 
   // Contenu réel — HTML embed (AdSense, script partenaire, etc.)
+  // Isolation stricte via iframe srcDoc pour empêcher qu'un code pub
+  // injecté (position:fixed, z-index, listeners globaux...) bloque les boutons de l'app.
   if (dynamic?.htmlEmbed?.trim()) {
     return (
-      <div
-        className={`w-full overflow-hidden ${minHeight} ${className}`}
-        data-ad-slot={adSlot}
-        // biome-ignore lint: HTML embed intentionnel (AdSense, partenaires)
-        dangerouslySetInnerHTML={{ __html: dynamic.htmlEmbed }}
-      />
+      <div className={`w-full overflow-hidden rounded-xl ring-1 ring-slate-200/80 ${minHeight} ${className}`} data-ad-slot={adSlot}>
+        <iframe
+          title={`ad-slot-${adSlot ?? "inline"}`}
+          className="h-full min-h-[56px] w-full border-0 bg-white"
+          srcDoc={dynamic.htmlEmbed}
+          sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+        />
+      </div>
     );
   }
 
