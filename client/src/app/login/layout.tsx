@@ -4,7 +4,7 @@ import { SITE_NAME } from "@/lib/seo";
 export const metadata: Metadata = {
   title: "Connexion",
   description:
-    "Accédez à votre espace DocuGest Ivoire : factures, devis, proforma et bulletins de paie. Connexion sécurisée.",
+    "Accédez à votre espace DocuGestIvoire : factures, devis, proforma et bulletins de paie. Connexion sécurisée.",
   alternates: { canonical: "/login" },
   openGraph: {
     title: `Connexion | ${SITE_NAME}`,

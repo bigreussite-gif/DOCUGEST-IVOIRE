@@ -124,7 +124,7 @@ export function AdminLayout({ session }: { session: AdminSession }) {
               DG
             </div>
             <div>
-              <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">DocuGest</div>
+              <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">DocuGestIvoire</div>
               <div className="text-sm font-bold text-text leading-tight">Back-office</div>
             </div>
           </div>
@@ -216,7 +216,7 @@ export function AdminLayout({ session }: { session: AdminSession }) {
         </main>
 
         <footer className="border-t border-slate-200/60 px-4 py-3.5 text-center text-[11px] text-slate-400 md:px-8">
-          DocuGest Ivoire · Administration · by Soroboss
+          DocuGestIvoire · Administration · by Soroboss
         </footer>
       </div>
     </div>

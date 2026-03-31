@@ -3,13 +3,12 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
-import html2canvas from "html2canvas";
-import { jsPDF } from "jspdf";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
 import { InlineAdStrip } from "../../components/promo/InlineAdStrip";
 import { useAutoSave, readDraft } from "../../hooks/useAutoSave";
+import { captureElementToPdfFile } from "../../lib/html2canvasPdf";
 import { cropImageToSquare } from "../../lib/brandColors";
 import { useDocumentBranding } from "../../hooks/useDocumentBranding";
 import BrandingPanel from "../../components/document/BrandingPanel";
@@ -111,36 +110,11 @@ export default function CVEditor() {
   }
 
   async function downloadPDF() {
-    // Priorité au conteneur off-screen (toujours rendu, jamais caché)
     const source = pdfRef.current ?? previewRef.current;
     if (!source) return;
     setPdfLoading(true);
     try {
-      const canvas = await html2canvas(source, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        allowTaint: true,
-        logging: false,
-      });
-      const imgData = canvas.toDataURL("image/jpeg", 0.95);
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      const pageW = 210;
-      const pageH = 297;
-      const imgH = (canvas.height * pageW) / canvas.width;
-      if (imgH <= pageH) {
-        pdf.addImage(imgData, "JPEG", 0, 0, pageW, imgH);
-      } else {
-        let y = 0;
-        let remaining = imgH;
-        while (remaining > 0) {
-          pdf.addImage(imgData, "JPEG", 0, -y, pageW, imgH);
-          remaining -= pageH;
-          y += pageH;
-          if (remaining > 0) pdf.addPage();
-        }
-      }
-      pdf.save(`CV-${values.nom.replace(/\s+/g, "-") || "cv"}.pdf`);
+      await captureElementToPdfFile(source, `CV-${values.nom.replace(/\s+/g, "-") || "cv"}.pdf`);
     } catch (e) {
       console.error("[CV PDF]", e);
       alert("Impossible de générer le PDF. Essayez 'Aperçu' puis Imprimer → Enregistrer en PDF.");

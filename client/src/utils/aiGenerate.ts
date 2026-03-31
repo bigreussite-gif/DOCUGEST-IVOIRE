@@ -1,5 +1,5 @@
 /**
- * IA interne DocuGest Ivoire — génération de texte sans API externe.
+ * IA interne DocuGestIvoire — génération de texte sans API externe.
  * Utilise les données du formulaire pour produire des drafts personnalisés.
  */
 

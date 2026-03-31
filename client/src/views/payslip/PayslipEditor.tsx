@@ -3,9 +3,6 @@ import { useForm, type Resolver } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import html2canvas from "html2canvas";
-import { jsPDF } from "jspdf";
-
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
@@ -17,6 +14,8 @@ import { InlineAdStrip } from "../../components/promo/InlineAdStrip";
 import { TrustModelBanner } from "../../components/trust/TrustModelBanner";
 import { extractBrandColorsFromFile, fileToDataUrl, readableOnWhite } from "../../lib/brandColors";
 import { inferCountryPolicy, buildAdministrativeClause } from "../../lib/francophonePolicy";
+import { captureElementToPdfFile } from "../../lib/html2canvasPdf";
+import { useAutoSave, readDraft } from "../../hooks/useAutoSave";
 
 const schema = z.object({
   employerEmail: z.string().default(""),
@@ -48,6 +47,14 @@ const schema = z.object({
 });
 
 type Values = z.infer<typeof schema>;
+
+const PAYSLIP_DRAFT_KEY = "payslip_editor_draft_v1";
+
+type PayslipDraftPayload = {
+  values: Values;
+  logoDataUrl: string | null;
+  brandPrimaryHex: string | null;
+};
 
 function todayISO() {
   const d = new Date();
@@ -81,7 +88,8 @@ export default function PayslipEditor() {
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
   const [brandPrimaryHex, setBrandPrimaryHex] = useState<string | null>(null);
   const previewRef = useRef<HTMLDivElement | null>(null);
-  const printRef = useRef<HTMLDivElement | null>(null);
+  /** Hors écran, même rendu que l’aperçu — évite les PDF blancs (ex. parent en opacity:0). */
+  const pdfRef = useRef<HTMLDivElement | null>(null);
   const autoPrintDoneRef = useRef(false);
 
   const countryPolicy = useMemo(() => inferCountryPolicy(auth.user?.user_typology), [auth.user?.user_typology]);
@@ -115,14 +123,35 @@ export default function PayslipEditor() {
     [countryPolicy]
   );
 
+  const mergedDefaults = useMemo(() => {
+    if (params.id) return defaultValues;
+    const d = readDraft<PayslipDraftPayload>(PAYSLIP_DRAFT_KEY);
+    if (d?.values) return { ...defaultValues, ...d.values };
+    return defaultValues;
+  }, [params.id, defaultValues]);
+
   const form = useForm<Values>({
     resolver: zodResolver(schema) as Resolver<Values>,
-    defaultValues,
+    defaultValues: mergedDefaults,
     mode: "onChange"
   });
 
   const watched = form.watch();
   const netPay = useMemo(() => computeNet(watched), [watched]);
+
+  useEffect(() => {
+    if (params.id) return;
+    const d = readDraft<PayslipDraftPayload>(PAYSLIP_DRAFT_KEY);
+    if (typeof d?.logoDataUrl === "string") setLogoDataUrl(d.logoDataUrl);
+    if (typeof d?.brandPrimaryHex === "string") setBrandPrimaryHex(d.brandPrimaryHex);
+  }, [params.id]);
+
+  useAutoSave(
+    PAYSLIP_DRAFT_KEY,
+    { values: watched, logoDataUrl, brandPrimaryHex } satisfies PayslipDraftPayload,
+    500,
+    !params.id
+  );
 
   useEffect(() => {
     const onIdSynced = (e: Event) => {
@@ -268,18 +297,14 @@ export default function PayslipEditor() {
   );
 
   async function downloadPdf() {
-    const source = previewRef.current ?? printRef.current;
+    const source = pdfRef.current ?? previewRef.current;
     if (!source) return;
     setPdfDownloading(true);
     try {
-      const canvas = await html2canvas(source, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF("p", "mm", "a4");
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`bulletin-${watched.employeeName || "salarie"}.pdf`);
+      await captureElementToPdfFile(source, `bulletin-${watched.employeeName || "salarie"}.pdf`);
+    } catch (e) {
+      console.error(e);
+      alert("Impossible de générer le PDF. Réessayez ou utilisez l’impression du navigateur.");
     } finally {
       setPdfDownloading(false);
     }
@@ -539,6 +564,9 @@ export default function PayslipEditor() {
           <div className="rounded-xl border-2 border-primary/25 bg-gradient-to-br from-primary/[0.06] to-white p-5 ring-1 ring-primary/15">
             <p className="text-xs font-semibold uppercase tracking-wide text-primary">Étape 2 — Export PDF</p>
             <p className="mt-1 text-sm text-slate-700">Après vérification des montants, générez le fichier PDF.</p>
+            {!params.id ? (
+              <p className="mt-2 text-xs text-slate-500">Sauvegarde locale automatique dans ce navigateur (brouillon).</p>
+            ) : null}
             <div className="mt-4">
               <Button variant="primary" type="button" onClick={() => void downloadPdf()} disabled={pdfDownloading || saving}>
                 {pdfDownloading ? "PDF…" : "Télécharger PDF"}
@@ -556,10 +584,18 @@ export default function PayslipEditor() {
             >
               <PayslipPreview data={previewPayload} />
             </div>
-            <div className="pointer-events-none absolute -left-[99999px] top-0 opacity-0">
-              <div ref={printRef}>
-                <PayslipPreview data={previewPayload} />
-              </div>
+            <div
+              ref={pdfRef}
+              style={{
+                position: "fixed",
+                left: "-9999px",
+                top: 0,
+                width: 794,
+                pointerEvents: "none",
+                visibility: "hidden"
+              }}
+            >
+              <PayslipPreview data={previewPayload} />
             </div>
           </div>
         </div>

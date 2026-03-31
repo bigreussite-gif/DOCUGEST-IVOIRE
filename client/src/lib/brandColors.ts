@@ -111,6 +111,50 @@ export function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
+/**
+ * Recadre une image au format carré 1:1 centré, puis la retourne en JPEG base64.
+ * Idéal pour les photos de CV affichées en rond.
+ * @param file    Fichier image source
+ * @param size    Taille en pixels du carré de sortie (défaut 400 px)
+ * @param quality Qualité JPEG 0-1 (défaut 0.92)
+ */
+export function cropImageToSquare(file: File, size = 400, quality = 0.92): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Lecture fichier impossible"));
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("Image invalide"));
+      img.onload = () => {
+        const side = Math.min(img.naturalWidth, img.naturalHeight);
+        const canvas = document.createElement("canvas");
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { reject(new Error("Canvas non disponible")); return; }
+        // Centrage du recadrage carré
+        const sx = (img.naturalWidth - side) / 2;
+        const sy = (img.naturalHeight - side) / 2;
+        ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.src = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * Retourne true si la couleur hex est suffisamment claire pour nécessiter du texte foncé.
+ */
+export function isLightColor(hex: string): boolean {
+  const p = parseRgb(hex.replace("#", ""));
+  if (!p) return false;
+  const [r, g, b] = p;
+  // Luminosité perçue (formule YIQ)
+  return (r * 299 + g * 587 + b * 114) / 1000 > 160;
+}
+
 /** Contraste lisible sur fond clair */
 export function readableOnWhite(hex: string): string {
   const p = parseRgb(hex.replace("#", ""));

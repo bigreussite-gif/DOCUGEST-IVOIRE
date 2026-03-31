@@ -1,4 +1,4 @@
-/** Rôles autorisés à accéder au back-office DocuGest */
+/** Rôles autorisés à accéder au back-office DocuGestIvoire */
 export function isBackofficeRole(role?: string | null): boolean {
   return ["super_admin", "admin", "manager", "operator"].includes(role ?? "user");
 }

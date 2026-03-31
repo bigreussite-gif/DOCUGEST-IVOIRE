@@ -44,6 +44,14 @@ const PRESET_SLOTS_BY_GROUP: Record<string, string[]> = {
     "invoice-editor-before-preview",
     "payslip-editor-inline",
   ],
+  "📝 Blog": [
+    "blog-list-top",
+    "blog-list-mid",
+    "blog-list-bottom",
+    "blog-sidebar",
+    "blog-sidebar-bottom",
+    "blog-article-mid",
+  ],
 };
 
 const PRESET_SLOTS = Object.values(PRESET_SLOTS_BY_GROUP).flat();
@@ -63,6 +71,12 @@ const SLOT_LABELS: Record<string, string> = {
   "landing-after-modules": "Landing — après les modules",
   "landing-cta": "Landing — section CTA / appel à l'action",
   "landing-bottom": "Landing — pied de page",
+  "blog-list-top": "Blog liste — haut (sous le héros)",
+  "blog-list-mid": "Blog liste — milieu (entre articles)",
+  "blog-list-bottom": "Blog liste — bas de page",
+  "blog-sidebar": "Blog article — sidebar haut",
+  "blog-sidebar-bottom": "Blog article — sidebar bas",
+  "blog-article-mid": "Blog article — milieu du contenu",
 };
 
 export function AdminAds() {

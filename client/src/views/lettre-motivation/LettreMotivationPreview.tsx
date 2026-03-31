@@ -95,7 +95,7 @@ export default function LettreMotivationPreview({ data, logoDataUrl, accentColor
       </div>
 
       <div style={{ marginTop: 32, borderTop: "1px solid #e5e7eb", paddingTop: 10, textAlign: "center", fontSize: 9, color: "#9ca3af" }}>
-        Document généré sur DocuGest Ivoire — docugest-ivoire.vercel.app
+        Document généré sur DocuGestIvoire — docugest-ivoire.vercel.app
       </div>
     </div>
   );

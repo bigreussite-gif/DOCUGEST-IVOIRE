@@ -3,13 +3,12 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
-import html2canvas from "html2canvas";
-import { jsPDF } from "jspdf";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
 import { InlineAdStrip } from "../../components/promo/InlineAdStrip";
 import { useAutoSave, readDraft } from "../../hooks/useAutoSave";
+import { captureElementToPdfFile } from "../../lib/html2canvasPdf";
 import { useDocumentBranding } from "../../hooks/useDocumentBranding";
 import BrandingPanel from "../../components/document/BrandingPanel";
 import { generateLettreParagraphs } from "../../utils/aiGenerate";
@@ -56,6 +55,7 @@ export default function LettreMotivationEditor() {
   const [showPreview, setShowPreview] = useState(false);
   const [formuleMode, setFormuleMode] = useState<"preset" | "perso">("preset");
   const previewRef = useRef<HTMLDivElement>(null);
+  const pdfRef = useRef<HTMLDivElement>(null);
   const draft = readDraft<Values>(DRAFT_KEY);
 
   const { register, watch, handleSubmit, setValue, formState: { errors } } = useForm<Values>({
@@ -91,27 +91,11 @@ export default function LettreMotivationEditor() {
   }
 
   async function downloadPDF() {
-    if (!previewRef.current) return;
+    const source = pdfRef.current ?? previewRef.current;
+    if (!source) return;
     setPdfLoading(true);
     try {
-      const canvas = await html2canvas(previewRef.current, { scale: 2, useCORS: true });
-      const imgData = canvas.toDataURL("image/jpeg", 0.95);
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      const pageW = 210;
-      const imgH = (canvas.height * pageW) / canvas.width;
-      if (imgH <= 297) {
-        pdf.addImage(imgData, "JPEG", 0, 0, pageW, imgH);
-      } else {
-        let y = 0;
-        let remaining = imgH;
-        while (remaining > 0) {
-          pdf.addImage(imgData, "JPEG", 0, -y, pageW, imgH);
-          remaining -= 297;
-          y += 297;
-          if (remaining > 0) pdf.addPage();
-        }
-      }
-      pdf.save(`Lettre-motivation-${values.nom.replace(/\s+/g, "-") || "lettre"}.pdf`);
+      await captureElementToPdfFile(source, `Lettre-motivation-${values.nom.replace(/\s+/g, "-") || "lettre"}.pdf`);
     } finally {
       setPdfLoading(false);
     }
@@ -128,7 +112,7 @@ export default function LettreMotivationEditor() {
 
   return (
     <div className="min-h-screen bg-surface">
-      <title>Lettre de Motivation Gratuite — DocuGest Ivoire</title>
+      <title>Lettre de Motivation Gratuite — DocuGestIvoire</title>
 
       <div className="sticky top-0 z-30 border-b border-border/60 bg-white/95 px-4 py-3 backdrop-blur-sm shadow-xs">
         <div className="flex items-center justify-between">
@@ -332,6 +316,15 @@ export default function LettreMotivationEditor() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Off-screen pour PDF — toujours rendu */}
+      <div ref={pdfRef} style={{ position: "fixed", left: "-9999px", top: 0, width: 794, pointerEvents: "none", visibility: "hidden" }}>
+        <LettreMotivationPreview
+          data={values as import("./LettreMotivationPreview").LettreMotivationData}
+          logoDataUrl={brand.logoDataUrl}
+          accentColor={brand.accentColor}
+        />
       </div>
     </div>
   );

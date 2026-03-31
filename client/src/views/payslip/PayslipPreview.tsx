@@ -249,7 +249,7 @@ export default function PayslipPreview({ data }: { data: PayslipPreviewData }) {
             {[data.employerHeadOffice || data.employerAddress, data.employerRib].filter(Boolean).join(" · ")}
           </div>
           {fiscalLine.length > 0 ? <div className="mt-1">{fiscalLine.join(" · ")}</div> : null}
-          <div className="mt-3 text-slate-400">Document généré avec DocuGest Ivoire</div>
+          <div className="mt-3 text-slate-400">Document généré avec DocuGestIvoire</div>
         </footer>
       </div>
     </div>

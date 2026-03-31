@@ -13,6 +13,19 @@ import {
   buildAdministrativeClause,
   buildFiscalPaymentTerms
 } from "../../lib/francophonePolicy";
+import { useAutoSave, readDraft } from "../../hooks/useAutoSave";
+
+const QUICK_INVOICE_DRAFT_KEY = "quick_invoice_draft_v1";
+
+type QuickInvoiceDraftPayload = {
+  clientName: string;
+  lines: LineDraft[];
+  deliveryLabel: string;
+  deliveryAmountTtc: string;
+  senderCompanyName: string;
+  senderPhone: string;
+  senderAddress: string;
+};
 
 function todayISO() {
   const d = new Date();
@@ -82,14 +95,32 @@ export default function QuickInvoiceEditor() {
   const navigate = useNavigate();
   const auth = useAuthStore();
   const [saving, setSaving] = useState(false);
-  const [clientName, setClientName] = useState("");
-  const [lines, setLines] = useState<LineDraft[]>(() => [newLine()]);
-  const [deliveryLabel, setDeliveryLabel] = useState("Frais de livraison");
-  const [deliveryAmountTtc, setDeliveryAmountTtc] = useState("");
-  const [senderCompanyName, setSenderCompanyName] = useState("");
-  const [senderPhone, setSenderPhone] = useState("");
-  const [senderAddress, setSenderAddress] = useState("");
+  const quickDraft = useMemo(() => readDraft<QuickInvoiceDraftPayload>(QUICK_INVOICE_DRAFT_KEY), []);
+  const [clientName, setClientName] = useState(() => quickDraft?.clientName ?? "");
+  const [lines, setLines] = useState<LineDraft[]>(() =>
+    quickDraft?.lines?.length ? quickDraft.lines : [newLine()]
+  );
+  const [deliveryLabel, setDeliveryLabel] = useState(() => quickDraft?.deliveryLabel ?? "Frais de livraison");
+  const [deliveryAmountTtc, setDeliveryAmountTtc] = useState(() => quickDraft?.deliveryAmountTtc ?? "");
+  const [senderCompanyName, setSenderCompanyName] = useState(() => quickDraft?.senderCompanyName ?? "");
+  const [senderPhone, setSenderPhone] = useState(() => quickDraft?.senderPhone ?? "");
+  const [senderAddress, setSenderAddress] = useState(() => quickDraft?.senderAddress ?? "");
   const clientRef = useRef<HTMLInputElement>(null);
+
+  const quickDraftPayload = useMemo(
+    () =>
+      ({
+        clientName,
+        lines,
+        deliveryLabel,
+        deliveryAmountTtc,
+        senderCompanyName,
+        senderPhone,
+        senderAddress
+      }) satisfies QuickInvoiceDraftPayload,
+    [clientName, lines, deliveryLabel, deliveryAmountTtc, senderCompanyName, senderPhone, senderAddress]
+  );
+  useAutoSave(QUICK_INVOICE_DRAFT_KEY, quickDraftPayload);
 
   useEffect(() => {
     const u = getEffectiveAuthUser();
@@ -277,6 +308,7 @@ export default function QuickInvoiceEditor() {
           <p className="mt-1 text-sm text-slate-600">
             Plusieurs lignes en TTC, frais de livraison optionnels, puis PDF ou impression.
           </p>
+          <p className="mt-1 text-xs text-slate-500">Sauvegarde locale automatique dans ce navigateur.</p>
         </div>
         <Link
           to="/dashboard/invoice/new?type=invoice"

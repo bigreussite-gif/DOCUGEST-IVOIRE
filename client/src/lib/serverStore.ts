@@ -989,7 +989,7 @@ async function ensureBlogTable(): Promise<void> {
       content TEXT DEFAULT '',
       cover_image_url TEXT DEFAULT '',
       category TEXT DEFAULT 'general',
-      author_name TEXT DEFAULT 'DocuGest Ivoire',
+      author_name TEXT DEFAULT 'DocuGestIvoire',
       published BOOLEAN DEFAULT false,
       published_at TIMESTAMPTZ,
       meta_title TEXT DEFAULT '',
@@ -1010,7 +1010,7 @@ function blogRowToPost(row: Record<string, unknown>): BlogPost {
     content: String(row.content ?? ""),
     cover_image_url: String(row.cover_image_url ?? ""),
     category: String(row.category ?? "general"),
-    author_name: String(row.author_name ?? "DocuGest Ivoire"),
+    author_name: String(row.author_name ?? "DocuGestIvoire"),
     published: Boolean(row.published),
     published_at: iso(row.published_at),
     meta_title: String(row.meta_title ?? ""),
@@ -1046,7 +1046,7 @@ export async function upsertBlogPost(
   const {
     id, slug, title,
     excerpt = "", content = "", cover_image_url = "",
-    category = "general", author_name = "DocuGest Ivoire",
+    category = "general", author_name = "DocuGestIvoire",
     published = false, published_at,
     meta_title = "", meta_description = "", reading_time_min = 3,
   } = post;

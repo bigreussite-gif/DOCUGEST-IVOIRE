@@ -3,9 +3,6 @@ import { useForm, useFieldArray, type Resolver } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import html2canvas from "html2canvas";
-import { jsPDF } from "jspdf";
-
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
@@ -25,6 +22,8 @@ import {
   ciVatRegimeToFiscalRegime,
   fiscalRegimeToCiVat
 } from "../../constants/ciVatRegimes";
+import { captureElementToPdfFile } from "../../lib/html2canvasPdf";
+import { useAutoSave, readDraft } from "../../hooks/useAutoSave";
 
 type DocType = "invoice" | "proforma" | "devis";
 
@@ -69,6 +68,14 @@ const editorSchema = z.object({
 });
 
 type EditorValues = z.infer<typeof editorSchema>;
+
+const INVOICE_DRAFT_KEY = "invoice_editor_draft_v1";
+
+type InvoiceDraftPayload = {
+  values: EditorValues;
+  logoDataUrl: string | null;
+  brandPrimaryHex: string | null;
+};
 
 const unitOptions = ["Forfait", "Heure", "Jour", "Pièce", "Kg", "Litre", "Mois", "Autre"] as const;
 
@@ -118,7 +125,8 @@ export default function InvoiceEditor() {
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
   const [brandPrimaryHex, setBrandPrimaryHex] = useState<string | null>(null);
   const previewWrapRef = useRef<HTMLDivElement | null>(null);
-  const printWrapRef = useRef<HTMLDivElement | null>(null);
+  /** Conteneur hors écran pour html2canvas (évite PDF vides si l’aperçu scrollé ou partiellement masqué). */
+  const pdfCaptureRef = useRef<HTMLDivElement | null>(null);
   const autoPrintDoneRef = useRef(false);
   const pendingPrintAfterLoadRef = useRef(false);
 
@@ -167,9 +175,16 @@ export default function InvoiceEditor() {
     };
   }, [auth.user, searchParams, countryPolicy]);
 
+  const mergedDefaults = useMemo(() => {
+    if (isPersistedDocumentId(params.id)) return defaultValues;
+    const d = readDraft<InvoiceDraftPayload>(INVOICE_DRAFT_KEY);
+    if (d?.values) return { ...defaultValues, ...d.values };
+    return defaultValues;
+  }, [params.id, defaultValues]);
+
   const form = useForm<EditorValues>({
     resolver: zodResolver(editorSchema) as Resolver<EditorValues>,
-    defaultValues,
+    defaultValues: mergedDefaults,
     mode: "onChange"
   });
 
@@ -185,6 +200,20 @@ export default function InvoiceEditor() {
     const t = setTimeout(() => setPreviewValues(watched), 150);
     return () => clearTimeout(t);
   }, [watched]);
+
+  useEffect(() => {
+    if (isPersistedDocumentId(params.id)) return;
+    const d = readDraft<InvoiceDraftPayload>(INVOICE_DRAFT_KEY);
+    if (typeof d?.logoDataUrl === "string") setLogoDataUrl(d.logoDataUrl);
+    if (typeof d?.brandPrimaryHex === "string") setBrandPrimaryHex(d.brandPrimaryHex);
+  }, [params.id]);
+
+  useAutoSave(
+    INVOICE_DRAFT_KEY,
+    { values: watched, logoDataUrl, brandPrimaryHex },
+    500,
+    !isPersistedDocumentId(params.id)
+  );
 
   // Reset auto-doc prefix when switching docType
   useEffect(() => {
@@ -388,22 +417,14 @@ export default function InvoiceEditor() {
   const accentForPreview = brandPrimaryHex ? readableOnWhite(brandPrimaryHex) : null;
 
   async function downloadPdf() {
-    /** L’aperçu visible rend correctement ; l’élément hors écran peut produire un PDF vide avec html2canvas. */
-    const source = previewWrapRef.current ?? printWrapRef.current;
+    const source = pdfCaptureRef.current ?? previewWrapRef.current;
     if (!source) {
       alert("Aperçu indisponible. Patientez un instant puis réessayez.");
       return;
     }
     setPdfDownloading(true);
     try {
-      const canvas = await html2canvas(source, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF("p", "mm", "a4");
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`${form.getValues().docNumber || previewValues.docNumber || "facture"}.pdf`);
+      await captureElementToPdfFile(source, `${form.getValues().docNumber || previewValues.docNumber || "facture"}.pdf`);
     } catch (e) {
       console.error(e);
       alert(
@@ -895,6 +916,9 @@ export default function InvoiceEditor() {
                 <p className="mt-1 text-sm text-slate-700">
                   Lorsque le formulaire est à jour, téléchargez le PDF ou imprimez. Vous pouvez aussi réinitialiser le brouillon.
                 </p>
+                {!isPersistedDocumentId(params.id) ? (
+                  <p className="mt-2 text-xs text-slate-500">Sauvegarde locale automatique dans ce navigateur (brouillon).</p>
+                ) : null}
                 <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                   <Button
                     variant="secondary"
@@ -996,8 +1020,17 @@ export default function InvoiceEditor() {
                 }}
               />
             </div>
-            <div className="pointer-events-none absolute -left-[99999px] top-0 opacity-0">
-              <div ref={printWrapRef}>
+            <div
+              ref={pdfCaptureRef}
+              style={{
+                position: "fixed",
+                left: "-9999px",
+                top: 0,
+                width: 794,
+                pointerEvents: "none",
+                visibility: "hidden"
+              }}
+            >
                 <InvoicePreview
                   themeColor={themeColor}
                   customAccentHex={accentForPreview}
@@ -1040,7 +1073,6 @@ export default function InvoiceEditor() {
                     footerNote: previewValues.footerNote
                   }}
                 />
-              </div>
             </div>
         </div>
       </div>

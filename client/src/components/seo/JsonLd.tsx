@@ -28,7 +28,7 @@ export function JsonLd() {
           url: logoUrl,
           width: 1024,
           height: 1024,
-          caption: "Logo DocuGest Ivoire"
+          caption: "Logo DocuGestIvoire"
         },
         image: imageObjects,
         description: SITE_DESCRIPTION,

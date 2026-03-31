@@ -243,7 +243,7 @@ export default function InvoicePreview({ docTypeLabel, themeColor, customAccentH
             {[data.sender.headOffice || data.sender.address, data.sender.legalForm, data.sender.rib].filter(Boolean).join(" · ")}
           </div>
           {fiscalFooter.length > 0 ? <div className="mt-1">{fiscalFooter.join(" · ")}</div> : null}
-          <div className="mt-2 text-slate-400">Document généré avec DocuGest Ivoire</div>
+          <div className="mt-2 text-slate-400">Document généré avec DocuGestIvoire</div>
         </footer>
       </div>
     </div>

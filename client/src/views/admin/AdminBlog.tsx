@@ -27,7 +27,7 @@ const CATEGORIES = [
   "Emploi",
   "Juridique",
   "Entrepreneuriat",
-  "DocuGest",
+  "DocuGestIvoire",
   "general",
 ];
 
@@ -39,7 +39,7 @@ function emptyPost(): Partial<BlogPost> {
     content: "",
     cover_image_url: "",
     category: "general",
-    author_name: "DocuGest Ivoire",
+    author_name: "DocuGestIvoire",
     published: false,
     published_at: null,
     meta_title: "",
@@ -159,7 +159,7 @@ export function AdminBlog() {
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-teal-700">Contenu</p>
             <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">Articles de blog</h1>
             <p className="mt-1 text-sm text-slate-600">
-              Rédigez et publiez des articles SEO pour référencer DocuGest sur Google.
+              Rédigez et publiez des articles SEO pour référencer DocuGestIvoire sur Google.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -402,7 +402,7 @@ export function AdminBlog() {
             </label>
             <Input
               label="Auteur"
-              value={form.author_name ?? "DocuGest Ivoire"}
+              value={form.author_name ?? "DocuGestIvoire"}
               onChange={(e) => set("author_name", e.target.value)}
             />
             <Input

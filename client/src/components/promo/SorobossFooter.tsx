@@ -4,7 +4,7 @@ export function SorobossFooter({ className = "" }: Props) {
   return (
     <footer className={`text-center ${className}`}>
       <p className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11px] text-slate-500 sm:text-xs">
-        <span className="font-medium text-slate-600">DocuGest Ivoire</span>
+        <span className="font-medium text-slate-600">DocuGestIvoire</span>
         <span className="text-slate-300" aria-hidden>
           ·
         </span>

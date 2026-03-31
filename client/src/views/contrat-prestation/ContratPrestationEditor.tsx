@@ -3,14 +3,13 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
-import html2canvas from "html2canvas";
-import { jsPDF } from "jspdf";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
 import { InlineAdStrip } from "../../components/promo/InlineAdStrip";
 import { nextDocNumber, peekDocNumber, todayISO } from "../../utils/documentNumber";
 import { useAutoSave, readDraft } from "../../hooks/useAutoSave";
+import { captureElementToPdfFile } from "../../lib/html2canvasPdf";
 import { useDocumentBranding } from "../../hooks/useDocumentBranding";
 import BrandingPanel from "../../components/document/BrandingPanel";
 import { generateContratObligations } from "../../utils/aiGenerate";
@@ -83,6 +82,7 @@ export default function ContratPrestationEditor() {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
+  const pdfRef = useRef<HTMLDivElement>(null);
   const draft = readDraft<Values>(DRAFT_KEY);
 
   const { register, watch, handleSubmit, setValue, formState: { errors } } = useForm<Values>({
@@ -124,28 +124,11 @@ export default function ContratPrestationEditor() {
   const montantTTC = (Number(values.montantHT) || 0) * (1 + (Number(values.vatPct) || 0) / 100);
 
   async function downloadPDF() {
-    if (!previewRef.current) return;
+    const source = pdfRef.current ?? previewRef.current;
+    if (!source) return;
     setPdfLoading(true);
     try {
-      const canvas = await html2canvas(previewRef.current, { scale: 2, useCORS: true });
-      const imgData = canvas.toDataURL("image/jpeg", 0.92);
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      const pageW = 210;
-      const imgH = (canvas.height * pageW) / canvas.width;
-      let y = 0;
-      const pageH = 297;
-      if (imgH <= pageH) {
-        pdf.addImage(imgData, "JPEG", 0, 0, pageW, imgH);
-      } else {
-        let remaining = imgH;
-        while (remaining > 0) {
-          pdf.addImage(imgData, "JPEG", 0, -y, pageW, imgH);
-          remaining -= pageH;
-          y += pageH;
-          if (remaining > 0) pdf.addPage();
-        }
-      }
-      pdf.save(`${values.cpsNumber || "contrat-prestation"}.pdf`);
+      await captureElementToPdfFile(source, `${values.cpsNumber || "contrat-prestation"}.pdf`);
       nextDocNumber("CPS");
     } finally {
       setPdfLoading(false);
@@ -156,7 +139,7 @@ export default function ContratPrestationEditor() {
 
   return (
     <div className="min-h-screen bg-surface">
-      <title>Contrat de Prestation de Services — DocuGest Ivoire</title>
+      <title>Contrat de Prestation de Services — DocuGestIvoire</title>
 
       <div className="sticky top-0 z-30 border-b border-border/60 bg-white/95 px-4 py-3 backdrop-blur-sm shadow-xs">
         <div className="flex items-center justify-between">
@@ -481,6 +464,13 @@ export default function ContratPrestationEditor() {
             </div>
           </div>
         </div>
+      </div>
+      <div ref={pdfRef} style={{ position: "fixed", left: "-9999px", top: 0, width: 794, pointerEvents: "none", visibility: "hidden" }}>
+        <ContratPrestationPreview
+          data={values as import("./ContratPrestationPreview").ContratPrestationData}
+          logoDataUrl={brand.logoDataUrl}
+          accentColor={brand.accentColor}
+        />
       </div>
     </div>
   );

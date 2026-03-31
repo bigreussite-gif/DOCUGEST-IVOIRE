@@ -4,8 +4,6 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
-import html2canvas from "html2canvas";
-import { jsPDF } from "jspdf";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
@@ -14,6 +12,7 @@ import { useDocumentBranding } from "../../hooks/useDocumentBranding";
 import BrandingPanel from "../../components/document/BrandingPanel";
 import { nextDocNumber, peekDocNumber, todayISO } from "../../utils/documentNumber";
 import { useAutoSave, readDraft } from "../../hooks/useAutoSave";
+import { captureElementToPdfFile } from "../../lib/html2canvasPdf";
 import BonCommandePreview from "./BonCommandePreview";
 
 const lineSchema = z.object({
@@ -62,6 +61,7 @@ export default function BonCommandeEditor() {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
+  const pdfRef = useRef<HTMLDivElement>(null);
 
   const draft = readDraft<Values>(DRAFT_KEY);
 
@@ -89,28 +89,11 @@ export default function BonCommandeEditor() {
   const totalTTC = netHT + vatAmount;
 
   async function downloadPDF() {
-    if (!previewRef.current) return;
+    const source = pdfRef.current ?? previewRef.current;
+    if (!source) return;
     setPdfLoading(true);
     try {
-      const canvas = await html2canvas(previewRef.current, { scale: 2, useCORS: true });
-      const imgData = canvas.toDataURL("image/jpeg", 0.92);
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      const pageW = 210;
-      const imgH = (canvas.height * pageW) / canvas.width;
-      let y = 0;
-      const pageH = 297;
-      if (imgH <= pageH) {
-        pdf.addImage(imgData, "JPEG", 0, 0, pageW, imgH);
-      } else {
-        let remaining = imgH;
-        while (remaining > 0) {
-          pdf.addImage(imgData, "JPEG", 0, -y, pageW, imgH);
-          remaining -= pageH;
-          y += pageH;
-          if (remaining > 0) pdf.addPage();
-        }
-      }
-      pdf.save(`${values.bcNumber || "bon-commande"}.pdf`);
+      await captureElementToPdfFile(source, `${values.bcNumber || "bon-commande"}.pdf`);
       if (!draft) nextDocNumber("BC");
     } finally {
       setPdfLoading(false);
@@ -124,7 +107,7 @@ export default function BonCommandeEditor() {
 
   return (
     <div className="min-h-screen bg-surface">
-      <title>Bon de Commande FCFA — DocuGest Ivoire</title>
+      <title>Bon de Commande FCFA — DocuGestIvoire</title>
 
       {/* Header */}
       <div className="sticky top-0 z-30 border-b border-border/60 bg-white/95 px-4 py-3 backdrop-blur-sm shadow-xs">
@@ -422,6 +405,20 @@ export default function BonCommandeEditor() {
           </div>
         </div>
 
+      </div>
+      <div ref={pdfRef} style={{ position: "fixed", left: "-9999px", top: 0, width: 794, pointerEvents: "none", visibility: "hidden" }}>
+        <BonCommandePreview data={{
+          bcNumber: values.bcNumber, bcDate: values.bcDate, refProforma: values.refProforma,
+          deliveryMode: values.deliveryMode, deliveryDelay: values.deliveryDelay, deliveryAddress: values.deliveryAddress,
+          paymentMode: values.paymentMode, paymentConditions: values.paymentConditions,
+          buyerName: values.buyerName, buyerRccm: values.buyerRccm, buyerNcc: values.buyerNcc,
+          buyerAddress: values.buyerAddress, buyerPhone: values.buyerPhone, buyerEmail: values.buyerEmail,
+          buyerContact: values.buyerContact, buyerFunction: values.buyerFunction,
+          supplierName: values.supplierName, supplierAddress: values.supplierAddress,
+          supplierPhone: values.supplierPhone, supplierEmail: values.supplierEmail, supplierContact: values.supplierContact,
+          lines: values.lines ?? [], discountPct: Number(values.discountPct) || 0, vatPct: Number(values.vatPct) || 18,
+          observations: values.observations,
+        }} logoDataUrl={brand.logoDataUrl} accentColor={brand.accentColor} />
       </div>
     </div>
   );

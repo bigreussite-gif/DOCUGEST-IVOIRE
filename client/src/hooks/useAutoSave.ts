@@ -4,10 +4,11 @@ import { useEffect, useRef } from "react";
  * Sauvegarde automatique en localStorage avec debounce (500ms).
  * Appel : useAutoSave("cv_draft", formValues)
  */
-export function useAutoSave<T>(key: string, data: T, delay = 500) {
+export function useAutoSave<T>(key: string, data: T, delay = 500, enabled = true) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    if (!enabled) return;
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       try {
@@ -17,7 +18,7 @@ export function useAutoSave<T>(key: string, data: T, delay = 500) {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [key, data, delay]);
+  }, [key, data, delay, enabled]);
 }
 
 /** Lit un brouillon sauvegardé. */

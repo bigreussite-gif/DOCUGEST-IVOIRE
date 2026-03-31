@@ -1,5 +1,5 @@
 /**
- * Modèle utilisateur aligné sur la table public.users (Insforge / migrations DocuGest).
+ * Modèle utilisateur aligné sur la table public.users (Insforge / migrations DocuGestIvoire).
  * Le mot de passe n’est jamais exposé côté client.
  */
 export type UserRole = "super_admin" | "admin" | "manager" | "operator" | "user" | string;

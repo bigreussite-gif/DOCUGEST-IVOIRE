@@ -1,5 +1,5 @@
 /**
- * 10 articles de démarrage SEO — DocuGest Ivoire
+ * 10 articles de démarrage SEO — DocuGestIvoire
  * Rédigés en français, ciblant les entrepreneurs, étudiants et demandeurs d'emploi ivoiriens.
  */
 
@@ -22,7 +22,7 @@ export const BLOG_SEED_ARTICLES: SeedArticle[] = [
     category: "Facturation",
     reading_time_min: 5,
     published: true,
-    meta_title: "Créer une facture professionnelle en Côte d'Ivoire | DocuGest Ivoire",
+    meta_title: "Créer une facture professionnelle en Côte d'Ivoire | DocuGestIvoire",
     meta_description:
       "Guide complet pour créer une facture normalisée en FCFA conforme aux normes ivoiriennes. Mentions obligatoires, TVA, format PDF — tout ce qu'il faut savoir.",
     excerpt:
@@ -56,8 +56,8 @@ export const BLOG_SEED_ARTICLES: SeedArticle[] = [
   <li>Oublier les pénalités de retard dans les conditions de règlement</li>
 </ul>
 
-<h2>Comment créer une facture gratuitement avec DocuGest Ivoire</h2>
-<p>Sur <strong>DocuGest Ivoire</strong>, vous pouvez générer une facture normalisée en moins de 2 minutes, directement depuis votre navigateur :</p>
+<h2>Comment créer une facture gratuitement avec DocuGestIvoire</h2>
+<p>Sur <strong>DocuGestIvoire</strong>, vous pouvez générer une facture normalisée en moins de 2 minutes, directement depuis votre navigateur :</p>
 <ol>
   <li>Accédez au module <strong>Facture normalisée</strong> depuis le dashboard</li>
   <li>Renseignez les coordonnées de votre entreprise (sauvegardées automatiquement)</li>
@@ -68,7 +68,7 @@ export const BLOG_SEED_ARTICLES: SeedArticle[] = [
 <p>Toutes vos données sont sauvegardées localement pour que vous puissiez reprendre à tout moment.</p>
 
 <h2>Conclusion</h2>
-<p>Une facture bien rédigée protège votre entreprise, facilite votre comptabilité et renforce la confiance de vos clients. Avec DocuGest Ivoire, générez vos factures en FCFA, conformes aux normes ivoiriennes, gratuitement et sans inscription.</p>`,
+<p>Une facture bien rédigée protège votre entreprise, facilite votre comptabilité et renforce la confiance de vos clients. Avec DocuGestIvoire, générez vos factures en FCFA, conformes aux normes ivoiriennes, gratuitement et sans inscription.</p>`,
   },
 
   {
@@ -77,7 +77,7 @@ export const BLOG_SEED_ARTICLES: SeedArticle[] = [
     category: "Ressources humaines",
     reading_time_min: 6,
     published: true,
-    meta_title: "Bulletin de paie en Côte d'Ivoire : tout savoir | DocuGest Ivoire",
+    meta_title: "Bulletin de paie en Côte d'Ivoire : tout savoir | DocuGestIvoire",
     meta_description:
       "Guide complet sur le bulletin de paie ivoirien : cotisations CNPS, IS, ITS, calcul salaire net. Créez votre fiche de paie PDF gratuitement.",
     excerpt:
@@ -123,12 +123,12 @@ export const BLOG_SEED_ARTICLES: SeedArticle[] = [
   <strong>Exemple :</strong> Pour un salaire de base de 200 000 FCFA, les retenues salariales se situent généralement entre 8 % et 15 % selon le niveau de rémunération et la situation familiale.
 </blockquote>
 
-<h2>Créer un bulletin de paie avec DocuGest Ivoire</h2>
-<p>Le module <strong>Bulletin de paie</strong> de DocuGest Ivoire calcule automatiquement les cotisations CNPS, l'ITS et l'IS selon les barèmes ivoiriens. Il génère un PDF professionnel avec toutes les mentions légales obligatoires.</p>
+<h2>Créer un bulletin de paie avec DocuGestIvoire</h2>
+<p>Le module <strong>Bulletin de paie</strong> de DocuGestIvoire calcule automatiquement les cotisations CNPS, l'ITS et l'IS selon les barèmes ivoiriens. Il génère un PDF professionnel avec toutes les mentions légales obligatoires.</p>
 <p>Résultat : vous n'avez plus besoin d'un logiciel de paie coûteux pour des petites structures. En moins de 3 minutes, votre bulletin de paie est prêt à être remis à votre employé.</p>
 
 <h2>Conclusion</h2>
-<p>Le bulletin de paie est bien plus qu'une simple formalité — c'est un document qui protège à la fois l'employé et l'employeur. DocuGest Ivoire vous accompagne pour le créer facilement, gratuitement, en respectant les normes ivoiriennes.</p>`,
+<p>Le bulletin de paie est bien plus qu'une simple formalité — c'est un document qui protège à la fois l'employé et l'employeur. DocuGestIvoire vous accompagne pour le créer facilement, gratuitement, en respectant les normes ivoiriennes.</p>`,
   },
 
   {
@@ -137,7 +137,7 @@ export const BLOG_SEED_ARTICLES: SeedArticle[] = [
     category: "Emploi",
     reading_time_min: 6,
     published: true,
-    meta_title: "CV Professionnel Côte d'Ivoire : modèle et conseils | DocuGest Ivoire",
+    meta_title: "CV Professionnel Côte d'Ivoire : modèle et conseils | DocuGestIvoire",
     meta_description:
       "Comment créer un CV professionnel qui attire les recruteurs ivoiriens. Modèles gratuits, conseils pratiques pour l'emploi en Côte d'Ivoire.",
     excerpt:
@@ -189,8 +189,8 @@ export const BLOG_SEED_ARTICLES: SeedArticle[] = [
   <li>Oublier de vérifier l'orthographe</li>
 </ul>
 
-<h2>Créer votre CV gratuitement avec DocuGest Ivoire</h2>
-<p>Le module <strong>CV Professionnel</strong> de DocuGest Ivoire propose 3 templates modernes (Classique, Moderne, Compact) avec upload de photo, gestion des compétences avec barres de progression, et génération PDF en 1 clic. Vos données sont sauvegardées localement pour une reprise facile.</p>`,
+<h2>Créer votre CV gratuitement avec DocuGestIvoire</h2>
+<p>Le module <strong>CV Professionnel</strong> de DocuGestIvoire propose 3 templates modernes (Classique, Moderne, Compact) avec upload de photo, gestion des compétences avec barres de progression, et génération PDF en 1 clic. Vos données sont sauvegardées localement pour une reprise facile.</p>`,
   },
 
   {
@@ -199,7 +199,7 @@ export const BLOG_SEED_ARTICLES: SeedArticle[] = [
     category: "Emploi",
     reading_time_min: 5,
     published: true,
-    meta_title: "Lettre de motivation Côte d'Ivoire : modèle et conseils | DocuGest Ivoire",
+    meta_title: "Lettre de motivation Côte d'Ivoire : modèle et conseils | DocuGestIvoire",
     meta_description:
       "Comment rédiger une lettre de motivation efficace pour trouver un emploi en Côte d'Ivoire. Structure, exemples et modèle PDF gratuit.",
     excerpt:
@@ -247,8 +247,8 @@ export const BLOG_SEED_ARTICLES: SeedArticle[] = [
   <li>Des fautes d'orthographe (rédhibitoires !)</li>
 </ul>
 
-<h2>Générez votre lettre avec DocuGest Ivoire</h2>
-<p>Le module <strong>Lettre de motivation</strong> de DocuGest Ivoire vous guide pas à pas avec des bulles d'aide pour chaque paragraphe. L'IA interne peut même générer une première version en quelques secondes à partir de votre poste cible et de l'entreprise. Résultat : une lettre professionnelle en PDF en moins de 5 minutes.</p>`,
+<h2>Générez votre lettre avec DocuGestIvoire</h2>
+<p>Le module <strong>Lettre de motivation</strong> de DocuGestIvoire vous guide pas à pas avec des bulles d'aide pour chaque paragraphe. L'IA interne peut même générer une première version en quelques secondes à partir de votre poste cible et de l'entreprise. Résultat : une lettre professionnelle en PDF en moins de 5 minutes.</p>`,
   },
 
   {
@@ -257,7 +257,7 @@ export const BLOG_SEED_ARTICLES: SeedArticle[] = [
     category: "Ressources humaines",
     reading_time_min: 7,
     published: true,
-    meta_title: "Contrat de travail CDD/CDI Côte d'Ivoire | DocuGest Ivoire",
+    meta_title: "Contrat de travail CDD/CDI Côte d'Ivoire | DocuGestIvoire",
     meta_description:
       "Guide complet sur le contrat de travail en Côte d'Ivoire : différences CDD/CDI, période d'essai, salaire minimum, clauses obligatoires selon le Code du travail.",
     excerpt:
@@ -313,8 +313,8 @@ export const BLOG_SEED_ARTICLES: SeedArticle[] = [
 </ul>
 <p>Le préavis légal varie de 1 mois (ouvriers) à 3 mois (cadres) pour un CDI.</p>
 
-<h2>Générez votre contrat de travail avec DocuGest Ivoire</h2>
-<p>Le module <strong>Contrat de travail</strong> de DocuGest Ivoire génère des contrats CDD/CDI conformes au Code du Travail ivoirien, avec toutes les mentions légales obligatoires, les clauses de confidentialité optionnelles et les blocs de signatures. Résultat : un contrat professionnel en PDF prêt à signer.</p>`,
+<h2>Générez votre contrat de travail avec DocuGestIvoire</h2>
+<p>Le module <strong>Contrat de travail</strong> de DocuGestIvoire génère des contrats CDD/CDI conformes au Code du Travail ivoirien, avec toutes les mentions légales obligatoires, les clauses de confidentialité optionnelles et les blocs de signatures. Résultat : un contrat professionnel en PDF prêt à signer.</p>`,
   },
 
   {
@@ -323,7 +323,7 @@ export const BLOG_SEED_ARTICLES: SeedArticle[] = [
     category: "Facturation",
     reading_time_min: 4,
     published: true,
-    meta_title: "Bon de commande professionnel en FCFA | DocuGest Ivoire",
+    meta_title: "Bon de commande professionnel en FCFA | DocuGestIvoire",
     meta_description:
       "Tout savoir sur le bon de commande en Côte d'Ivoire : définition, mentions obligatoires, différence avec la facture. Créez votre BC en FCFA gratuitement.",
     excerpt:
@@ -362,8 +362,8 @@ export const BLOG_SEED_ARTICLES: SeedArticle[] = [
   <li>Le <strong>bon de commande</strong> est émis par l'<strong>acheteur</strong> pour accepter et confirmer la commande — c'est un engagement d'achat</li>
 </ul>
 
-<h2>Créez votre bon de commande avec DocuGest Ivoire</h2>
-<p>Le module <strong>Bon de commande</strong> de DocuGest Ivoire génère automatiquement un numéro de BC (BC-2026-XXXX), calcule les montants HT, la TVA et le TTC, et produit un PDF professionnel en FCFA prêt à transmettre à votre fournisseur.</p>`,
+<h2>Créez votre bon de commande avec DocuGestIvoire</h2>
+<p>Le module <strong>Bon de commande</strong> de DocuGestIvoire génère automatiquement un numéro de BC (BC-2026-XXXX), calcule les montants HT, la TVA et le TTC, et produit un PDF professionnel en FCFA prêt à transmettre à votre fournisseur.</p>`,
   },
 
   {
@@ -372,9 +372,9 @@ export const BLOG_SEED_ARTICLES: SeedArticle[] = [
     category: "Facturation",
     reading_time_min: 4,
     published: true,
-    meta_title: "Facture proforma gratuite en FCFA - Côte d'Ivoire | DocuGest Ivoire",
+    meta_title: "Facture proforma gratuite en FCFA - Côte d'Ivoire | DocuGestIvoire",
     meta_description:
-      "Comprendre la facture proforma : définition, utilité, différence avec la facture définitive. Créez votre proforma en FCFA en 2 minutes sur DocuGest Ivoire.",
+      "Comprendre la facture proforma : définition, utilité, différence avec la facture définitive. Créez votre proforma en FCFA en 2 minutes sur DocuGestIvoire.",
     excerpt:
       "La facture proforma est l'outil numéro 1 pour décrocher des marchés et rassurer vos clients avant de finaliser une vente. Voici comment l'utiliser efficacement.",
     content: `<h2>Qu'est-ce qu'une facture proforma ?</h2>
@@ -409,8 +409,8 @@ export const BLOG_SEED_ARTICLES: SeedArticle[] = [
   <li>Conditions de paiement et de livraison</li>
 </ul>
 
-<h2>Créez votre facture proforma avec DocuGest Ivoire</h2>
-<p>Le module <strong>Facture proforma</strong> de DocuGest Ivoire génère des proformas professionnelles en FCFA avec la mention "PROFORMA" bien visible, une date de validité et toutes les informations nécessaires. Envoyez votre proforma à votre client en PDF en moins de 2 minutes.</p>`,
+<h2>Créez votre facture proforma avec DocuGestIvoire</h2>
+<p>Le module <strong>Facture proforma</strong> de DocuGestIvoire génère des proformas professionnelles en FCFA avec la mention "PROFORMA" bien visible, une date de validité et toutes les informations nécessaires. Envoyez votre proforma à votre client en PDF en moins de 2 minutes.</p>`,
   },
 
   {
@@ -419,7 +419,7 @@ export const BLOG_SEED_ARTICLES: SeedArticle[] = [
     category: "Juridique",
     reading_time_min: 6,
     published: true,
-    meta_title: "Contrat prestation de services freelance Côte d'Ivoire | DocuGest Ivoire",
+    meta_title: "Contrat prestation de services freelance Côte d'Ivoire | DocuGestIvoire",
     meta_description:
       "Comment rédiger un contrat de prestation de services solide pour protéger votre activité freelance en Côte d'Ivoire. Clauses essentielles, pièges à éviter.",
     excerpt:
@@ -465,8 +465,8 @@ export const BLOG_SEED_ARTICLES: SeedArticle[] = [
   <li>Commencer à travailler sans signature du contrat</li>
 </ul>
 
-<h2>Générez votre contrat avec DocuGest Ivoire</h2>
-<p>Le module <strong>Contrat de prestation de services</strong> de DocuGest Ivoire génère un contrat professionnel en PDF avec toutes les clauses essentielles, conforme aux pratiques juridiques ivoiriennes. Le contrat inclut automatiquement la clause de confidentialité, les obligations des parties (générables par IA) et le bloc de double signature "Lu et approuvé".</p>`,
+<h2>Générez votre contrat avec DocuGestIvoire</h2>
+<p>Le module <strong>Contrat de prestation de services</strong> de DocuGestIvoire génère un contrat professionnel en PDF avec toutes les clauses essentielles, conforme aux pratiques juridiques ivoiriennes. Le contrat inclut automatiquement la clause de confidentialité, les obligations des parties (générables par IA) et le bloc de double signature "Lu et approuvé".</p>`,
   },
 
   {
@@ -475,7 +475,7 @@ export const BLOG_SEED_ARTICLES: SeedArticle[] = [
     category: "Entrepreneuriat",
     reading_time_min: 5,
     published: true,
-    meta_title: "Créer une entreprise en Côte d'Ivoire : les documents clés | DocuGest Ivoire",
+    meta_title: "Créer une entreprise en Côte d'Ivoire : les documents clés | DocuGestIvoire",
     meta_description:
       "Quels documents sont nécessaires pour créer une entreprise en Côte d'Ivoire ? RCCM, NCC, CNPS, statuts... Le guide complet pour les entrepreneurs ivoiriens.",
     excerpt:
@@ -514,7 +514,7 @@ export const BLOG_SEED_ARTICLES: SeedArticle[] = [
   <li>Déclarations fiscales mensuelles ou trimestrielles</li>
   <li>Contrats de travail pour vos employés</li>
 </ul>
-<p><strong>DocuGest Ivoire</strong> vous accompagne pour tous ces documents du quotidien, gratuitement et en ligne.</p>`,
+<p><strong>DocuGestIvoire</strong> vous accompagne pour tous ces documents du quotidien, gratuitement et en ligne.</p>`,
   },
 
   {
@@ -523,7 +523,7 @@ export const BLOG_SEED_ARTICLES: SeedArticle[] = [
     category: "Entrepreneuriat",
     reading_time_min: 5,
     published: true,
-    meta_title: "Digitalisation PME Côte d'Ivoire : outils gratuits | DocuGest Ivoire",
+    meta_title: "Digitalisation PME Côte d'Ivoire : outils gratuits | DocuGestIvoire",
     meta_description:
       "Comment les PME ivoiriennes peuvent se digitaliser sans gros budget ? Découvrez les meilleurs outils gratuits pour gérer vos documents, finances et équipes en 2026.",
     excerpt:
@@ -533,7 +533,7 @@ export const BLOG_SEED_ARTICLES: SeedArticle[] = [
 <p>La bonne nouvelle : en 2026, de nombreux outils sont accessibles <strong>gratuitement</strong> sur Internet.</p>
 
 <h2>1. La gestion des documents commerciaux</h2>
-<p><strong>DocuGest Ivoire</strong> est la solution de référence pour les entrepreneurs ivoiriens. Créez gratuitement vos factures, devis, bulletins de paie, contrats et bien plus, directement depuis votre navigateur, sans installation. Vos documents sont conformes aux normes ivoiriennes (FCFA, TVA 18 %, Code du travail).</p>
+<p><strong>DocuGestIvoire</strong> est la solution de référence pour les entrepreneurs ivoiriens. Créez gratuitement vos factures, devis, bulletins de paie, contrats et bien plus, directement depuis votre navigateur, sans installation. Vos documents sont conformes aux normes ivoiriennes (FCFA, TVA 18 %, Code du travail).</p>
 <p><strong>Avantages :</strong> 100 % gratuit, en français, 11 types de documents, génération PDF en 1 clic, données sauvegardées localement.</p>
 
 <h2>2. La communication et la messagerie</h2>
@@ -570,6 +570,6 @@ export const BLOG_SEED_ARTICLES: SeedArticle[] = [
 </ol>
 
 <h2>Conclusion</h2>
-<p>La digitalisation des PME ivoiriennes est en marche. Les outils existent, ils sont souvent gratuits et accessibles depuis un smartphone. Commencez dès aujourd'hui par digitaliser votre gestion documentaire avec <strong>DocuGest Ivoire</strong> — c'est le point de départ idéal pour une transformation progressive et réussie.</p>`,
+<p>La digitalisation des PME ivoiriennes est en marche. Les outils existent, ils sont souvent gratuits et accessibles depuis un smartphone. Commencez dès aujourd'hui par digitaliser votre gestion documentaire avec <strong>DocuGestIvoire</strong> — c'est le point de départ idéal pour une transformation progressive et réussie.</p>`,
   },
 ];

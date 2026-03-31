@@ -4,7 +4,7 @@ import { SITE_NAME } from "@/lib/seo";
 export const metadata: Metadata = {
   title: "Créer un compte gratuit",
   description:
-    "Inscrivez-vous gratuitement sur DocuGest Ivoire : facturation, devis et fiches de paie en PDF pour entrepreneurs en Afrique francophone.",
+    "Inscrivez-vous gratuitement sur DocuGestIvoire : facturation, devis et fiches de paie en PDF pour entrepreneurs en Afrique francophone.",
   alternates: { canonical: "/register" },
   openGraph: {
     title: `Inscription gratuite | ${SITE_NAME}`,

@@ -3,13 +3,14 @@ import Link from "next/link";
 import { runWithDbRetry } from "@/lib/db";
 import * as store from "@/lib/serverStore";
 import type { BlogPost } from "@/lib/serverStore";
+import { BlogAdBanner } from "@/components/promo/BlogAdBanner";
 
 export const metadata: Metadata = {
-  title: "Blog — Conseils Documents & Gestion | DocuGest Ivoire",
+  title: "Blog — Conseils Documents & Gestion | DocuGestIvoire",
   description:
     "Guides pratiques pour entrepreneurs, salariés et demandeurs d'emploi en Côte d'Ivoire. Factures, contrats, CV, bulletins de paie — nos experts vous expliquent tout.",
   openGraph: {
-    title: "Blog DocuGest Ivoire — Conseils Documents & Gestion",
+    title: "Blog DocuGestIvoire — Conseils Documents & Gestion",
     description:
       "Guides pratiques pour entrepreneurs ivoiriens : créer une facture, rédiger un CV, comprendre le contrat de travail…",
   },
@@ -52,7 +53,7 @@ export default async function BlogPage() {
       <header className="border-b border-slate-200/70 bg-white/90 backdrop-blur sticky top-0 z-20">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
           <Link href="/" className="flex items-center gap-2">
-            <img src="/logo-docugest-ivoire.png" alt="DocuGest Ivoire" className="h-8 w-auto" />
+            <img src="/logo-docugest-ivoire.png" alt="DocuGestIvoire" className="h-11 w-auto" />
           </Link>
           <nav className="flex items-center gap-4 text-sm">
             <Link href="/" className="text-slate-600 hover:text-primary transition">Accueil</Link>
@@ -92,8 +93,13 @@ export default async function BlogPage() {
         </div>
       </section>
 
+      {/* Pub top de liste */}
+      <div className="mx-auto max-w-6xl px-4 pt-8 sm:px-6">
+        <BlogAdBanner adSlot="blog-list-top" label="Sponsorisé" minHeight="min-h-[80px]" />
+      </div>
+
       {/* Articles */}
-      <main className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
         {posts.length === 0 ? (
           <div className="py-20 text-center text-slate-500">
             <p className="text-lg font-medium">Aucun article publié pour le moment.</p>
@@ -131,6 +137,9 @@ export default async function BlogPage() {
               </Link>
             )}
 
+            {/* Pub entre article featured et la grille */}
+            <BlogAdBanner adSlot="blog-list-mid" label="Sponsorisé" className="mb-8" minHeight="min-h-[72px]" />
+
             {/* Grid */}
             {posts.length > 1 && (
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -166,13 +175,18 @@ export default async function BlogPage() {
         )}
       </main>
 
+      {/* Pub bas de page liste */}
+      <div className="mx-auto max-w-6xl px-4 pb-10 sm:px-6">
+        <BlogAdBanner adSlot="blog-list-bottom" label="Sponsorisé" minHeight="min-h-[80px]" />
+      </div>
+
       {/* CTA */}
       <section className="border-t border-slate-200/60 bg-gradient-to-br from-primary/5 to-emerald-50/40 py-14">
         <div className="mx-auto max-w-2xl px-4 text-center">
           <h2 className="text-2xl font-bold text-slate-900">Prêt à créer vos documents professionnels ?</h2>
           <p className="mt-3 text-slate-600">Factures, CV, contrats, bulletins de paie — gratuitement, en FCFA, sans inscription.</p>
           <Link href="/dashboard" className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-primary px-6 py-3 font-semibold text-white shadow-md hover:brightness-105 transition">
-            Accéder à DocuGest Ivoire
+            Accéder à DocuGestIvoire
             <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
@@ -181,7 +195,7 @@ export default async function BlogPage() {
       </section>
 
       <footer className="border-t border-slate-200/60 py-6 text-center text-xs text-slate-400">
-        © {new Date().getFullYear()} DocuGest Ivoire — Tous droits réservés ·{" "}
+        © {new Date().getFullYear()} DocuGestIvoire — Tous droits réservés ·{" "}
         <Link href="/" className="hover:text-primary">Retour à l'accueil</Link>
       </footer>
     </div>

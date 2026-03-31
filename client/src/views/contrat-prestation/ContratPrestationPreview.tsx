@@ -224,7 +224,7 @@ export default function ContratPrestationPreview({ data, logoDataUrl, accentColo
       </div>
 
       <div style={{ marginTop: 24, borderTop: "1px solid #e5e7eb", paddingTop: 10, textAlign: "center", fontSize: 9, color: "#9ca3af" }}>
-        Document généré par DocuGest Ivoire — docugest-ivoire.vercel.app
+        Document généré par DocuGestIvoire — docugest-ivoire.vercel.app
       </div>
     </div>
   );

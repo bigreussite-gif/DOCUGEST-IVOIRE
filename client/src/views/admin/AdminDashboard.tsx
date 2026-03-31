@@ -130,7 +130,7 @@ export function AdminDashboard() {
       <section className="rounded-[28px] border border-teal-200/70 bg-gradient-to-br from-[#f4fffd] via-white to-[#eef8f7] p-6 shadow-[0_10px_30px_rgba(15,118,110,0.08)] sm:p-8">
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal-700">Vue investisseur</p>
-          <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">Synthèse exécutive DocuGest</h1>
+          <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">Synthèse exécutive DocuGestIvoire</h1>
           <p className="mt-2 text-sm leading-relaxed text-slate-600 sm:text-base">
             Indicateurs clés pour le board : base utilisateurs, production documentaire, signal monétisation et qualité
             perçue.
