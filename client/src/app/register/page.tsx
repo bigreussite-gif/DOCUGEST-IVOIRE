@@ -12,7 +12,7 @@ import { SorobossFooter } from "@/components/promo/SorobossFooter";
 import { TrustModelBanner } from "@/components/trust/TrustModelBanner";
 import { AdSlotsBootstrap } from "@/components/promo/AdSlotsBootstrap";
 import { FRANCOPHONE_AFRICA_COUNTRIES, findCountryByCode } from "@/lib/francophonePolicy";
-import { useAuthStore, type AuthUser } from "@/store/authStore";
+import { useAuthStore, commitAuthSession, type AuthUser } from "@/store/authStore";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -68,13 +68,13 @@ export default function RegisterPage() {
         return;
       }
 
-      if (typeof window !== "undefined") {
-        localStorage.setItem("docugest_token", data.token);
-        localStorage.setItem("docugest_user_cache", JSON.stringify(data.user ?? {}));
-        if (data.user && typeof data.user === "object" && "id" in data.user) {
-          useAuthStore.setState({ user: data.user, loading: false, error: null });
-        }
+      if (!data.user || typeof data.user !== "object" || !("id" in data.user)) {
+        setError("Réponse serveur invalide (profil manquant). Réessayez.");
+        return;
       }
+
+      commitAuthSession(data.token, data.user);
+      await useAuthStore.getState().loadMe();
 
       router.replace("/dashboard");
     } catch {
@@ -236,14 +236,7 @@ export default function RegisterPage() {
             <Link href="/login" className="font-semibold text-primary underline-offset-4 hover:underline">
               Me connecter
             </Link>
-          </p>
-          <p className="mt-3 text-center">
-            <Link
-              href="/forgot-password"
-              className="inline-flex min-h-[44px] items-center justify-center rounded-2xl border border-primary/25 bg-primary/5 px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/10"
-            >
-              Mot de passe oublié ? — réinitialiser par e-mail
-            </Link>
+            {" "}(mot de passe oublié : depuis l’écran de connexion.)
           </p>
 
           <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3.5 text-center">

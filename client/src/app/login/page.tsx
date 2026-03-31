@@ -8,7 +8,7 @@ import { InlineAdStrip } from "@/components/promo/InlineAdStrip";
 import { SorobossFooter } from "@/components/promo/SorobossFooter";
 import { TrustModelBanner } from "@/components/trust/TrustModelBanner";
 import { AdSlotsBootstrap } from "@/components/promo/AdSlotsBootstrap";
-import { useAuthStore, type AuthUser } from "@/store/authStore";
+import { useAuthStore, commitAuthSession, type AuthUser } from "@/store/authStore";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -43,13 +43,13 @@ export default function LoginPage() {
         return;
       }
 
-      if (typeof window !== "undefined") {
-        localStorage.setItem("docugest_token", data.token);
-        localStorage.setItem("docugest_user_cache", JSON.stringify(data.user ?? {}));
-        if (data.user && typeof data.user === "object" && "id" in data.user) {
-          useAuthStore.setState({ user: data.user, loading: false, error: null });
-        }
+      if (!data.user || typeof data.user !== "object" || !("id" in data.user)) {
+        setError("Réponse serveur invalide (profil manquant). Réessayez.");
+        return;
       }
+
+      commitAuthSession(data.token, data.user);
+      await useAuthStore.getState().loadMe();
 
       router.replace("/dashboard");
     } catch {

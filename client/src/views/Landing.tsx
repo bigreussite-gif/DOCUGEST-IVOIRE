@@ -107,12 +107,6 @@ export default function Landing() {
             <Link to="/register">
               <Button variant="primary">Créer mon compte — gratuit</Button>
             </Link>
-            <Link
-              to="/forgot-password"
-              className="w-full text-center text-xs font-semibold text-primary underline-offset-4 hover:underline min-[420px]:w-auto"
-            >
-              Mot de passe oublié ?
-            </Link>
           </div>
         </header>
 

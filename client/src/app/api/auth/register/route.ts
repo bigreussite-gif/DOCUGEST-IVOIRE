@@ -50,6 +50,8 @@ async function registerWithDb(parsed: ParsedBody): Promise<NextResponse> {
   const placeholderPhone = buildPlaceholderPhone(cleanEmail);
   const cleanWhatsapp = typeof whatsapp === "string" && whatsapp.trim() ? whatsapp.trim() : null;
   const cleanCountry = typeof country === "string" && country.trim() ? country.trim() : null;
+  /** Même numéro pour connexion par téléphone et affichage profil (évite un « faux » +225 dérivé de l’email). */
+  const phoneForDb = cleanWhatsapp ?? placeholderPhone;
 
   return runWithDbRetry(async () => {
     const pool = getPool();
@@ -67,7 +69,7 @@ async function registerWithDb(parsed: ParsedBody): Promise<NextResponse> {
           full_name, phone, whatsapp, email, password_hash, user_typology
         ) VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING *`,
-        [full_name, placeholderPhone, cleanWhatsapp, cleanEmail, password_hash, cleanCountry]
+        [full_name, phoneForDb, cleanWhatsapp, cleanEmail, password_hash, cleanCountry]
       );
       row = ins.rows[0] as UserRow;
     } catch (e: unknown) {

@@ -157,14 +157,8 @@ export async function ensureBootstrapAdmin(userId: string): Promise<void> {
       return;
     }
 
-    // Mode sécurité terrain: si aucun super_admin n'existe, on élève
-    // le premier utilisateur connecté pour débloquer l'accès admin.
-    const { rows } = await pool.query(`SELECT COUNT(*)::int AS c FROM public.users WHERE role = 'super_admin'`);
-    const count = Number(rows[0]?.c ?? 0);
-    if (count === 0) {
-      await pool.query(`UPDATE public.users SET role = 'super_admin' WHERE id = $1`, [userId]);
-      console.log("[serverStore] ensureBootstrapAdmin: premier super_admin auto-promu", userId);
-    }
+    // Ne plus promouvoir automatiquement le « premier compte » : évite qu’un utilisateur lambda
+    // obtienne le back-office. Utiliser ADMIN_BOOTSTRAP_EMAIL ou la page /setup-super-admin.
   } catch {
     /* colonne role non migrée ou connexion DB — ignoré */
   }

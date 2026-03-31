@@ -6,6 +6,25 @@ import { AD_SLOTS_LS_KEY } from "./adSlotsStore";
 
 const USER_CACHE_KEY = "docugest_user_cache";
 
+/**
+ * Remplace entièrement la session locale (évite de mélanger deux comptes : cache / store / jeton).
+ * À utiliser après login ou inscription réussis.
+ */
+export function commitAuthSession(token: string, user: AuthUser): void {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem("docugest_token");
+  localStorage.removeItem(USER_CACHE_KEY);
+  localStorage.removeItem("docugest_ad_session_id");
+  try {
+    localStorage.removeItem(AD_SLOTS_LS_KEY);
+  } catch {
+    /* ignore */
+  }
+  localStorage.setItem("docugest_token", token);
+  localStorage.setItem(USER_CACHE_KEY, JSON.stringify(user));
+  useAuthStore.setState({ user, loading: false, error: null });
+}
+
 function readUserCache(): AuthUser | null {
   try {
     const raw = localStorage.getItem(USER_CACHE_KEY);
@@ -148,9 +167,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         method: "POST",
         json: { email, password, rememberMe }
       });
-      localStorage.setItem("docugest_token", res.token);
-      localStorage.setItem(USER_CACHE_KEY, JSON.stringify(res.user));
-      set({ user: res.user, loading: false });
+      commitAuthSession(res.token, res.user);
       void flushSyncQueue();
       return true;
     } catch (e) {

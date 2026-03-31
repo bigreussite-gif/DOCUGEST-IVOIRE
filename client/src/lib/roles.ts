@@ -1,6 +1,9 @@
-/** Rôles autorisés à accéder au back-office DocuGestIvoire */
+/**
+ * Lien « Back-office » dans l’app utilisateur : réservé aux administrateurs de la plateforme.
+ * (Les rôles manager/operator restent gérables côté API si besoin, mais ne voient pas l’entrée admin.)
+ */
 export function isBackofficeRole(role?: string | null): boolean {
-  return ["super_admin", "admin", "manager", "operator"].includes(role ?? "user");
+  return role === "super_admin" || role === "admin";
 }
 
 export function roleLabelFr(role?: string | null): string {

@@ -14,7 +14,9 @@ const patchSchema = z.object({
   email: z.string().trim().email(),
   whatsapp: z.string().trim().max(32).nullable().optional(),
   country: z.string().trim().max(80).nullable().optional(),
-  photo_url: z.string().trim().url().max(500).nullable().optional()
+  photo_url: z
+    .union([z.string().trim().url().max(500), z.literal(""), z.null()])
+    .optional()
 });
 
 export async function GET(req: Request) {
@@ -43,12 +45,13 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ message: "Champs invalides", details: parsed.error.flatten() }, { status: 400 });
   }
 
+  const rawPhoto = parsed.data.photo_url;
   const clean = {
     full_name: parsed.data.full_name.trim(),
     email: parsed.data.email.trim().toLowerCase(),
     whatsapp: parsed.data.whatsapp?.trim() || null,
     country: parsed.data.country?.trim() || null,
-    photo_url: parsed.data.photo_url?.trim() || null
+    photo_url: rawPhoto === "" || rawPhoto === null || rawPhoto === undefined ? null : String(rawPhoto).trim()
   };
 
   const pool = getPool();
@@ -58,6 +61,10 @@ export async function PATCH(req: Request) {
         full_name = $2,
         email = $3,
         whatsapp = $4,
+        phone = CASE
+          WHEN $4::text IS NOT NULL AND length(trim($4::text)) > 0 THEN trim($4::text)
+          ELSE phone
+        END,
         user_typology = $5,
         company_logo_url = $6
       WHERE id = $1`,

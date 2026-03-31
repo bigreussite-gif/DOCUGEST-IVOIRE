@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuthStore } from "../store/authStore";
 import { apiFetch } from "../lib/api";
 import { roleLabelFr } from "../lib/roles";
@@ -24,6 +24,23 @@ export default function Profile() {
   const [whatsapp, setWhatsapp] = useState(u?.whatsapp ?? "");
   const [country, setCountry] = useState(u?.user_typology ?? "Cote d'Ivoire");
   const [photoUrl, setPhotoUrl] = useState(u?.company_logo_url ?? "");
+
+  useEffect(() => {
+    if (!u || editOpen) return;
+    setFullName(u.full_name ?? "");
+    setEmail(u.email ?? "");
+    setWhatsapp(u.whatsapp ?? "");
+    setCountry(u.user_typology ?? "Cote d'Ivoire");
+    setPhotoUrl(u.company_logo_url ?? "");
+  }, [
+    editOpen,
+    u?.id,
+    u?.full_name,
+    u?.email,
+    u?.whatsapp,
+    u?.user_typology,
+    u?.company_logo_url
+  ]);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -61,7 +78,7 @@ export default function Profile() {
         }
       });
       await auth.loadMe();
-      setSaveOk("Profil mis a jour.");
+      setSaveOk("Profil mis à jour.");
       setEditOpen(false);
     } catch (e) {
       const message =
@@ -85,7 +102,7 @@ export default function Profile() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-      setPwdOk("Mot de passe modifie avec succes.");
+      setPwdOk("Mot de passe modifié avec succès.");
     } catch (e) {
       const message =
         e && typeof e === "object" && "message" in e ? String((e as { message?: string }).message) : "Echec du changement de mot de passe.";
@@ -106,7 +123,7 @@ export default function Profile() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-xl font-bold text-text">Profil</h1>
           <Button variant="primary" className="h-10" onClick={openEdit}>
-            Modifier mes donnees
+            Modifier mes données
           </Button>
         </div>
         <p className="mt-2 text-base leading-relaxed text-slate-600">
@@ -130,8 +147,8 @@ export default function Profile() {
             <dd className="mt-2 text-lg font-medium text-text break-all">{u?.email ?? "—"}</dd>
           </div>
           <div className="rounded-xl bg-surface p-5 ring-1 ring-border/60">
-            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Téléphone</dt>
-            <dd className="mt-2 text-lg font-medium text-text">{u?.phone ?? "—"}</dd>
+            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">WhatsApp / téléphone</dt>
+            <dd className="mt-2 text-lg font-medium text-text">{u?.whatsapp?.trim() || u?.phone || "—"}</dd>
           </div>
           <div className="rounded-xl bg-surface p-5 ring-1 ring-border/60">
             <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Entreprise</dt>
