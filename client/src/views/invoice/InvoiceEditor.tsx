@@ -22,8 +22,9 @@ import {
   ciVatRegimeToFiscalRegime,
   fiscalRegimeToCiVat
 } from "../../constants/ciVatRegimes";
-import { captureElementToPdfFile } from "../../lib/html2canvasPdf";
+import { captureElementToPdfFile, PDF_OFFSCREEN_CAPTURE_STYLE } from "../../lib/html2canvasPdf";
 import { useAutoSave, readDraft } from "../../hooks/useAutoSave";
+import { DocumentEditorActionButtons } from "../../components/document/DocumentEditorActionButtons";
 
 type DocType = "invoice" | "proforma" | "devis";
 
@@ -914,33 +915,20 @@ export default function InvoiceEditor() {
               <div className="rounded-xl border-2 border-primary/25 bg-gradient-to-br from-primary/[0.06] to-white p-5 ring-1 ring-primary/15">
                 <p className="text-xs font-semibold uppercase tracking-wide text-primary">Étape 2 — Export</p>
                 <p className="mt-1 text-sm text-slate-700">
-                  Lorsque le formulaire est à jour, téléchargez le PDF ou imprimez. Vous pouvez aussi réinitialiser le brouillon.
+                  Sauvegarde serveur ou locale (brouillon), export PDF, impression ou réinitialisation du formulaire.
                 </p>
                 {!isPersistedDocumentId(params.id) ? (
                   <p className="mt-2 text-xs text-slate-500">Sauvegarde locale automatique dans ce navigateur (brouillon).</p>
                 ) : null}
-                <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                  <Button
-                    variant="secondary"
-                    className="min-h-11 w-full sm:w-auto"
-                    type="button"
-                    onClick={() => printPreview()}
-                    disabled={pdfDownloading || saving}
-                  >
-                    Imprimer
-                  </Button>
-                  <Button
-                    variant="primary"
-                    className="min-h-11 w-full sm:w-auto"
-                    type="button"
-                    onClick={() => void downloadPdf()}
-                    disabled={pdfDownloading || saving}
-                  >
-                    {pdfDownloading ? "Téléchargement…" : "Télécharger PDF"}
-                  </Button>
-                  <Button variant="ghost" className="min-h-11 w-full sm:w-auto" type="button" onClick={onReset} disabled={saving}>
-                    Réinitialiser
-                  </Button>
+                <div className="mt-4">
+                  <DocumentEditorActionButtons
+                    onSave={() => void form.handleSubmit(onSave)()}
+                    onDownload={() => void downloadPdf()}
+                    onPrint={printPreview}
+                    onReset={onReset}
+                    saving={saving}
+                    downloading={pdfDownloading}
+                  />
                 </div>
               </div>
             </div>
@@ -1020,17 +1008,7 @@ export default function InvoiceEditor() {
                 }}
               />
             </div>
-            <div
-              ref={pdfCaptureRef}
-              style={{
-                position: "fixed",
-                left: "-9999px",
-                top: 0,
-                width: 794,
-                pointerEvents: "none",
-                visibility: "hidden"
-              }}
-            >
+            <div ref={pdfCaptureRef} className="print:hidden" style={PDF_OFFSCREEN_CAPTURE_STYLE} aria-hidden>
                 <InvoicePreview
                   themeColor={themeColor}
                   customAccentHex={accentForPreview}

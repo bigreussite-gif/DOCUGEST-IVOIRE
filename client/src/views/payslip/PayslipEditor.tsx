@@ -14,8 +14,9 @@ import { InlineAdStrip } from "../../components/promo/InlineAdStrip";
 import { TrustModelBanner } from "../../components/trust/TrustModelBanner";
 import { extractBrandColorsFromFile, fileToDataUrl, readableOnWhite } from "../../lib/brandColors";
 import { inferCountryPolicy, buildAdministrativeClause } from "../../lib/francophonePolicy";
-import { captureElementToPdfFile } from "../../lib/html2canvasPdf";
-import { useAutoSave, readDraft } from "../../hooks/useAutoSave";
+import { captureElementToPdfFile, PDF_OFFSCREEN_CAPTURE_STYLE } from "../../lib/html2canvasPdf";
+import { useAutoSave, readDraft, writeDraftNow, clearDraft } from "../../hooks/useAutoSave";
+import { DocumentEditorActionButtons } from "../../components/document/DocumentEditorActionButtons";
 
 const schema = z.object({
   employerEmail: z.string().default(""),
@@ -310,6 +311,30 @@ export default function PayslipEditor() {
     }
   }
 
+  function printPreview() {
+    window.print();
+  }
+
+  function handleToolbarSave() {
+    if (params.id) {
+      void form.handleSubmit(onSave)();
+    } else {
+      writeDraftNow(PAYSLIP_DRAFT_KEY, { values: watched, logoDataUrl, brandPrimaryHex });
+    }
+  }
+
+  function handleReset() {
+    if (!confirm("Réinitialiser le formulaire ? Les modifications non sauvegardées sur le serveur seront perdues.")) return;
+    if (params.id) {
+      window.location.reload();
+      return;
+    }
+    clearDraft(PAYSLIP_DRAFT_KEY);
+    setLogoDataUrl(null);
+    setBrandPrimaryHex(null);
+    form.reset(defaultValues);
+  }
+
   useEffect(() => {
     if (autoPrintDoneRef.current) return;
     if (searchParams.get("action") !== "print") return;
@@ -376,21 +401,20 @@ export default function PayslipEditor() {
     <div className="min-w-0 px-3 py-4 sm:p-6">
       <div className="mb-4 space-y-3">
         <TrustModelBanner variant="compact" />
-        <InlineAdStrip variant="compact" />
+        <InlineAdStrip variant="compact" adSlot="payslip-editor-inline" />
       </div>
 
       <div className="rounded-2xl bg-bg p-4 shadow-soft ring-1 ring-border/70">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex flex-col gap-3">
           <div>
             <div className="text-lg font-bold text-text">Bulletin de salaire</div>
             <div className="text-sm text-slate-600">
               Remplissez le formulaire — le net se met à jour automatiquement selon vos retenues.
             </div>
-            <p className="mt-2 text-xs text-slate-500">PDF disponible en bas après vérification des montants.</p>
+            <p className="mt-2 text-xs text-slate-500">
+              Utilisez les actions ci-dessous : sauvegarde {params.id ? "serveur" : "locale (brouillon)"}, PDF, impression ou réinitialisation.
+            </p>
           </div>
-          <Button type="button" className="min-h-11 w-full shrink-0 sm:w-auto" onClick={form.handleSubmit(onSave)} disabled={saving}>
-            {saving ? "Sauvegarde…" : "Sauvegarder"}
-          </Button>
         </div>
       </div>
 
@@ -562,15 +586,23 @@ export default function PayslipEditor() {
           </div>
 
           <div className="rounded-xl border-2 border-primary/25 bg-gradient-to-br from-primary/[0.06] to-white p-5 ring-1 ring-primary/15">
-            <p className="text-xs font-semibold uppercase tracking-wide text-primary">Étape 2 — Export PDF</p>
-            <p className="mt-1 text-sm text-slate-700">Après vérification des montants, générez le fichier PDF.</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-primary">Étape 2 — Sauvegarde & export</p>
+            <p className="mt-1 text-sm text-slate-700">
+              Sauvegarde, téléchargement PDF, impression ou réinitialisation du formulaire.
+            </p>
             {!params.id ? (
               <p className="mt-2 text-xs text-slate-500">Sauvegarde locale automatique dans ce navigateur (brouillon).</p>
             ) : null}
             <div className="mt-4">
-              <Button variant="primary" type="button" onClick={() => void downloadPdf()} disabled={pdfDownloading || saving}>
-                {pdfDownloading ? "PDF…" : "Télécharger PDF"}
-              </Button>
+              <DocumentEditorActionButtons
+                onSave={handleToolbarSave}
+                onDownload={() => void downloadPdf()}
+                onPrint={printPreview}
+                onReset={handleReset}
+                saving={saving}
+                downloading={pdfDownloading}
+                saveLabel={params.id ? "Sauvegarder" : "Enregistrer le brouillon"}
+              />
             </div>
           </div>
         </form>
@@ -584,17 +616,7 @@ export default function PayslipEditor() {
             >
               <PayslipPreview data={previewPayload} />
             </div>
-            <div
-              ref={pdfRef}
-              style={{
-                position: "fixed",
-                left: "-9999px",
-                top: 0,
-                width: 794,
-                pointerEvents: "none",
-                visibility: "hidden"
-              }}
-            >
+            <div ref={pdfRef} className="print:hidden" style={PDF_OFFSCREEN_CAPTURE_STYLE} aria-hidden>
               <PayslipPreview data={previewPayload} />
             </div>
           </div>

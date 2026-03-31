@@ -4,6 +4,7 @@ import { notifyAdSlotsUpdated } from "../../store/adSlotsStore";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { compressImageToWebP } from "../../lib/imageCompress";
+import { AD_FRAME_OPTIONS, frameBoxClass, normalizeAdFrame } from "../../lib/adFrames";
 
 type AdCfg = {
   slot: string;
@@ -16,7 +17,7 @@ type AdCfg = {
   imageUrl: string;
   imageDataUrl: string;
   imageFit: "cover" | "contain";
-  imageFrame: "banner" | "photo" | "square";
+  imageFrame: string;
   htmlEmbed: string;
   active: boolean;
   updated_at: string | null;
@@ -40,11 +41,23 @@ const PRESET_SLOTS_BY_GROUP: Record<string, string[]> = {
     "register-inline",
   ],
   "📊 Application": [
+    "dashboard-home-top",
+    "dashboard-home-mid",
+    "dashboard-home-bottom",
     "dashboard-inline",
+    "profile-inline",
     "invoice-editor-top",
     "invoice-editor-before-preview",
     "payslip-editor-inline",
+    "cv-editor-inline",
+    "contrat-travail-editor-inline",
+    "lettre-motivation-editor-inline",
+    "contrat-prestation-editor-inline",
+    "recu-paiement-editor-inline",
+    "bon-commande-editor-inline",
+    "bon-livraison-editor-inline",
   ],
+  "🔑 Mot de passe": ["forgot-password-inline", "reset-password-inline"],
   "📝 Blog": [
     "blog-list-top",
     "blog-list-mid",
@@ -56,6 +69,40 @@ const PRESET_SLOTS_BY_GROUP: Record<string, string[]> = {
 };
 
 const PRESET_SLOTS = Object.values(PRESET_SLOTS_BY_GROUP).flat();
+
+/** Page cible (filtrage / suivi côté admin) */
+const PAGE_OPTIONS: { value: string; label: string }[] = [
+  { value: "global", label: "Global — tout le site" },
+  { value: "landing", label: "Landing (accueil public)" },
+  { value: "dashboard", label: "Espace connecté / Dashboard" },
+  { value: "blog", label: "Blog" },
+  { value: "auth", label: "Connexion & inscription" },
+  { value: "password", label: "Mot de passe oublié / réinitialisation" },
+  { value: "documents", label: "Éditeurs de documents" },
+  { value: "monetization", label: "Barres monétisation (haut / bas)" }
+];
+
+/** Catégorie commerciale */
+const CATEGORY_OPTIONS: { value: string; label: string }[] = [
+  { value: "general", label: "Général" },
+  { value: "partner", label: "Partenaire / sponsor" },
+  { value: "promo", label: "Promotion / offre" },
+  { value: "adsense", label: "Régies / AdSense / programmatic" },
+  { value: "internal", label: "Communication interne DocuGest" },
+  { value: "ngo", label: "Association / ONG" },
+  { value: "commerce", label: "Commerce / e-commerce" }
+];
+
+function slotHasVisualContent(c: AdCfg | undefined): boolean {
+  if (!c) return false;
+  return Boolean(
+    c.imageUrl?.trim() ||
+      c.imageDataUrl?.trim() ||
+      c.htmlEmbed?.trim() ||
+      c.title?.trim() ||
+      c.body?.trim()
+  );
+}
 
 const SLOT_LABELS: Record<string, string> = {
   "top-bar-partners": "Barre haut — partenaires",
@@ -78,6 +125,19 @@ const SLOT_LABELS: Record<string, string> = {
   "blog-sidebar": "Blog article — sidebar haut",
   "blog-sidebar-bottom": "Blog article — sidebar bas",
   "blog-article-mid": "Blog article — milieu du contenu",
+  "dashboard-home-top": "Dashboard accueil — sous bannière confiance",
+  "dashboard-home-mid": "Dashboard accueil — entre blocs",
+  "dashboard-home-bottom": "Dashboard accueil — avant pied de page",
+  "profile-inline": "Page profil — bandeau",
+  "cv-editor-inline": "Éditeur CV — bandeau",
+  "contrat-travail-editor-inline": "Éditeur contrat travail — bandeau",
+  "lettre-motivation-editor-inline": "Éditeur lettre motivation — bandeau",
+  "contrat-prestation-editor-inline": "Éditeur contrat prestation — bandeau",
+  "recu-paiement-editor-inline": "Éditeur reçu paiement — bandeau",
+  "bon-commande-editor-inline": "Éditeur bon de commande — bandeau",
+  "bon-livraison-editor-inline": "Éditeur bon de livraison — bandeau",
+  "forgot-password-inline": "Mot de passe oublié — bandeau",
+  "reset-password-inline": "Réinitialisation MDP — bandeau",
 };
 
 export function AdminAds() {
@@ -92,7 +152,7 @@ export function AdminAds() {
   const [imageUrl, setImageUrl] = useState("");
   const [imageDataUrl, setImageDataUrl] = useState("");
   const [imageFit, setImageFit] = useState<"cover" | "contain">("cover");
-  const [imageFrame, setImageFrame] = useState<"banner" | "photo" | "square">("photo");
+  const [imageFrame, setImageFrame] = useState<string>("photo");
   const [htmlEmbed, setHtmlEmbed] = useState("");
   const [adMode, setAdMode] = useState<"image" | "html">("image");
   const [active, setActive] = useState(true);
@@ -108,8 +168,6 @@ export function AdminAds() {
   useEffect(() => {
     void load();
   }, []);
-
-  const occupiedSlots = useMemo(() => new Set(items.filter((i) => i.active).map((i) => i.slot)), [items]);
 
   const currentSlotConfig = useMemo(() => items.find((i) => i.slot === slot), [items, slot]);
 
@@ -138,16 +196,23 @@ export function AdminAds() {
     setImageUrl(c.imageUrl ?? "");
     setImageDataUrl(c.imageDataUrl ?? "");
     setImageFit(c.imageFit === "contain" ? "contain" : "cover");
-    setImageFrame(c.imageFrame === "banner" || c.imageFrame === "square" ? c.imageFrame : "photo");
+    setImageFrame(normalizeAdFrame(c.imageFrame));
     setHtmlEmbed(c.htmlEmbed ?? "");
     setAdMode(c.htmlEmbed?.trim() ? "html" : "image");
-    setPage(c.page);
-    setCategory(c.category);
+    setPage(PAGE_OPTIONS.some((o) => o.value === c.page) ? c.page : "global");
+    setCategory(CATEGORY_OPTIONS.some((o) => o.value === c.category) ? c.category : "general");
     setActive(c.active);
   }, [currentSlotConfig, slot]);
 
   async function onPickImage(file: File | null) {
-    if (!file || !file.type.startsWith("image/")) return;
+    if (!file) return;
+    const allowed =
+      /^(image\/(jpeg|png|gif|webp))$/i.test(file.type) ||
+      /\.(jpe?g|png|gif|webp)$/i.test(file.name);
+    if (!allowed) {
+      setMsg("Formats acceptés : JPEG, JPG, PNG, GIF, WebP.");
+      return;
+    }
     setCompressing(true);
     setMsg(null);
     try {
@@ -166,13 +231,14 @@ export function AdminAds() {
     }
   }
 
-  async function save() {
+  async function save(opts?: { forcePublish?: boolean }) {
     const hasVisual =
       Boolean(imageUrl.trim()) || Boolean(imageDataUrl.trim()) || Boolean(title.trim()) || Boolean(body.trim());
     if (!hasVisual && !(adMode === "html" && htmlEmbed.trim())) {
       setMsg("Ajoutez une image (fichier ou URL), un code HTML ou un titre / texte.");
       return;
     }
+    const effectiveActive = opts?.forcePublish === true ? true : active;
     setBusy(true);
     setMsg(null);
     try {
@@ -189,12 +255,17 @@ export function AdminAds() {
           imageUrl: imageUrl.trim(),
           imageDataUrl,
           imageFit,
-          imageFrame,
+          imageFrame: normalizeAdFrame(imageFrame),
           htmlEmbed: adMode === "html" ? htmlEmbed : "",
-          active
+          active: effectiveActive
         }
       });
-      setMsg("Publicité enregistrée.");
+      if (opts?.forcePublish) setActive(true);
+      setMsg(
+        effectiveActive
+          ? "Publicité enregistrée et publiée — visible sur le site sous ~1 min (cache)."
+          : "Configuration enregistrée (masquée sur le site)."
+      );
       await load();
       notifyAdSlotsUpdated();
     } catch (e) {
@@ -217,14 +288,18 @@ export function AdminAds() {
 
       <section className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm ring-1 ring-slate-100">
         <h2 className="text-sm font-semibold text-slate-800">Emplacements publicitaires</h2>
-        <p className="mt-1 text-xs text-slate-500">Sélectionnez un emplacement pour le configurer. Les emplacements verts sont actifs.</p>
+        <p className="mt-1 text-xs text-slate-500">
+          <strong>Libre</strong> = aucun contenu enregistré · <strong>Occupé</strong> = visuel ou texte · <strong>En ligne</strong> = visible sur le site.
+        </p>
         <div className="mt-4 space-y-4">
           {Object.entries(PRESET_SLOTS_BY_GROUP).map(([groupLabel, slots]) => (
             <div key={groupLabel}>
               <p className="mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">{groupLabel}</p>
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                 {slots.map((s) => {
-                  const occ = occupiedSlots.has(s);
+                  const cfg = items.find((i) => i.slot === s);
+                  const filled = slotHasVisualContent(cfg);
+                  const online = filled && cfg?.active;
                   return (
                     <button
                       key={s}
@@ -234,19 +309,33 @@ export function AdminAds() {
                         "flex flex-col rounded-xl border px-3 py-3 text-left text-sm transition",
                         slot === s
                           ? "border-primary bg-primary/5 ring-1 ring-primary/25"
-                          : "border-slate-200 bg-slate-50/80 hover:border-slate-300"
+                          : online
+                            ? "border-emerald-200 bg-emerald-50/40 hover:border-emerald-300"
+                            : "border-slate-200 bg-slate-50/80 hover:border-slate-300"
                       ].join(" ")}
                     >
                       <span className="font-medium text-slate-800 text-xs leading-tight">{SLOT_LABELS[s] ?? s}</span>
                       <span className="mt-1 font-mono text-[10px] text-slate-400">{s}</span>
-                      <span
-                        className={[
-                          "mt-2 inline-flex w-fit rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase",
-                          occ ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-600"
-                        ].join(" ")}
-                      >
-                        {occ ? "Actif" : "Libre"}
-                      </span>
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        <span
+                          className={[
+                            "inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase",
+                            filled ? "bg-amber-100 text-amber-900" : "bg-slate-200 text-slate-600"
+                          ].join(" ")}
+                        >
+                          {filled ? "Occupé" : "Libre"}
+                        </span>
+                        {filled ? (
+                          <span
+                            className={[
+                              "inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase",
+                              online ? "bg-emerald-100 text-emerald-800" : "bg-slate-300 text-slate-700"
+                            ].join(" ")}
+                          >
+                            {online ? "En ligne" : "Masqué"}
+                          </span>
+                        ) : null}
+                      </div>
                     </button>
                   );
                 })}
@@ -298,17 +387,6 @@ export function AdminAds() {
                   placeholder="<ins class=&quot;adsbygoogle&quot; ...></ins>"
                 />
               </label>
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-text">Visibilité</span>
-                <select
-                  value={active ? "1" : "0"}
-                  onChange={(e) => setActive(e.target.value === "1")}
-                  className="min-h-[48px] w-full rounded-xl border border-border bg-white px-4 py-3 text-sm"
-                >
-                  <option value="1">Active</option>
-                  <option value="0">Masquée</option>
-                </select>
-              </label>
             </div>
           ) : (
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -316,14 +394,15 @@ export function AdminAds() {
                 <span className="mb-1 block text-sm font-medium text-text">Visuel</span>
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,.jpg,.jpeg,.png,.gif,.webp"
                   className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white"
                   onChange={(e) => void onPickImage(e.target.files?.[0] ?? null)}
                 />
               </label>
               {compressing ? <p className="text-sm text-slate-500 sm:col-span-2">Traitement image…</p> : null}
               <p className="text-[11px] text-slate-400 sm:col-span-2">
-                PNG, JPG, WebP, SVG → WebP optimisé · GIF → conservé (animation préservée). GIF lourd : utilisez plutôt l’URL ci‑dessous.
+                Formats acceptés : <strong>JPEG, JPG, PNG, GIF, WebP</strong>. PNG/JPG/WebP → optimisés en WebP · GIF → conservé
+                (animation). GIF lourd : préférez l’URL ci‑dessous.
               </p>
 
               <div className="sm:col-span-2">
@@ -352,12 +431,14 @@ export function AdminAds() {
                 <span className="mb-1 block text-sm font-medium text-text">Forme du cadre sur le site</span>
                 <select
                   value={imageFrame}
-                  onChange={(e) => setImageFrame(e.target.value as "banner" | "photo" | "square")}
+                  onChange={(e) => setImageFrame(e.target.value)}
                   className="min-h-[48px] w-full rounded-xl border border-border bg-white px-4 py-3 text-sm"
                 >
-                  <option value="banner">Bandeau large (21:9)</option>
-                  <option value="photo">Photo / carte (4:3)</option>
-                  <option value="square">Carré (1:1)</option>
+                  {AD_FRAME_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
                 </select>
               </label>
               <label className="block sm:col-span-2">
@@ -371,25 +452,66 @@ export function AdminAds() {
                   <option value="contain">Voir toute l'image (bandes possibles)</option>
                 </select>
               </label>
-              <Input label="Page cible" value={page} onChange={(e) => setPage(e.target.value)} />
-              <Input label="Catégorie" value={category} onChange={(e) => setCategory(e.target.value)} />
-              <label className="block sm:col-span-2">
-                <span className="mb-1 block text-sm font-medium text-text">Visibilité</span>
-                <select
-                  value={active ? "1" : "0"}
-                  onChange={(e) => setActive(e.target.value === "1")}
-                  className="min-h-[48px] w-full rounded-xl border border-border bg-white px-4 py-3 text-sm"
-                >
-                  <option value="1">Active</option>
-                  <option value="0">Masquée</option>
-                </select>
-              </label>
             </div>
           )}
 
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 rounded-xl border border-slate-200/80 bg-slate-50/80 p-4">
+            <p className="sm:col-span-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Ciblage & visibilité</p>
+            <label className="block sm:col-span-1">
+              <span className="mb-1 block text-sm font-medium text-text">Page cible</span>
+              <select
+                value={PAGE_OPTIONS.some((o) => o.value === page) ? page : "global"}
+                onChange={(e) => setPage(e.target.value)}
+                className="min-h-[48px] w-full rounded-xl border border-border bg-white px-4 py-3 text-sm"
+              >
+                {PAGE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block sm:col-span-1">
+              <span className="mb-1 block text-sm font-medium text-text">Catégorie</span>
+              <select
+                value={CATEGORY_OPTIONS.some((o) => o.value === category) ? category : "general"}
+                onChange={(e) => setCategory(e.target.value)}
+                className="min-h-[48px] w-full rounded-xl border border-border bg-white px-4 py-3 text-sm"
+              >
+                {CATEGORY_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block sm:col-span-2">
+              <span className="mb-1 block text-sm font-medium text-text">Visibilité sur le site</span>
+              <select
+                value={active ? "1" : "0"}
+                onChange={(e) => setActive(e.target.value === "1")}
+                className="min-h-[48px] w-full rounded-xl border border-border bg-white px-4 py-3 text-sm"
+              >
+                <option value="1">Publiée — visible pour les visiteurs (après enregistrement)</option>
+                <option value="0">Masquée — brouillon (non affichée)</option>
+              </select>
+              <p className="mt-1 text-[11px] text-slate-500">
+                Les encarts actifs sont diffusés via l’API publique (cache ~1 min). Utilisez « Valider et publier » pour forcer la publication.
+              </p>
+            </label>
+          </div>
+
           <div className="mt-5 flex flex-wrap items-center gap-3">
-            <Button type="button" onClick={() => void save()} disabled={busy || compressing}>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={() => void save({ forcePublish: true })}
+              disabled={busy || compressing}
+            >
               {busy ? "Enregistrement…" : "Valider et publier"}
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => void save()} disabled={busy || compressing}>
+              Enregistrer (visibilité ci-dessus)
             </Button>
             {msg ? <span className="text-sm text-slate-600">{msg}</span> : null}
           </div>
@@ -399,15 +521,19 @@ export function AdminAds() {
           <h2 className="text-sm font-semibold text-slate-800">Prévisualisation</h2>
           <p className="mt-1 text-xs text-slate-500">Rendu approximatif sur le site (emplacement {slot}).</p>
           <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-            {imageUrl.trim() || imageDataUrl ? (
+            {adMode === "html" && htmlEmbed.trim() ? (
+              <div className="min-h-[120px] rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3 text-[11px] text-slate-600">
+                <p className="mb-2 font-semibold text-slate-700">Aperçu code HTML (extrait)</p>
+                <pre className="max-h-40 overflow-auto whitespace-pre-wrap font-mono text-[10px] text-slate-500">
+                  {htmlEmbed.trim().slice(0, 800)}
+                  {htmlEmbed.trim().length > 800 ? "…" : ""}
+                </pre>
+              </div>
+            ) : imageUrl.trim() || imageDataUrl ? (
               <div
                 className={[
                   "relative w-full overflow-hidden rounded-lg bg-slate-100 ring-1 ring-slate-200/80",
-                  imageFrame === "banner"
-                    ? "aspect-[21/9] min-h-[52px]"
-                    : imageFrame === "square"
-                      ? "aspect-square max-h-56"
-                      : "aspect-[4/3] max-h-56"
+                  frameBoxClass(imageFrame)
                 ].join(" ")}
               >
                 <img
@@ -417,7 +543,9 @@ export function AdminAds() {
                 />
               </div>
             ) : (
-              <div className="flex min-h-[120px] items-center justify-center text-sm text-slate-400">Aucune image</div>
+              <div className="flex min-h-[120px] items-center justify-center text-sm text-slate-400">
+                {adMode === "html" ? "Collez du code HTML à gauche" : "Aucune image"}
+              </div>
             )}
             {title ? <p className="mt-3 text-center text-sm font-semibold text-slate-800">{title}</p> : null}
             {body ? <p className="mt-1 text-center text-xs text-slate-600">{body}</p> : null}
@@ -436,37 +564,46 @@ export function AdminAds() {
       </div>
 
       <section className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <table className="w-full min-w-[720px] text-left text-sm">
+        <table className="w-full min-w-[880px] text-left text-sm">
           <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
             <tr>
               <th className="px-4 py-3">Slot</th>
               <th className="px-4 py-3">Page</th>
+              <th className="px-4 py-3">Statut</th>
               <th className="px-4 py-3">Aperçu</th>
-              <th className="px-4 py-3">Actif</th>
+              <th className="px-4 py-3">En ligne</th>
               <th className="px-4 py-3">Mis à jour</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {items.map((i) => (
-              <tr key={i.slot} className="hover:bg-slate-50/80">
-                <td className="px-4 py-2 font-medium">{i.slot}</td>
-                <td className="px-4 py-2">{i.page}</td>
-                <td className="px-4 py-2">
-                  {i.imageUrl?.trim() || i.imageDataUrl ? (
-                    <img src={i.imageUrl?.trim() || i.imageDataUrl} alt="" className="h-10 w-24 rounded object-cover" />
-                  ) : (
-                    <span className="text-slate-400">—</span>
-                  )}
-                </td>
-                <td className="px-4 py-2">{i.active ? "Oui" : "Non"}</td>
-                <td className="px-4 py-2 text-slate-600">
-                  {i.updated_at ? new Date(i.updated_at).toLocaleString("fr-FR") : "—"}
-                </td>
-              </tr>
-            ))}
+            {items.map((i) => {
+              const filled = slotHasVisualContent(i);
+              return (
+                <tr key={i.slot} className="hover:bg-slate-50/80">
+                  <td className="px-4 py-2 font-medium">{i.slot}</td>
+                  <td className="px-4 py-2">{i.page}</td>
+                  <td className="px-4 py-2">
+                    <span className={filled ? "text-amber-800" : "text-slate-500"}>{filled ? "Occupé" : "Libre"}</span>
+                  </td>
+                  <td className="px-4 py-2">
+                    {i.imageUrl?.trim() || i.imageDataUrl ? (
+                      <img src={i.imageUrl?.trim() || i.imageDataUrl} alt="" className="h-10 w-24 rounded object-cover" />
+                    ) : i.htmlEmbed?.trim() ? (
+                      <span className="text-[10px] text-slate-500">HTML</span>
+                    ) : (
+                      <span className="text-slate-400">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-2">{i.active ? "Oui" : "Non"}</td>
+                  <td className="px-4 py-2 text-slate-600">
+                    {i.updated_at ? new Date(i.updated_at).toLocaleString("fr-FR") : "—"}
+                  </td>
+                </tr>
+              );
+            })}
             {items.length === 0 ? (
               <tr>
-                <td className="px-4 py-4 text-slate-500" colSpan={5}>
+                <td className="px-4 py-4 text-slate-500" colSpan={6}>
                   Aucune configuration.
                 </td>
               </tr>

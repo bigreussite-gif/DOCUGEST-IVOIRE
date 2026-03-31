@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { SorobossFooter } from "@/components/promo/SorobossFooter";
+import { AdSlotsBootstrap } from "@/components/promo/AdSlotsBootstrap";
+import { InlineAdStrip } from "@/components/promo/InlineAdStrip";
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -209,6 +211,7 @@ export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50/90 via-bg to-slate-50/85 px-4 py-6 sm:py-10"
       style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}>
+      <AdSlotsBootstrap />
       <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-md flex-col justify-center">
 
         {/* Header */}
@@ -232,6 +235,9 @@ export default function ResetPasswordPage() {
           <ResetPasswordForm />
         </Suspense>
 
+        <div className="mx-auto mt-6 w-full max-w-md">
+          <InlineAdStrip variant="compact" adSlot="reset-password-inline" />
+        </div>
         <div className="mx-auto mt-6 w-full max-w-md border-t border-slate-200/70 pt-5">
           <SorobossFooter />
         </div>

@@ -4,6 +4,7 @@
  */
 import { getPool, runWithDbRetry } from "@/lib/db";
 import type { PublicUser, UserRow } from "@/models/User";
+import { normalizeAdFrame } from "@/lib/adFrames";
 
 function iso(d: unknown): string | null {
   if (!d) return null;
@@ -554,7 +555,7 @@ type AdSlotConfig = {
   /** Remplissage du cadre : cover = sans bandes vides, contain = image entière */
   imageFit: "cover" | "contain";
   /** Proportions du cadre affiché sur le site */
-  imageFrame: "banner" | "photo" | "square";
+  imageFrame: string;
   /** Code HTML brut injecté (AdSense, bannière partenaire…) */
   htmlEmbed: string;
   active: boolean;
@@ -588,7 +589,7 @@ export async function upsertAdSlotConfig({
   imageUrl?: string;
   imageDataUrl?: string;
   imageFit?: "cover" | "contain";
-  imageFrame?: "banner" | "photo" | "square";
+  imageFrame?: string;
   htmlEmbed?: string;
   active: boolean;
 }) {
@@ -643,8 +644,7 @@ export async function listAdSlotsConfig(): Promise<AdSlotConfig[]> {
       imageUrl: String(m.imageUrl ?? ""),
       imageDataUrl: String(m.imageDataUrl ?? ""),
       imageFit: m.imageFit === "contain" ? "contain" : "cover",
-      imageFrame:
-        m.imageFrame === "banner" || m.imageFrame === "square" ? (m.imageFrame as "banner" | "square") : "photo",
+      imageFrame: normalizeAdFrame(m.imageFrame),
       htmlEmbed: String(m.htmlEmbed ?? ""),
       active: Boolean(m.active ?? true),
       updated_at: iso(row.created_at)

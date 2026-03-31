@@ -13,7 +13,8 @@ import {
   buildAdministrativeClause,
   buildFiscalPaymentTerms
 } from "../../lib/francophonePolicy";
-import { useAutoSave, readDraft } from "../../hooks/useAutoSave";
+import { useAutoSave, readDraft, writeDraftNow, clearDraft } from "../../hooks/useAutoSave";
+import { DocumentEditorActionButtons } from "../../components/document/DocumentEditorActionButtons";
 
 const QUICK_INVOICE_DRAFT_KEY = "quick_invoice_draft_v1";
 
@@ -468,6 +469,37 @@ export default function QuickInvoiceEditor() {
             Régime {fiscalRegime} — montants TTC saisis tels quels ({countryPolicy.label}).
           </p>
         )}
+
+        <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+          <p className="mb-3 text-xs font-semibold text-primary">Actions document (brouillon local)</p>
+          <DocumentEditorActionButtons
+            onSave={() => {
+              writeDraftNow(QUICK_INVOICE_DRAFT_KEY, quickDraftPayload);
+            }}
+            onDownload={() =>
+              alert(
+                "Créez d’abord la facture avec « Créer & ouvrir le PDF », puis téléchargez le PDF depuis l’éditeur facture."
+              )
+            }
+            onPrint={() =>
+              alert(
+                "Créez d’abord la facture avec « Créer & ouvrir le PDF », puis imprimez depuis l’éditeur facture."
+              )
+            }
+            onReset={() => {
+              if (!confirm("Réinitialiser le formulaire express ? Le brouillon local sera effacé.")) return;
+              clearDraft(QUICK_INVOICE_DRAFT_KEY);
+              setClientName("");
+              setLines([newLine()]);
+              setDeliveryLabel("Frais de livraison");
+              setDeliveryAmountTtc("");
+              setSenderCompanyName("");
+              setSenderPhone("");
+              setSenderAddress("");
+            }}
+            saveLabel="Enregistrer le brouillon"
+          />
+        </div>
 
         <div className="flex flex-col gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:flex-wrap sm:justify-end sm:gap-3">
           <Link

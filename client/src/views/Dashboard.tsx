@@ -220,7 +220,7 @@ function DashboardHome() {
       </div>
 
       <div className="mt-6">
-        <InlineAdStrip />
+        <InlineAdStrip adSlot="dashboard-home-top" />
       </div>
 
       {/* ─── CATÉGORIE 1 : Documents Commerciaux ─── */}
@@ -335,7 +335,7 @@ function DashboardHome() {
       </CategorySection>
 
       <div className="mt-8">
-        <InlineAdStrip variant="compact" />
+        <InlineAdStrip variant="compact" adSlot="dashboard-home-mid" />
       </div>
 
       {/* ─── Historique ─── */}
@@ -444,7 +444,7 @@ function DashboardHome() {
       </DashboardSection>
 
       <div className="mt-8">
-        <InlineAdStrip variant="compact" />
+        <InlineAdStrip variant="compact" adSlot="dashboard-home-bottom" />
       </div>
 
       <div className="mt-8 pb-4">

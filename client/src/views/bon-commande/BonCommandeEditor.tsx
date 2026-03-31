@@ -4,15 +4,15 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
-import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
 import { InlineAdStrip } from "../../components/promo/InlineAdStrip";
 import { useDocumentBranding } from "../../hooks/useDocumentBranding";
 import BrandingPanel from "../../components/document/BrandingPanel";
 import { nextDocNumber, peekDocNumber, todayISO } from "../../utils/documentNumber";
-import { useAutoSave, readDraft } from "../../hooks/useAutoSave";
-import { captureElementToPdfFile } from "../../lib/html2canvasPdf";
+import { useAutoSave, readDraft, writeDraftNow, clearDraft } from "../../hooks/useAutoSave";
+import { DocumentEditorActionButtons } from "../../components/document/DocumentEditorActionButtons";
+import { captureElementToPdfFile, PDF_OFFSCREEN_CAPTURE_STYLE } from "../../lib/html2canvasPdf";
 import BonCommandePreview from "./BonCommandePreview";
 
 const lineSchema = z.object({
@@ -54,6 +54,36 @@ const schema = z.object({
 type Values = z.infer<typeof schema>;
 
 const DRAFT_KEY = "bon_commande_draft";
+
+function bonCommandeEmptyDefaults(): Values {
+  return {
+    bcNumber: peekDocNumber("BC"),
+    bcDate: todayISO(),
+    refProforma: "",
+    deliveryMode: "Sur site",
+    deliveryDelay: "",
+    deliveryAddress: "",
+    paymentMode: "Virement bancaire",
+    paymentConditions: "Paiement à la commande",
+    buyerName: "",
+    buyerRccm: "",
+    buyerNcc: "",
+    buyerAddress: "",
+    buyerPhone: "",
+    buyerEmail: "",
+    buyerContact: "",
+    buyerFunction: "",
+    supplierName: "",
+    supplierAddress: "",
+    supplierPhone: "",
+    supplierEmail: "",
+    supplierContact: "",
+    lines: [{ designation: "", reference: "", quantity: 1, unit: "Pièce", unitPriceHT: 0 }],
+    discountPct: 0,
+    vatPct: 18,
+    observations: ""
+  };
+}
 const UNITS = ["Pièce", "Kg", "Litre", "Carton", "Lot", "Sac", "Palette", "m²", "m³", "Unité"];
 
 export default function BonCommandeEditor() {
@@ -65,16 +95,10 @@ export default function BonCommandeEditor() {
 
   const draft = readDraft<Values>(DRAFT_KEY);
 
-  const { register, control, watch, handleSubmit, formState: { errors } } = useForm<Values>({
+  const { register, control, watch, handleSubmit, getValues, reset, formState: { errors } } = useForm<Values>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(schema) as any,
-    defaultValues: draft ?? {
-      bcNumber: peekDocNumber("BC"),
-      bcDate: todayISO(),
-      lines: [{ designation: "", reference: "", quantity: 1, unit: "Pièce", unitPriceHT: 0 }],
-      discountPct: 0,
-      vatPct: 18,
-    },
+    defaultValues: draft ?? bonCommandeEmptyDefaults(),
   });
 
   const { fields, append, remove } = useFieldArray({ control, name: "lines" });
@@ -100,35 +124,46 @@ export default function BonCommandeEditor() {
     }
   }
 
-  const onSubmit = handleSubmit(() => {
-    nextDocNumber("BC");
-    downloadPDF();
-  });
+  const onSubmit = handleSubmit(() => void downloadPDF());
+
+  function handleReset() {
+    if (!confirm("Réinitialiser le bon de commande ? Le brouillon local sera effacé.")) return;
+    clearDraft(DRAFT_KEY);
+    reset(bonCommandeEmptyDefaults());
+  }
 
   return (
     <div className="min-h-screen bg-surface">
       <title>Bon de Commande FCFA — DocuGestIvoire</title>
 
       {/* Header */}
-      <div className="sticky top-0 z-30 border-b border-border/60 bg-white/95 px-4 py-3 backdrop-blur-sm shadow-xs">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button type="button" onClick={() => navigate(-1)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface ring-1 ring-border/70 text-slate-500 hover:bg-white hover:text-text transition active:scale-95">
-              ←
-            </button>
-            <div>
-              <p className="text-sm font-bold text-text">Bon de commande</p>
-              <p className="text-xs text-slate-500">{values.bcNumber}</p>
+      <div className="sticky top-0 z-30 border-b border-border/60 bg-white/95 backdrop-blur-sm shadow-xs">
+        <div className="space-y-2 px-4 py-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-3">
+              <button type="button" onClick={() => navigate(-1)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface ring-1 ring-border/70 text-slate-500 hover:bg-white hover:text-text transition active:scale-95">
+                ←
+              </button>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-text">Bon de commande</p>
+                <p className="truncate text-xs text-slate-500">{values.bcNumber}</p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button type="button" onClick={() => setShowPreview(!showPreview)} className="rounded-xl border border-border/70 bg-surface px-3 py-2 text-xs font-medium text-slate-600 hover:bg-white transition lg:hidden">
+            <button type="button" onClick={() => setShowPreview(!showPreview)} className="shrink-0 rounded-xl border border-border/70 bg-surface px-3 py-2 text-xs font-medium text-slate-600 hover:bg-white transition lg:hidden">
               {showPreview ? "Formulaire" : "Aperçu"}
             </button>
-            <Button variant="primary" loading={pdfLoading} onClick={onSubmit} className="h-9 px-4 text-sm">
-              Télécharger PDF
-            </Button>
           </div>
+          <DocumentEditorActionButtons
+            variant="compact"
+            onSave={() => {
+              writeDraftNow(DRAFT_KEY, getValues());
+            }}
+            onDownload={() => void downloadPDF()}
+            onPrint={() => window.print()}
+            onReset={handleReset}
+            downloading={pdfLoading}
+            saveLabel="Enregistrer le brouillon"
+          />
         </div>
       </div>
 
@@ -137,7 +172,7 @@ export default function BonCommandeEditor() {
         {/* ─── Formulaire ─── */}
         <div className={showPreview ? "hidden lg:block" : ""}>
           <form className="space-y-5" onSubmit={onSubmit}>
-            <InlineAdStrip variant="compact" />
+            <InlineAdStrip variant="compact" adSlot="bon-commande-editor-inline" />
             <BrandingPanel brand={brand} onUploadLogo={uploadLogo} onRemoveLogo={removeLogo} onColorChange={(hex) => updateBrand({ accentColor: hex })} />
 
             {/* Numéro + Date */}
@@ -361,9 +396,16 @@ export default function BonCommandeEditor() {
               <Textarea {...register("observations")} rows={3} placeholder="Remarques, conditions particulières…" />
             </div>
 
-            <Button variant="primary" loading={pdfLoading} type="submit" className="h-12 w-full text-base font-semibold">
-              Télécharger le PDF
-            </Button>
+            <DocumentEditorActionButtons
+              onSave={() => {
+                writeDraftNow(DRAFT_KEY, getValues());
+              }}
+              onDownload={() => void downloadPDF()}
+              onPrint={() => window.print()}
+              onReset={handleReset}
+              downloading={pdfLoading}
+              saveLabel="Enregistrer le brouillon"
+            />
           </form>
         </div>
 
@@ -406,7 +448,7 @@ export default function BonCommandeEditor() {
         </div>
 
       </div>
-      <div ref={pdfRef} style={{ position: "fixed", left: "-9999px", top: 0, width: 794, pointerEvents: "none", visibility: "hidden" }}>
+      <div ref={pdfRef} className="print:hidden" style={PDF_OFFSCREEN_CAPTURE_STYLE} aria-hidden>
         <BonCommandePreview data={{
           bcNumber: values.bcNumber, bcDate: values.bcDate, refProforma: values.refProforma,
           deliveryMode: values.deliveryMode, deliveryDelay: values.deliveryDelay, deliveryAddress: values.deliveryAddress,

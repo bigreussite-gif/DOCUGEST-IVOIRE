@@ -3,15 +3,15 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
-import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
 import { InlineAdStrip } from "../../components/promo/InlineAdStrip";
 import { useDocumentBranding } from "../../hooks/useDocumentBranding";
 import BrandingPanel from "../../components/document/BrandingPanel";
 import { nextDocNumber, peekDocNumber, todayISO } from "../../utils/documentNumber";
-import { useAutoSave, readDraft } from "../../hooks/useAutoSave";
-import { captureElementToPdfFile } from "../../lib/html2canvasPdf";
+import { useAutoSave, readDraft, writeDraftNow, clearDraft } from "../../hooks/useAutoSave";
+import { DocumentEditorActionButtons } from "../../components/document/DocumentEditorActionButtons";
+import { captureElementToPdfFile, PDF_OFFSCREEN_CAPTURE_STYLE } from "../../lib/html2canvasPdf";
 import BonLivraisonPreview from "./BonLivraisonPreview";
 
 const lineSchema = z.object({
@@ -51,6 +51,32 @@ type Values = z.infer<typeof schema>;
 const DRAFT_KEY = "bon_livraison_draft";
 const UNITS = ["Pièce", "Kg", "Litre", "Carton", "Lot", "Sac", "Palette", "m²", "m³", "Unité"];
 
+function bonLivraisonEmptyDefaults(): Values {
+  return {
+    blNumber: peekDocNumber("BL"),
+    blDate: todayISO(),
+    refBC: "",
+    refFacture: "",
+    transportMode: "Véhicule société",
+    vehicleImmat: "",
+    senderName: "",
+    senderRccm: "",
+    senderAddress: "",
+    senderPhone: "",
+    senderEmail: "",
+    delivererName: "",
+    recipientName: "",
+    recipientAddress: "",
+    recipientPhone: "",
+    recipientContact: "",
+    lines: [{ designation: "", reference: "", quantityOrdered: 0, quantityDelivered: 1, unit: "Pièce", observations: "" }],
+    deliveryStatus: "Conforme",
+    reserves: "",
+    receiverName: "",
+    receptionDate: ""
+  };
+}
+
 export default function BonLivraisonEditor() {
   const navigate = useNavigate();
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -59,14 +85,9 @@ export default function BonLivraisonEditor() {
   const pdfRef = useRef<HTMLDivElement>(null);
   const draft = readDraft<Values>(DRAFT_KEY);
 
-  const { register, control, watch, handleSubmit, formState: { errors } } = useForm<Values>({
+  const { register, control, watch, handleSubmit, getValues, reset, formState: { errors } } = useForm<Values>({
     resolver: zodResolver(schema) as any,
-    defaultValues: draft ?? {
-      blNumber: peekDocNumber("BL"),
-      blDate: todayISO(),
-      lines: [{ designation: "", reference: "", quantityOrdered: 0, quantityDelivered: 1, unit: "Pièce", observations: "" }],
-      deliveryStatus: "Conforme",
-    },
+    defaultValues: draft ?? bonLivraisonEmptyDefaults(),
   });
 
   const { fields, append, remove } = useFieldArray({ control, name: "lines" });
@@ -86,36 +107,50 @@ export default function BonLivraisonEditor() {
     }
   }
 
-  const onSubmit = handleSubmit(() => downloadPDF());
+  const onSubmit = handleSubmit(() => void downloadPDF());
+
+  function handleReset() {
+    if (!confirm("Réinitialiser le bon de livraison ? Le brouillon local sera effacé.")) return;
+    clearDraft(DRAFT_KEY);
+    reset(bonLivraisonEmptyDefaults());
+  }
 
   return (
     <div className="min-h-screen bg-surface">
       <title>Bon de Livraison — DocuGestIvoire</title>
 
-      <div className="sticky top-0 z-30 border-b border-border/60 bg-white/95 px-4 py-3 backdrop-blur-sm shadow-xs">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button type="button" onClick={() => navigate(-1)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface ring-1 ring-border/70 text-slate-500 hover:bg-white transition active:scale-95">←</button>
-            <div>
-              <p className="text-sm font-bold text-text">Bon de livraison</p>
-              <p className="text-xs text-slate-500">{values.blNumber}</p>
+      <div className="sticky top-0 z-30 border-b border-border/60 bg-white/95 backdrop-blur-sm shadow-xs">
+        <div className="space-y-2 px-4 py-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-3">
+              <button type="button" onClick={() => navigate(-1)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface ring-1 ring-border/70 text-slate-500 hover:bg-white transition active:scale-95">←</button>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-text">Bon de livraison</p>
+                <p className="truncate text-xs text-slate-500">{values.blNumber}</p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button type="button" onClick={() => setShowPreview(!showPreview)} className="rounded-xl border border-border/70 bg-surface px-3 py-2 text-xs font-medium text-slate-600 hover:bg-white transition lg:hidden">
+            <button type="button" onClick={() => setShowPreview(!showPreview)} className="shrink-0 rounded-xl border border-border/70 bg-surface px-3 py-2 text-xs font-medium text-slate-600 hover:bg-white transition lg:hidden">
               {showPreview ? "Formulaire" : "Aperçu"}
             </button>
-            <Button variant="primary" loading={pdfLoading} onClick={onSubmit} className="h-9 px-4 text-sm">
-              Télécharger PDF
-            </Button>
           </div>
+          <DocumentEditorActionButtons
+            variant="compact"
+            onSave={() => {
+              writeDraftNow(DRAFT_KEY, getValues());
+            }}
+            onDownload={() => void downloadPDF()}
+            onPrint={() => window.print()}
+            onReset={handleReset}
+            downloading={pdfLoading}
+            saveLabel="Enregistrer le brouillon"
+          />
         </div>
       </div>
 
       <div className="mx-auto max-w-7xl px-3 py-5 sm:px-4 lg:grid lg:grid-cols-2 lg:gap-6 lg:py-6">
         <div className={showPreview ? "hidden lg:block" : ""}>
           <form className="space-y-5" onSubmit={onSubmit}>
-            <InlineAdStrip variant="compact" />
+            <InlineAdStrip variant="compact" adSlot="bon-livraison-editor-inline" />
             <BrandingPanel brand={brand} onUploadLogo={uploadLogo} onRemoveLogo={removeLogo} onColorChange={(hex) => updateBrand({ accentColor: hex })} />
 
             {/* En-tête */}
@@ -287,9 +322,16 @@ export default function BonLivraisonEditor() {
               </div>
             </div>
 
-            <Button variant="primary" loading={pdfLoading} type="submit" className="h-12 w-full text-base font-semibold">
-              Télécharger le PDF
-            </Button>
+            <DocumentEditorActionButtons
+              onSave={() => {
+                writeDraftNow(DRAFT_KEY, getValues());
+              }}
+              onDownload={() => void downloadPDF()}
+              onPrint={() => window.print()}
+              onReset={handleReset}
+              downloading={pdfLoading}
+              saveLabel="Enregistrer le brouillon"
+            />
           </form>
         </div>
 
@@ -304,7 +346,7 @@ export default function BonLivraisonEditor() {
           </div>
         </div>
       </div>
-      <div ref={pdfRef} style={{ position: "fixed", left: "-9999px", top: 0, width: 794, pointerEvents: "none", visibility: "hidden" }}>
+      <div ref={pdfRef} className="print:hidden" style={PDF_OFFSCREEN_CAPTURE_STYLE} aria-hidden>
         <BonLivraisonPreview data={{ ...values, lines: values.lines ?? [] }} logoDataUrl={brand.logoDataUrl} accentColor={brand.accentColor} />
       </div>
     </div>

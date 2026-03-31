@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { AD_FRAME_ZOD_ENUM } from "@/lib/adFrames";
 import { requireBackofficeRequest } from "@/lib/serverAuth";
 import * as store from "@/lib/serverStore";
 
@@ -18,7 +19,7 @@ const schema = z.object({
   /** data:image/...;base64,... — GIF animés peuvent dépasser la limite serveur ; utiliser imageUrl dans ce cas */
   imageDataUrl: z.string().max(10_000_000).optional().default(""),
   imageFit: z.enum(["cover", "contain"]).optional().default("cover"),
-  imageFrame: z.enum(["banner", "photo", "square"]).optional().default("photo"),
+  imageFrame: z.enum(AD_FRAME_ZOD_ENUM).optional().default("photo"),
   /** Code HTML brut : balise <script> AdSense, iframe partenaire, bannière HTML… */
   htmlEmbed: z.string().max(20_000).optional().default(""),
   active: z.boolean()

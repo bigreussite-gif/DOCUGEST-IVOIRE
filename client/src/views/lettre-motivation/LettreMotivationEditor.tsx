@@ -3,12 +3,12 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
-import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
 import { InlineAdStrip } from "../../components/promo/InlineAdStrip";
-import { useAutoSave, readDraft } from "../../hooks/useAutoSave";
-import { captureElementToPdfFile } from "../../lib/html2canvasPdf";
+import { useAutoSave, readDraft, writeDraftNow, clearDraft } from "../../hooks/useAutoSave";
+import { DocumentEditorActionButtons } from "../../components/document/DocumentEditorActionButtons";
+import { captureElementToPdfFile, PDF_OFFSCREEN_CAPTURE_STYLE } from "../../lib/html2canvasPdf";
 import { useDocumentBranding } from "../../hooks/useDocumentBranding";
 import BrandingPanel from "../../components/document/BrandingPanel";
 import { generateLettreParagraphs } from "../../utils/aiGenerate";
@@ -49,6 +49,30 @@ function today() {
   return `Abidjan, le ${new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}`;
 }
 
+function lettreEmptyDefaults(): Values {
+  return {
+    nom: "",
+    adresse: "",
+    telephone: "",
+    email: "",
+    recruteurNom: "",
+    recruteurFonction: "",
+    entrepriseNom: "",
+    entrepriseAdresse: "",
+    objet: "",
+    typeCandidat: "Réponse à une offre",
+    refOffre: "",
+    sourceOffre: "Site web entreprise",
+    lieuDate: today(),
+    accroche: "Votre structure correspond à mon projet professionnel.",
+    paragrapheVous: "Votre entreprise s’est imposée comme un acteur de référence sur son marché.",
+    paragrapheMoi: "Mon parcours et mes compétences sont alignés avec vos besoins.",
+    paragrapheNous: "Je souhaite contribuer activement à vos objectifs.",
+    formule: FORMULES[0],
+    formulePerso: ""
+  };
+}
+
 export default function LettreMotivationEditor() {
   const navigate = useNavigate();
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -58,13 +82,9 @@ export default function LettreMotivationEditor() {
   const pdfRef = useRef<HTMLDivElement>(null);
   const draft = readDraft<Values>(DRAFT_KEY);
 
-  const { register, watch, handleSubmit, setValue, formState: { errors } } = useForm<Values>({
+  const { register, watch, handleSubmit, setValue, getValues, reset, formState: { errors } } = useForm<Values>({
     resolver: zodResolver(schema) as any,
-    defaultValues: draft ?? {
-      lieuDate: today(),
-      typeCandidat: "Réponse à une offre",
-      formule: FORMULES[0],
-    },
+    defaultValues: draft ?? lettreEmptyDefaults(),
   });
 
   const values = watch();
@@ -101,7 +121,13 @@ export default function LettreMotivationEditor() {
     }
   }
 
-  const onSubmit = handleSubmit(() => downloadPDF());
+  const onSubmit = handleSubmit(() => void downloadPDF());
+
+  function handleReset() {
+    if (!confirm("Réinitialiser la lettre ? Le brouillon local sera effacé.")) return;
+    clearDraft(DRAFT_KEY);
+    reset(lettreEmptyDefaults());
+  }
 
   const HELP_TEXTS = {
     accroche: "💡 Montrez votre enthousiasme. Ex: «Ce qui m'attire chez [Entreprise], c'est votre engagement dans...»",
@@ -114,30 +140,38 @@ export default function LettreMotivationEditor() {
     <div className="min-h-screen bg-surface">
       <title>Lettre de Motivation Gratuite — DocuGestIvoire</title>
 
-      <div className="sticky top-0 z-30 border-b border-border/60 bg-white/95 px-4 py-3 backdrop-blur-sm shadow-xs">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button type="button" onClick={() => navigate(-1)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface ring-1 ring-border/70 text-slate-500 hover:bg-white transition active:scale-95">←</button>
-            <div>
-              <p className="text-sm font-bold text-text">Lettre de motivation</p>
-              <p className="text-xs text-slate-500">{values.objet || "Nouvelle lettre"}</p>
+      <div className="sticky top-0 z-30 border-b border-border/60 bg-white/95 backdrop-blur-sm shadow-xs">
+        <div className="space-y-2 px-4 py-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-3">
+              <button type="button" onClick={() => navigate(-1)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface ring-1 ring-border/70 text-slate-500 hover:bg-white transition active:scale-95">←</button>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-text">Lettre de motivation</p>
+                <p className="truncate text-xs text-slate-500">{values.objet || "Nouvelle lettre"}</p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button type="button" onClick={() => setShowPreview(!showPreview)} className="rounded-xl border border-border/70 bg-surface px-3 py-2 text-xs font-medium text-slate-600 hover:bg-white transition lg:hidden">
+            <button type="button" onClick={() => setShowPreview(!showPreview)} className="shrink-0 rounded-xl border border-border/70 bg-surface px-3 py-2 text-xs font-medium text-slate-600 hover:bg-white transition lg:hidden">
               {showPreview ? "Formulaire" : "Aperçu"}
             </button>
-            <Button variant="primary" loading={pdfLoading} onClick={onSubmit} className="h-9 px-4 text-sm">
-              Télécharger PDF
-            </Button>
           </div>
+          <DocumentEditorActionButtons
+            variant="compact"
+            onSave={() => {
+              writeDraftNow(DRAFT_KEY, getValues());
+            }}
+            onDownload={() => void downloadPDF()}
+            onPrint={() => window.print()}
+            onReset={handleReset}
+            downloading={pdfLoading}
+            saveLabel="Enregistrer le brouillon"
+          />
         </div>
       </div>
 
       <div className="mx-auto max-w-7xl px-3 py-5 sm:px-4 lg:grid lg:grid-cols-2 lg:gap-6 lg:py-6">
         <div className={showPreview ? "hidden lg:block" : ""}>
           <form className="space-y-5" onSubmit={onSubmit}>
-            <InlineAdStrip variant="compact" />
+            <InlineAdStrip variant="compact" adSlot="lettre-motivation-editor-inline" />
 
             {/* Branding */}
             <BrandingPanel
@@ -296,9 +330,16 @@ export default function LettreMotivationEditor() {
               </div>
             </div>
 
-            <Button variant="primary" loading={pdfLoading} type="submit" className="h-12 w-full text-base font-semibold">
-              Télécharger la lettre en PDF
-            </Button>
+            <DocumentEditorActionButtons
+              onSave={() => {
+                writeDraftNow(DRAFT_KEY, getValues());
+              }}
+              onDownload={() => void downloadPDF()}
+              onPrint={() => window.print()}
+              onReset={handleReset}
+              downloading={pdfLoading}
+              saveLabel="Enregistrer le brouillon"
+            />
           </form>
         </div>
 
@@ -319,7 +360,7 @@ export default function LettreMotivationEditor() {
       </div>
 
       {/* Off-screen pour PDF — toujours rendu */}
-      <div ref={pdfRef} style={{ position: "fixed", left: "-9999px", top: 0, width: 794, pointerEvents: "none", visibility: "hidden" }}>
+      <div ref={pdfRef} className="print:hidden" style={PDF_OFFSCREEN_CAPTURE_STYLE} aria-hidden>
         <LettreMotivationPreview
           data={values as import("./LettreMotivationPreview").LettreMotivationData}
           logoDataUrl={brand.logoDataUrl}

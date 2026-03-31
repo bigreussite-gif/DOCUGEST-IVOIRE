@@ -38,3 +38,13 @@ export function clearDraft(key: string) {
     localStorage.removeItem(key);
   } catch { /* ignore */ }
 }
+
+/** Écrit immédiatement le brouillon (sans attendre le debounce de useAutoSave). */
+export function writeDraftNow<T>(key: string, data: T): boolean {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+    return true;
+  } catch {
+    return false;
+  }
+}

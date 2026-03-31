@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react";
+import { frameBoxClass } from "../../lib/adFrames";
 import { trackAdEvent } from "../../lib/adTracking";
 import { useAdSlotsStore } from "../../store/adSlotsStore";
 
@@ -20,7 +21,7 @@ type SlotConfig = {
   imageUrl: string;
   imageDataUrl: string;
   imageFit: "cover" | "contain";
-  imageFrame: "banner" | "photo" | "square";
+  imageFrame: string;
   htmlEmbed: string;
 };
 
@@ -41,12 +42,6 @@ function normalizeHref(raw: string): string {
   return t.startsWith("http://") || t.startsWith("https://") ? t : `https://${t}`;
 }
 
-const FRAME_BOX: Record<SlotConfig["imageFrame"], string> = {
-  banner: "aspect-[21/9] w-full min-h-[48px] max-h-[120px]",
-  photo: "aspect-[4/3] w-full max-h-[min(280px,50vh)]",
-  square: "aspect-square w-full max-h-[min(280px,45vh)]"
-};
-
 export function AdPlaceholder({ label, hint, adSlot, className = "", minHeight = "min-h-[72px]", showEmpty = false }: Props) {
   const raw = useAdSlotsStore((s) => (adSlot ? s.bySlot[adSlot] : undefined));
   const isFetching = useAdSlotsStore((s) => s.isFetching);
@@ -61,10 +56,7 @@ export function AdPlaceholder({ label, hint, adSlot, className = "", minHeight =
       imageUrl: String(raw.imageUrl ?? ""),
       imageDataUrl: String(raw.imageDataUrl ?? ""),
       imageFit: raw.imageFit === "contain" ? "contain" : "cover",
-      imageFrame:
-        raw.imageFrame === "banner" || raw.imageFrame === "square"
-          ? (raw.imageFrame as "banner" | "square")
-          : "photo",
+      imageFrame: String(raw.imageFrame ?? "photo"),
       htmlEmbed: String(raw.htmlEmbed ?? ""),
     };
   }, [raw]);
@@ -89,7 +81,7 @@ export function AdPlaceholder({ label, hint, adSlot, className = "", minHeight =
   const href = dynamic?.ctaUrl ? normalizeHref(dynamic.ctaUrl) : "";
   const linkOk = Boolean(href) && isValidHttpUrl(href);
   const fit = dynamic?.imageFit ?? "cover";
-  const frame = dynamic?.imageFrame ?? "photo";
+  const frameClass = frameBoxClass(dynamic?.imageFrame ?? "photo");
   const imgFitClass = fit === "contain" ? "object-contain" : "object-cover";
 
   function onTrackedClick() {
@@ -107,7 +99,7 @@ export function AdPlaceholder({ label, hint, adSlot, className = "", minHeight =
   const hasImage = Boolean(imgSrc);
 
   const imageBlock = imgSrc ? (
-    <div className={["relative w-full overflow-hidden rounded-xl bg-slate-200/50", FRAME_BOX[frame]].join(" ")}>
+    <div className={["relative w-full overflow-hidden rounded-xl bg-slate-200/50", frameClass].join(" ")}>
       {/* GIF animé : pas de ring pour ne pas couper les bords */}
       <img
         src={imgSrc}

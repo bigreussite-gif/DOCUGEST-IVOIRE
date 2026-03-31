@@ -3,12 +3,12 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
-import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
 import { InlineAdStrip } from "../../components/promo/InlineAdStrip";
-import { useAutoSave, readDraft } from "../../hooks/useAutoSave";
-import { captureElementToPdfFile } from "../../lib/html2canvasPdf";
+import { useAutoSave, readDraft, writeDraftNow, clearDraft } from "../../hooks/useAutoSave";
+import { DocumentEditorActionButtons } from "../../components/document/DocumentEditorActionButtons";
+import { captureElementToPdfFile, PDF_OFFSCREEN_CAPTURE_STYLE } from "../../lib/html2canvasPdf";
 import { cropImageToSquare } from "../../lib/brandColors";
 import { useDocumentBranding } from "../../hooks/useDocumentBranding";
 import BrandingPanel from "../../components/document/BrandingPanel";
@@ -58,6 +58,28 @@ const schema = z.object({
 type Values = z.infer<typeof schema>;
 const DRAFT_KEY = "cv_draft";
 
+const CV_EMPTY_DEFAULTS: Values = {
+  template: "classique",
+  nationalite: "Ivoirienne",
+  permis: "Aucun",
+  nom: "",
+  titre: "",
+  dateNaissance: "",
+  lieuResidence: "",
+  telephone: "",
+  email: "",
+  linkedin: "",
+  situation: "",
+  profil: "",
+  experiences: [{ poste: "", entreprise: "", localisation: "", dateDebut: "", dateFin: "", actuel: false, missions: "" }],
+  formations: [{ diplome: "", etablissement: "", localisation: "", annee: "", mention: "Aucune" }],
+  competences: [{ nom: "", niveau: "Intermédiaire" }],
+  langues: [{ langue: "Français", niveau: "Langue maternelle" }],
+  interets: "",
+  referencesDisponibles: false,
+  photoDataUrl: ""
+};
+
 const TEMPLATES = [
   { id: "classique", label: "Classique", desc: "Bandeau haut, marge gauche colorée" },
   { id: "moderne", label: "Moderne", desc: "Colonne gauche couleur" },
@@ -79,17 +101,9 @@ export default function CVEditor() {
   const draft = readDraft<Values>(DRAFT_KEY);
   const { brand, uploadLogo, removeLogo, updateBrand } = useDocumentBranding();
 
-  const { register, control, watch, handleSubmit, setValue, formState: { errors } } = useForm<Values>({
+  const { register, control, watch, handleSubmit, setValue, getValues, reset, formState: { errors } } = useForm<Values>({
     resolver: zodResolver(schema) as any,
-    defaultValues: draft ?? {
-      template: "classique",
-      nationalite: "Ivoirienne",
-      permis: "Aucun",
-      experiences: [{ poste: "", entreprise: "", localisation: "", dateDebut: "", dateFin: "", actuel: false, missions: "" }],
-      formations: [{ diplome: "", etablissement: "", localisation: "", annee: "", mention: "Aucune" }],
-      competences: [{ nom: "", niveau: "Intermédiaire" }],
-      langues: [{ langue: "Français", niveau: "Langue maternelle" }],
-    },
+    defaultValues: draft ?? CV_EMPTY_DEFAULTS,
   });
 
   const expFields = useFieldArray({ control, name: "experiences" });
@@ -142,36 +156,50 @@ export default function CVEditor() {
 
   const onSubmit = handleSubmit(() => downloadPDF());
 
+  function handleReset() {
+    if (!confirm("Réinitialiser le CV ? Le brouillon local sera effacé.")) return;
+    clearDraft(DRAFT_KEY);
+    reset(CV_EMPTY_DEFAULTS);
+  }
+
   const selectClass = "w-full rounded-xl border border-border/70 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40";
 
   return (
     <div className="min-h-screen bg-surface">
       <title>CV Professionnel Gratuit — DocuGestIvoire</title>
 
-      <div className="sticky top-0 z-30 border-b border-border/60 bg-white/95 px-4 py-3 backdrop-blur-sm shadow-xs">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button type="button" onClick={() => navigate(-1)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface ring-1 ring-border/70 text-slate-500 hover:bg-white transition active:scale-95">←</button>
-            <div>
-              <p className="text-sm font-bold text-text">CV Professionnel</p>
-              <p className="text-xs text-slate-500">{values.nom || "Nouveau CV"}</p>
+      <div className="sticky top-0 z-30 border-b border-border/60 bg-white/95 backdrop-blur-sm shadow-xs">
+        <div className="space-y-2 px-4 py-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-3">
+              <button type="button" onClick={() => navigate(-1)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface ring-1 ring-border/70 text-slate-500 hover:bg-white transition active:scale-95">←</button>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-text">CV Professionnel</p>
+                <p className="truncate text-xs text-slate-500">{values.nom || "Nouveau CV"}</p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button type="button" onClick={() => setShowPreview(!showPreview)} className="rounded-xl border border-border/70 bg-surface px-3 py-2 text-xs font-medium text-slate-600 hover:bg-white transition lg:hidden">
+            <button type="button" onClick={() => setShowPreview(!showPreview)} className="shrink-0 rounded-xl border border-border/70 bg-surface px-3 py-2 text-xs font-medium text-slate-600 hover:bg-white transition lg:hidden">
               {showPreview ? "Formulaire" : "Aperçu"}
             </button>
-            <Button variant="primary" loading={pdfLoading} onClick={onSubmit} className="h-9 px-4 text-sm">
-              Télécharger PDF
-            </Button>
           </div>
+          <DocumentEditorActionButtons
+            variant="compact"
+            onSave={() => {
+              writeDraftNow(DRAFT_KEY, getValues());
+            }}
+            onDownload={() => void downloadPDF()}
+            onPrint={() => window.print()}
+            onReset={handleReset}
+            downloading={pdfLoading}
+            saveLabel="Enregistrer le brouillon"
+          />
         </div>
       </div>
 
       <div className="mx-auto max-w-7xl px-3 py-5 sm:px-4 lg:grid lg:grid-cols-2 lg:gap-6 lg:py-6">
         <div className={showPreview ? "hidden lg:block" : ""}>
           <form className="space-y-5" onSubmit={onSubmit}>
-            <InlineAdStrip variant="compact" />
+            <InlineAdStrip variant="compact" adSlot="cv-editor-inline" />
 
             {/* Branding */}
             <BrandingPanel
@@ -493,9 +521,16 @@ export default function CVEditor() {
               </div>
             </div>
 
-            <Button variant="primary" loading={pdfLoading} type="submit" className="h-12 w-full text-base font-semibold">
-              Télécharger le CV en PDF
-            </Button>
+            <DocumentEditorActionButtons
+              onSave={() => {
+                writeDraftNow(DRAFT_KEY, getValues());
+              }}
+              onDownload={() => void downloadPDF()}
+              onPrint={() => window.print()}
+              onReset={handleReset}
+              downloading={pdfLoading}
+              saveLabel="Enregistrer le brouillon"
+            />
           </form>
         </div>
 
@@ -515,18 +550,8 @@ export default function CVEditor() {
         </div>
       </div>
 
-      {/* Conteneur off-screen pour la génération PDF — jamais caché, toujours rendu */}
-      <div
-        ref={pdfRef}
-        style={{
-          position: "fixed",
-          left: "-9999px",
-          top: 0,
-          width: 794,
-          pointerEvents: "none",
-          visibility: "hidden",
-        }}
-      >
+      {/* Conteneur off-screen pour html2canvas — visible pour le moteur de rendu (pas visibility:hidden) */}
+      <div ref={pdfRef} className="print:hidden" style={PDF_OFFSCREEN_CAPTURE_STYLE} aria-hidden>
         <CVPreview
           data={values as import("./CVPreview").CVData}
           accentColor={brand.accentColor}
