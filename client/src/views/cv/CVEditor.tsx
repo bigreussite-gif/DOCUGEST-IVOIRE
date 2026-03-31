@@ -10,7 +10,7 @@ import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
 import { InlineAdStrip } from "../../components/promo/InlineAdStrip";
 import { useAutoSave, readDraft } from "../../hooks/useAutoSave";
-import { fileToDataUrl } from "../../lib/brandColors";
+import { cropImageToSquare } from "../../lib/brandColors";
 import { useDocumentBranding } from "../../hooks/useDocumentBranding";
 import BrandingPanel from "../../components/document/BrandingPanel";
 import { generateCVProfile } from "../../utils/aiGenerate";
@@ -60,9 +60,9 @@ type Values = z.infer<typeof schema>;
 const DRAFT_KEY = "cv_draft";
 
 const TEMPLATES = [
-  { id: "classique", label: "Classique", desc: "Sobre, une colonne" },
-  { id: "moderne", label: "Moderne", desc: "Deux colonnes colorées" },
-  { id: "compact", label: "Compact", desc: "Tout en 1 page" },
+  { id: "classique", label: "Classique", desc: "Bandeau haut, marge gauche colorée" },
+  { id: "moderne", label: "Moderne", desc: "Colonne gauche couleur" },
+  { id: "compact", label: "Compact", desc: "Colonne droite couleur" },
 ] as const;
 
 const NIVEAUX_COMP = ["Débutant", "Intermédiaire", "Avancé", "Expert"];
@@ -74,6 +74,9 @@ export default function CVEditor() {
   const [showPreview, setShowPreview] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
+  // Conteneur off-screen toujours rendu — utilisé pour la génération PDF
+  // (le preview visible peut être caché sur mobile via display:none)
+  const pdfRef = useRef<HTMLDivElement>(null);
   const draft = readDraft<Values>(DRAFT_KEY);
   const { brand, uploadLogo, removeLogo, updateBrand } = useDocumentBranding();
 
@@ -101,25 +104,34 @@ export default function CVEditor() {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const dataUrl = await fileToDataUrl(file);
+      // Recadrage automatique 1:1 centré pour un rendu optimal en cercle
+      const dataUrl = await cropImageToSquare(file, 400, 0.92);
       setValue("photoDataUrl", dataUrl);
     } catch { /* ignore */ }
   }
 
   async function downloadPDF() {
-    if (!previewRef.current) return;
+    // Priorité au conteneur off-screen (toujours rendu, jamais caché)
+    const source = pdfRef.current ?? previewRef.current;
+    if (!source) return;
     setPdfLoading(true);
     try {
-      const canvas = await html2canvas(previewRef.current, { scale: 2, useCORS: true });
-      const imgData = canvas.toDataURL("image/jpeg", 0.92);
+      const canvas = await html2canvas(source, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        allowTaint: true,
+        logging: false,
+      });
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
       const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       const pageW = 210;
-      const imgH = (canvas.height * pageW) / canvas.width;
-      let y = 0;
       const pageH = 297;
+      const imgH = (canvas.height * pageW) / canvas.width;
       if (imgH <= pageH) {
         pdf.addImage(imgData, "JPEG", 0, 0, pageW, imgH);
       } else {
+        let y = 0;
         let remaining = imgH;
         while (remaining > 0) {
           pdf.addImage(imgData, "JPEG", 0, -y, pageW, imgH);
@@ -129,6 +141,9 @@ export default function CVEditor() {
         }
       }
       pdf.save(`CV-${values.nom.replace(/\s+/g, "-") || "cv"}.pdf`);
+    } catch (e) {
+      console.error("[CV PDF]", e);
+      alert("Impossible de générer le PDF. Essayez 'Aperçu' puis Imprimer → Enregistrer en PDF.");
     } finally {
       setPdfLoading(false);
     }
@@ -157,7 +172,7 @@ export default function CVEditor() {
 
   return (
     <div className="min-h-screen bg-surface">
-      <title>CV Professionnel Gratuit — DocuGest Ivoire</title>
+      <title>CV Professionnel Gratuit — DocuGestIvoire</title>
 
       <div className="sticky top-0 z-30 border-b border-border/60 bg-white/95 px-4 py-3 backdrop-blur-sm shadow-xs">
         <div className="flex items-center justify-between">
@@ -203,18 +218,52 @@ export default function CVEditor() {
                     onClick={() => setValue("template", t.id)}
                     className={`rounded-xl border-2 p-3 text-center transition ${values.template === t.id ? "border-primary bg-primary/5 shadow-sm" : "border-border/60 hover:border-primary/40"}`}
                   >
-                    <div className={`mx-auto mb-2 h-10 w-14 rounded-lg border border-slate-200 ${t.id === "moderne" ? "flex overflow-hidden" : "bg-white"}`}>
-                      {t.id === "moderne" ? (
-                        <>
-                          <div className="w-5 flex-shrink-0" style={{ background: brand.accentColor }} />
-                          <div className="flex-1 bg-white" />
-                        </>
-                      ) : (
-                        <div className="h-full w-full rounded-lg bg-white p-1">
-                          <div className="mb-1 h-1.5 w-full rounded" style={{ background: brand.accentColor }} />
-                          <div className="space-y-0.5">
-                            {[100, 80, 90, 70].map((w, i) => (
-                              <div key={i} className="rounded-full bg-slate-200" style={{ height: 2, width: `${t.id === "compact" ? w - 10 : w}%` }} />
+                    {/* Mini-aperçu distinct par template */}
+                    <div className="mx-auto mb-2 h-10 w-14 overflow-hidden rounded-lg border border-slate-200">
+                      {t.id === "classique" && (
+                        <div className="flex h-full bg-white">
+                          <div className="w-0.5 shrink-0" style={{ background: brand.accentColor || "#1a6b4a" }} />
+                          <div className="flex flex-1 flex-col p-1">
+                            <div className="mb-1 h-3 w-full rounded-sm" style={{ background: `${brand.accentColor || "#1a6b4a"}22` }}>
+                              <div className="h-full w-1/3 rounded-full" style={{ background: brand.accentColor || "#1a6b4a", opacity: 0.7 }} />
+                            </div>
+                            <div className="mb-0.5 h-1 rounded-full" style={{ background: brand.accentColor || "#1a6b4a", width: "80%" }} />
+                            {[70, 90, 60].map((w, i) => (
+                              <div key={i} className="mb-0.5 rounded-full bg-slate-200" style={{ height: 1.5, width: `${w}%` }} />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {t.id === "moderne" && (
+                        <div className="flex h-full">
+                          <div className="flex w-5 flex-col items-center gap-0.5 py-1" style={{ background: brand.accentColor || "#1a6b4a" }}>
+                            <div className="h-3 w-3 rounded-full bg-white/40" />
+                            {[70, 90, 60].map((_, i) => (
+                              <div key={i} className="h-0.5 rounded-full bg-white/30" style={{ width: "70%" }} />
+                            ))}
+                          </div>
+                          {/* Contenu blanc */}
+                          <div className="flex flex-1 flex-col justify-center gap-0.5 p-1">
+                            <div className="h-1 rounded-full" style={{ background: brand.accentColor || "#1a6b4a", width: "80%" }} />
+                            {[90, 70].map((w, i) => (
+                              <div key={i} className="h-0.5 rounded-full bg-slate-200" style={{ width: `${w}%` }} />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {t.id === "compact" && (
+                        <div className="flex h-full bg-white">
+                          <div className="flex flex-1 flex-col justify-center gap-0.5 p-1">
+                            <div className="h-1 rounded-full bg-slate-800" style={{ width: "75%" }} />
+                            <div className="h-0.5 rounded-full" style={{ background: brand.accentColor || "#1a6b4a", width: "55%" }} />
+                            {[85, 70, 60].map((w, i) => (
+                              <div key={i} className="rounded-full bg-slate-200" style={{ height: 1.5, width: `${w}%` }} />
+                            ))}
+                          </div>
+                          <div className="flex w-4 shrink-0 flex-col items-center gap-0.5 py-1" style={{ background: brand.accentColor || "#1a6b4a" }}>
+                            <div className="h-2 w-2 rounded-full bg-white/45" />
+                            {[65, 55, 70].map((_, i) => (
+                              <div key={i} className="h-0.5 rounded-full bg-white/35" style={{ width: "72%" }} />
                             ))}
                           </div>
                         </div>
@@ -243,8 +292,36 @@ export default function CVEditor() {
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-semibold text-slate-700">Photo (optionnel)</label>
-                  <input type="file" accept="image/*" onChange={handlePhotoUpload} className="w-full rounded-xl border border-border/70 bg-white px-3 py-2 text-sm" />
-                  {values.photoDataUrl && <img src={values.photoDataUrl} alt="Aperçu" className="mt-2 h-16 w-16 rounded-full object-cover ring-2 ring-primary/30" />}
+                  <p className="mb-2 text-[11px] text-slate-400">Recadrage automatique en carré 1:1 — centré sur votre visage</p>
+                  <div className="flex items-center gap-4">
+                    <label className="cursor-pointer rounded-xl border border-border/70 bg-white px-3 py-2 text-sm text-slate-600 hover:bg-surface transition">
+                      {values.photoDataUrl ? "Changer la photo" : "Choisir une photo"}
+                      <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
+                    </label>
+                    {values.photoDataUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setValue("photoDataUrl", "")}
+                        className="text-xs text-red-400 hover:text-red-600 transition"
+                      >
+                        Supprimer
+                      </button>
+                    )}
+                  </div>
+                  {values.photoDataUrl && (
+                    <div className="mt-3 flex items-center gap-3">
+                      <img
+                        src={values.photoDataUrl}
+                        alt="Aperçu"
+                        className="h-24 w-24 rounded-full object-cover shadow-md"
+                        style={{ border: `3px solid ${brand.accentColor || "#1a6b4a"}` }}
+                      />
+                      <div className="text-xs text-slate-500">
+                        <p className="font-medium text-slate-700">✓ Photo recadrée 1:1</p>
+                        <p className="mt-0.5">La couleur de la bordure correspond à votre couleur choisie</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -462,6 +539,25 @@ export default function CVEditor() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Conteneur off-screen pour la génération PDF — jamais caché, toujours rendu */}
+      <div
+        ref={pdfRef}
+        style={{
+          position: "fixed",
+          left: "-9999px",
+          top: 0,
+          width: 794,
+          pointerEvents: "none",
+          visibility: "hidden",
+        }}
+      >
+        <CVPreview
+          data={values as import("./CVPreview").CVData}
+          accentColor={brand.accentColor}
+          logoDataUrl={brand.logoDataUrl}
+        />
       </div>
     </div>
   );
