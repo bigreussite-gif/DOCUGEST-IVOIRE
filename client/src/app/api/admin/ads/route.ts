@@ -13,8 +13,10 @@ const schema = z.object({
   body: z.string().max(300),
   ctaLabel: z.string().max(60),
   ctaUrl: z.string().max(500).optional().default(""),
-  /** data:image/webp;base64,... (ou data:image/gif;base64,... pour les GIF animés) — traité côté client */
-  imageDataUrl: z.string().max(4_000_000).optional().default(""),
+  /** Préféré pour GIF lourds : fichier dans /public/… ou URL HTTPS (évite limite ~4,5 Mo du corps de requête Vercel). */
+  imageUrl: z.string().max(2000).optional().default(""),
+  /** data:image/...;base64,... — GIF animés peuvent dépasser la limite serveur ; utiliser imageUrl dans ce cas */
+  imageDataUrl: z.string().max(10_000_000).optional().default(""),
   imageFit: z.enum(["cover", "contain"]).optional().default("cover"),
   imageFrame: z.enum(["banner", "photo", "square"]).optional().default("photo"),
   /** Code HTML brut : balise <script> AdSense, iframe partenaire, bannière HTML… */

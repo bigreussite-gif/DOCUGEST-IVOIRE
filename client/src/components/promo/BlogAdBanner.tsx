@@ -22,7 +22,7 @@ export function BlogAdBanner({ adSlot, label = "Publicité", className = "", min
     void refresh();
   }, [refresh]);
 
-  if (!raw?.title && !raw?.imageDataUrl && !raw?.htmlEmbed) return null;
+  if (!raw?.title && !raw?.body && !raw?.imageUrl && !raw?.imageDataUrl && !raw?.htmlEmbed) return null;
 
   return (
     <div className={`w-full overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200/70 shadow-sm ${className}`}>

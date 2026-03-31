@@ -17,6 +17,7 @@ type SlotConfig = {
   body: string;
   ctaLabel: string;
   ctaUrl: string;
+  imageUrl: string;
   imageDataUrl: string;
   imageFit: "cover" | "contain";
   imageFrame: "banner" | "photo" | "square";
@@ -57,6 +58,7 @@ export function AdPlaceholder({ label, hint, adSlot, className = "", minHeight =
       body: String(raw.body ?? ""),
       ctaLabel: String(raw.ctaLabel ?? ""),
       ctaUrl: String(raw.ctaUrl ?? ""),
+      imageUrl: String(raw.imageUrl ?? ""),
       imageDataUrl: String(raw.imageDataUrl ?? ""),
       imageFit: raw.imageFit === "contain" ? "contain" : "cover",
       imageFrame:
@@ -73,7 +75,11 @@ export function AdPlaceholder({ label, hint, adSlot, className = "", minHeight =
   }, [adSlot]);
 
   const hasContent = Boolean(
-    dynamic?.imageDataUrl?.trim() || dynamic?.title?.trim() || dynamic?.body?.trim() || dynamic?.htmlEmbed?.trim()
+    dynamic?.imageUrl?.trim() ||
+      dynamic?.imageDataUrl?.trim() ||
+      dynamic?.title?.trim() ||
+      dynamic?.body?.trim() ||
+      dynamic?.htmlEmbed?.trim()
   );
 
   // Si aucun contenu et pas en mode showEmpty : ne rien afficher
@@ -90,14 +96,22 @@ export function AdPlaceholder({ label, hint, adSlot, className = "", minHeight =
     if (adSlot) trackAdEvent("click", adSlot);
   }
 
-  const hasImage = Boolean(dynamic?.imageDataUrl?.trim());
+  const imgSrc = (() => {
+    const u = dynamic?.imageUrl?.trim();
+    if (u) {
+      if (u.startsWith("http://") || u.startsWith("https://") || u.startsWith("/")) return u;
+    }
+    return dynamic?.imageDataUrl?.trim() ?? "";
+  })();
 
-  const imageBlock = dynamic?.imageDataUrl ? (
+  const hasImage = Boolean(imgSrc);
+
+  const imageBlock = imgSrc ? (
     <div className={["relative w-full overflow-hidden rounded-xl bg-slate-200/50", FRAME_BOX[frame]].join(" ")}>
       {/* GIF animé : pas de ring pour ne pas couper les bords */}
       <img
-        src={dynamic.imageDataUrl}
-        alt={dynamic.title || label || "Publicité"}
+        src={imgSrc}
+        alt={dynamic?.title || label || "Publicité"}
         className={`h-full w-full ${imgFitClass} object-center`}
         loading={adSlot === "top-banner" || adSlot === "top-bar-partners" ? "eager" : "lazy"}
         decoding="async"
@@ -106,7 +120,7 @@ export function AdPlaceholder({ label, hint, adSlot, className = "", minHeight =
   ) : null;
 
   const imageWithLink =
-    dynamic?.imageDataUrl && linkOk ? (
+    imgSrc && linkOk ? (
       <a
         href={href}
         target="_blank"
@@ -161,7 +175,7 @@ export function AdPlaceholder({ label, hint, adSlot, className = "", minHeight =
       className={`flex flex-col items-center justify-center rounded-xl bg-white px-3 py-2 text-center ring-1 ring-slate-200/80 ${minHeight} ${className}`}
       data-ad-slot={adSlot}
     >
-      {dynamic?.imageDataUrl ? <div className="w-full">{imageWithLink}</div> : null}
+      {imgSrc ? <div className="w-full">{imageWithLink}</div> : null}
 
       {hasImage ? (
         <>

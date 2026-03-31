@@ -19,7 +19,11 @@ export function InlineAdStrip({
   const h = variant === "compact" ? "min-h-[56px]" : "min-h-[72px]";
 
   const hasContent = Boolean(
-    raw?.imageDataUrl?.trim() || raw?.title?.trim() || raw?.body?.trim()
+    raw?.imageUrl?.trim() ||
+      raw?.imageDataUrl?.trim() ||
+      raw?.title?.trim() ||
+      raw?.body?.trim() ||
+      raw?.htmlEmbed?.trim()
   );
 
   // Invisible si pas de pub + chargement terminé

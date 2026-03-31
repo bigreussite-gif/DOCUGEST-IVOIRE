@@ -13,6 +13,7 @@ type AdCfg = {
   body: string;
   ctaLabel: string;
   ctaUrl: string;
+  imageUrl: string;
   imageDataUrl: string;
   imageFit: "cover" | "contain";
   imageFrame: "banner" | "photo" | "square";
@@ -88,6 +89,7 @@ export function AdminAds() {
   const [body, setBody] = useState("");
   const [ctaLabel, setCtaLabel] = useState("");
   const [ctaUrl, setCtaUrl] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
   const [imageDataUrl, setImageDataUrl] = useState("");
   const [imageFit, setImageFit] = useState<"cover" | "contain">("cover");
   const [imageFrame, setImageFrame] = useState<"banner" | "photo" | "square">("photo");
@@ -118,6 +120,7 @@ export function AdminAds() {
       setBody("");
       setCtaLabel("");
       setCtaUrl("");
+      setImageUrl("");
       setImageDataUrl("");
       setImageFit("cover");
       setImageFrame("photo");
@@ -132,6 +135,7 @@ export function AdminAds() {
     setBody(c.body);
     setCtaLabel(c.ctaLabel);
     setCtaUrl(c.ctaUrl);
+    setImageUrl(c.imageUrl ?? "");
     setImageDataUrl(c.imageDataUrl ?? "");
     setImageFit(c.imageFit === "contain" ? "contain" : "cover");
     setImageFrame(c.imageFrame === "banner" || c.imageFrame === "square" ? c.imageFrame : "photo");
@@ -149,8 +153,11 @@ export function AdminAds() {
     try {
       const dataUrl = await compressImageToWebP(file, 1200, 0.82);
       setImageDataUrl(dataUrl);
-      if (file.type === "image/gif" && file.size > 3_000_000) {
-        setMsg("GIF accepté — attention : il est volumineux, ce qui peut ralentir l’affichage.");
+      setImageUrl("");
+      if (file.type === "image/gif" && file.size > 1_500_000) {
+        setMsg(
+          "GIF volumineux : l’enregistrement peut échouer (limite serveur). Préférez déposer le fichier dans public/ (ex. /banners/hero.gif) et indiquez l’URL ci‑dessous."
+        );
       }
     } catch {
       setMsg("Impossible de traiter l’image.");
@@ -160,8 +167,10 @@ export function AdminAds() {
   }
 
   async function save() {
-    if (!imageDataUrl.trim() && !title.trim() && !body.trim() && !htmlEmbed.trim()) {
-      setMsg("Ajoutez une image, un code HTML ou un titre / texte.");
+    const hasVisual =
+      Boolean(imageUrl.trim()) || Boolean(imageDataUrl.trim()) || Boolean(title.trim()) || Boolean(body.trim());
+    if (!hasVisual && !(adMode === "html" && htmlEmbed.trim())) {
+      setMsg("Ajoutez une image (fichier ou URL), un code HTML ou un titre / texte.");
       return;
     }
     setBusy(true);
@@ -169,7 +178,21 @@ export function AdminAds() {
     try {
       await adminFetch("/ads", {
         method: "POST",
-        json: { slot, page, category, title, body, ctaLabel, ctaUrl, imageDataUrl, imageFit, imageFrame, htmlEmbed: adMode === "html" ? htmlEmbed : "", active }
+        json: {
+          slot,
+          page,
+          category,
+          title,
+          body,
+          ctaLabel,
+          ctaUrl,
+          imageUrl: imageUrl.trim(),
+          imageDataUrl,
+          imageFit,
+          imageFrame,
+          htmlEmbed: adMode === "html" ? htmlEmbed : "",
+          active
+        }
       });
       setMsg("Publicité enregistrée.");
       await load();
@@ -299,7 +322,22 @@ export function AdminAds() {
                 />
               </label>
               {compressing ? <p className="text-sm text-slate-500 sm:col-span-2">Traitement image…</p> : null}
-              <p className="text-[11px] text-slate-400 sm:col-span-2">PNG, JPG, WebP, SVG → WebP optimisé · GIF → conservé (animation préservée)</p>
+              <p className="text-[11px] text-slate-400 sm:col-span-2">
+                PNG, JPG, WebP, SVG → WebP optimisé · GIF → conservé (animation préservée). GIF lourd : utilisez plutôt l’URL ci‑dessous.
+              </p>
+
+              <div className="sm:col-span-2">
+                <Input
+                  label="URL du visuel (recommandé pour GIF lourds)"
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  placeholder="Ex. /banners/jachete.gif ou https://…"
+                />
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Déposez le fichier dans <code className="rounded bg-slate-100 px-1">client/public/…</code> puis saisissez le chemin web (ex.{" "}
+                  <code className="rounded bg-slate-100 px-1">/jachete.gif</code>). Évite la limite de taille des images intégrées.
+                </p>
+              </div>
 
               <Input label="Titre (court)" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex. Promo livraison" />
               <Input label="Texte (optionnel)" value={body} onChange={(e) => setBody(e.target.value)} placeholder="Sous-titre" />
@@ -361,7 +399,7 @@ export function AdminAds() {
           <h2 className="text-sm font-semibold text-slate-800">Prévisualisation</h2>
           <p className="mt-1 text-xs text-slate-500">Rendu approximatif sur le site (emplacement {slot}).</p>
           <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-            {imageDataUrl ? (
+            {imageUrl.trim() || imageDataUrl ? (
               <div
                 className={[
                   "relative w-full overflow-hidden rounded-lg bg-slate-100 ring-1 ring-slate-200/80",
@@ -373,7 +411,7 @@ export function AdminAds() {
                 ].join(" ")}
               >
                 <img
-                  src={imageDataUrl}
+                  src={imageUrl.trim() || imageDataUrl}
                   alt=""
                   className={`h-full w-full object-center ${imageFit === "cover" ? "object-cover" : "object-contain"}`}
                 />
@@ -414,8 +452,8 @@ export function AdminAds() {
                 <td className="px-4 py-2 font-medium">{i.slot}</td>
                 <td className="px-4 py-2">{i.page}</td>
                 <td className="px-4 py-2">
-                  {i.imageDataUrl ? (
-                    <img src={i.imageDataUrl} alt="" className="h-10 w-24 rounded object-cover" />
+                  {i.imageUrl?.trim() || i.imageDataUrl ? (
+                    <img src={i.imageUrl?.trim() || i.imageDataUrl} alt="" className="h-10 w-24 rounded object-cover" />
                   ) : (
                     <span className="text-slate-400">—</span>
                   )}

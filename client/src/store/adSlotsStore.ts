@@ -8,6 +8,8 @@ export type AdSlotItem = {
   body?: string;
   ctaLabel?: string;
   ctaUrl?: string;
+  /** Fichier servi depuis /public ou CDN — fiable pour GIF lourds */
+  imageUrl?: string;
   imageDataUrl?: string;
   imageFit?: string;
   imageFrame?: string;
@@ -102,7 +104,8 @@ export const useAdSlotsStore = create<AdSlotsState>((set, get) => ({
           try {
             const slim = items.map((r) => ({
               ...r,
-              imageDataUrl: r.imageDataUrl && r.imageDataUrl.length < 2_000_000 ? r.imageDataUrl : ""
+              imageDataUrl:
+                r.imageDataUrl && r.imageDataUrl.length < 8_000_000 ? r.imageDataUrl : ""
             }));
             localStorage.setItem(AD_SLOTS_LS_KEY, JSON.stringify({ items: slim, t: lastNetworkFetch }));
           } catch {

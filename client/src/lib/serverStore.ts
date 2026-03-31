@@ -547,6 +547,8 @@ type AdSlotConfig = {
   body: string;
   ctaLabel: string;
   ctaUrl: string;
+  /** URL absolue ou chemin /public (ex. /banners/hero.gif) — préférable aux data URL pour GIF lourds */
+  imageUrl: string;
   /** Image WebP (data URL) compressée côté client */
   imageDataUrl: string;
   /** Remplissage du cadre : cover = sans bandes vides, contain = image entière */
@@ -568,6 +570,7 @@ export async function upsertAdSlotConfig({
   body,
   ctaLabel,
   ctaUrl,
+  imageUrl,
   imageDataUrl,
   imageFit,
   imageFrame,
@@ -582,6 +585,7 @@ export async function upsertAdSlotConfig({
   body: string;
   ctaLabel: string;
   ctaUrl: string;
+  imageUrl?: string;
   imageDataUrl?: string;
   imageFit?: "cover" | "contain";
   imageFrame?: "banner" | "photo" | "square";
@@ -601,6 +605,7 @@ export async function upsertAdSlotConfig({
       body,
       ctaLabel,
       ctaUrl,
+      imageUrl: imageUrl ?? "",
       imageDataUrl: imageDataUrl ?? "",
       imageFit: imageFit ?? "cover",
       imageFrame: imageFrame ?? "photo",
@@ -635,6 +640,7 @@ export async function listAdSlotsConfig(): Promise<AdSlotConfig[]> {
       body: String(m.body ?? ""),
       ctaLabel: String(m.ctaLabel ?? ""),
       ctaUrl: String(m.ctaUrl ?? ""),
+      imageUrl: String(m.imageUrl ?? ""),
       imageDataUrl: String(m.imageDataUrl ?? ""),
       imageFit: m.imageFit === "contain" ? "contain" : "cover",
       imageFrame:
