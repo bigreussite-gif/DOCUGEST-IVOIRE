@@ -617,21 +617,42 @@ export async function upsertAdSlotConfig({
   });
 }
 
+export async function deleteAdSlotConfig({
+  actorId,
+  slot
+}: {
+  actorId: string;
+  slot: string;
+}) {
+  await appendAuditLog({
+    actorId,
+    action: "ads.config.delete",
+    targetType: "ad_slot",
+    targetId: slot,
+    metadata: { slot },
+    ip: null
+  });
+}
+
 export async function listAdSlotsConfig(): Promise<AdSlotConfig[]> {
   const pool = getPool();
   const { rows } = await pool.query(
-    `SELECT target_id, metadata, created_at
+    `SELECT action, target_id, metadata, created_at
      FROM public.admin_audit_logs
-     WHERE action = 'ads.config.upsert'
+     WHERE action IN ('ads.config.upsert', 'ads.config.delete')
      ORDER BY created_at DESC
      LIMIT 500`
   );
 
   const seen = new Set<string>();
   const out: AdSlotConfig[] = [];
-  for (const row of rows as { target_id: string | null; metadata: unknown; created_at: unknown }[]) {
+  for (const row of rows as { action: string; target_id: string | null; metadata: unknown; created_at: unknown }[]) {
     const slot = String(row.target_id ?? "");
     if (!slot || seen.has(slot)) continue;
+    if (row.action === "ads.config.delete") {
+      seen.add(slot);
+      continue;
+    }
     const m = (row.metadata ?? {}) as Record<string, unknown>;
     out.push({
       slot,

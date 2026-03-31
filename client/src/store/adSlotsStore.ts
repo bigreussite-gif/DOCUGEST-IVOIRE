@@ -56,6 +56,12 @@ type AdSlotsState = {
 /** Appelé après sauvegarde admin : rafraîchit tous les clients (même onglet + autres). */
 export function notifyAdSlotsUpdated() {
   try {
+    localStorage.removeItem(AD_SLOTS_LS_KEY);
+  } catch {
+    /* ignore */
+  }
+  lastNetworkFetch = 0;
+  try {
     const bc = new BroadcastChannel("docugest-ads-updated");
     bc.postMessage({ t: Date.now() });
     bc.close();
@@ -91,7 +97,10 @@ export const useAdSlotsStore = create<AdSlotsState>((set, get) => ({
     inflight = (async () => {
       set({ isFetching: true });
       try {
-        const r = await fetch("/api/ads/slots", { cache: "no-store", credentials: "same-origin" });
+        const r = await fetch(`/api/ads/slots${force ? `?_t=${Date.now()}` : ""}`, {
+          cache: "no-store",
+          credentials: "same-origin"
+        });
         const data = (await r.json()) as { items?: AdSlotItem[] };
         const items = Array.isArray(data.items) ? data.items : [];
         const bySlot = buildBySlot(items);

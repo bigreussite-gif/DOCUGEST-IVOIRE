@@ -54,3 +54,21 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: "Echec sauvegarde affichage pub" }, { status: 500 });
   }
 }
+
+export async function DELETE(req: Request) {
+  const ctx = await requireBackofficeRequest(req);
+  if (ctx instanceof NextResponse) return ctx;
+  const { auth } = ctx;
+  const { searchParams } = new URL(req.url);
+  const slot = searchParams.get("slot")?.trim() ?? "";
+  if (slot.length < 2 || slot.length > 80) {
+    return NextResponse.json({ message: "Slot invalide" }, { status: 400 });
+  }
+  try {
+    await store.deleteAdSlotConfig({ actorId: auth.sub, slot });
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    console.error("[api/admin/ads] DELETE", e);
+    return NextResponse.json({ message: "Echec suppression pub" }, { status: 500 });
+  }
+}

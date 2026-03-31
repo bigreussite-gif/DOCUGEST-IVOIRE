@@ -12,8 +12,8 @@ export async function GET() {
       { items: activeItems },
       {
         headers: {
-          // Revalidation courte : 60 s CDN, toujours frais au navigateur
-          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=30"
+          // Revalidation plus agressive pour propager vite les changements admin.
+          "Cache-Control": "public, s-maxage=10, stale-while-revalidate=10"
         }
       }
     );

@@ -275,6 +275,35 @@ export function AdminAds() {
     }
   }
 
+  async function removeSlotConfig() {
+    if (!window.confirm("Supprimer cette publicité de l'emplacement sélectionné ?")) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      await adminFetch(`/ads?slot=${encodeURIComponent(slot)}`, { method: "DELETE" });
+      setTitle("");
+      setBody("");
+      setCtaLabel("");
+      setCtaUrl("");
+      setImageUrl("");
+      setImageDataUrl("");
+      setImageFit("cover");
+      setImageFrame("photo");
+      setHtmlEmbed("");
+      setAdMode("image");
+      setPage("global");
+      setCategory("general");
+      setActive(false);
+      setMsg("Publicité supprimée. Le slot repassera en Libre après rafraîchissement.");
+      await load();
+      notifyAdSlotsUpdated();
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Erreur suppression");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-5xl space-y-8">
       <header className="text-center sm:text-left">
@@ -512,6 +541,9 @@ export function AdminAds() {
             </Button>
             <Button type="button" variant="secondary" onClick={() => void save()} disabled={busy || compressing}>
               Enregistrer (visibilité ci-dessus)
+            </Button>
+            <Button type="button" variant="ghost" onClick={() => void removeSlotConfig()} disabled={busy || compressing}>
+              Supprimer la pub
             </Button>
             {msg ? <span className="text-sm text-slate-600">{msg}</span> : null}
           </div>
