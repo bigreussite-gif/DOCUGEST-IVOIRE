@@ -1,8 +1,8 @@
 /**
- * URL canonique du site (SEO, Open Graph, JSON-LD, sitemap).
- * Production : définir NEXT_PUBLIC_APP_URL sur l’alias officiel https://docugest-ivoire.vercel.app
- * (éviter les URLs de prévisualisation ou autres domaines).
- * Si absent : repli sur VERCEL_URL (ex. déploiement *.vercel.app).
+ * URL canonique du site (SEO, Open Graph, JSON-LD, sitemap, liens e-mail).
+ * Préférer NEXT_PUBLIC_SITE_URL ou NEXT_PUBLIC_APP_URL = URL du front Next.js
+ * (ex. https://docugest-ivoire.vercel.app), pas l’URL d’une API.
+ * Si absent : repli sur VERCEL_PROJECT_PRODUCTION_URL puis VERCEL_URL.
  */
 function normalizeOriginUrl(raw: string): string {
   const t = raw.trim().replace(/\/+$/, "");
@@ -11,7 +11,7 @@ function normalizeOriginUrl(raw: string): string {
 }
 
 export function getSiteUrl(): string {
-  const explicit = process.env.NEXT_PUBLIC_APP_URL;
+  const explicit = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL;
   if (typeof explicit === "string" && explicit.trim() !== "") {
     return explicit.trim().replace(/\/+$/, "");
   }
@@ -31,11 +31,11 @@ export function getMetadataBase(): URL {
   return new URL(`${getSiteUrl()}/`);
 }
 
-export const SITE_NAME = "DocuGest Ivoire";
+export const SITE_NAME = "DocuGestIvoire";
 
 /** Texte optimisé pour titres / partages (≈155–165 car. utiles pour les SERP). */
 export const SITE_DESCRIPTION =
-  "DocuGest Ivoire : factures, devis, proforma et bulletins de paie en PDF professionnels. Outil en ligne pour entrepreneurs et PME en Côte d'Ivoire et Afrique francophone — simple, rapide, conforme.";
+  "DocuGestIvoire : factures, devis, proforma et bulletins de paie en PDF professionnels. Outil en ligne pour entrepreneurs et PME en Côte d'Ivoire et Afrique francophone — simple, rapide, conforme.";
 
 export const SITE_KEYWORDS = [
   "facture électronique Côte d'Ivoire",
@@ -46,7 +46,7 @@ export const SITE_KEYWORDS = [
   "entrepreneur Afrique francophone",
   "logiciel facturation gratuit",
   "gestion PME Abidjan",
-  "DocuGest Ivoire",
+  "DocuGestIvoire",
   "gestion documentaire PME",
   "PDF facture professionnelle",
   "devis crédible UEMOA"
@@ -66,24 +66,24 @@ export const SEO_SHARE_IMAGES: ReadonlyArray<{
     path: "/seo/docugest-partage-hero-1.png",
     width: 682,
     height: 1024,
-    alt: "DocuGest Ivoire — Tes documents pro sans prise de tête : factures, devis et bulletins en FCFA pour l’entrepreneuriat en Afrique francophone."
+    alt: "DocuGestIvoire — Tes documents pro sans prise de tête : factures, devis et bulletins en FCFA pour l’entrepreneuriat en Afrique francophone."
   },
   {
     path: "/seo/docugest-partage-hero-2.png",
     width: 682,
     height: 1024,
-    alt: "DocuGest Ivoire — Gérez factures, devis, proforma et bulletins de salaire : outil pro pour entrepreneurs et PME."
+    alt: "DocuGestIvoire — Gérez factures, devis, proforma et bulletins de salaire : outil pro pour entrepreneurs et PME."
   },
   {
     path: "/seo/docugest-partage-hero-3.png",
     width: 682,
     height: 1024,
-    alt: "DocuGest Ivoire — Facturation, devis et paie en FCFA, gratuit et financé par la publicité."
+    alt: "DocuGestIvoire — Facturation, devis et paie en FCFA, gratuit et financé par la publicité."
   },
   {
     path: "/seo/docugest-marque-logo.png",
     width: 1024,
     height: 1024,
-    alt: "Logo DocuGest Ivoire — dossier, calculatrice et carte de l’Afrique, marque orange et vert."
+    alt: "Logo DocuGestIvoire — dossier, calculatrice et carte de l’Afrique, marque orange et vert."
   }
 ];
