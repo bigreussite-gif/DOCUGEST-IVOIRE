@@ -18,6 +18,7 @@ export default function App() {
         <Route path="/forgot-password" element={<NextFullPageRedirect path="/forgot-password" />} />
         <Route path="/reset-password" element={<NextFullPageRedirect path="/reset-password" />} />
         <Route path="/register" element={<NextFullPageRedirect path="/register" />} />
+        <Route path="/setup-super-admin" element={<NextFullPageRedirect path="/setup-super-admin" />} />
         <Route path="/dashboard/*" element={<Dashboard />} />
         <Route
           path="/admin/*"

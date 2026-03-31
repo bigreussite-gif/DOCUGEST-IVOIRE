@@ -350,6 +350,12 @@ function AdminLogin({
             <div className="mb-5">
               <h2 className="text-xl font-bold text-text">Connexion administrateur</h2>
               <p className="mt-1 text-sm text-slate-600">Accès au tableau de bord admin DocuGestIvoire.</p>
+              <p className="mt-2 text-xs text-slate-500">
+                Première installation (promouvoir le super admin) :{" "}
+                <a href="/setup-super-admin" className="font-semibold text-primary underline-offset-2 hover:underline">
+                  page d’activation
+                </a>
+              </p>
             </div>
             {cachedIdentity ? (
               <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
