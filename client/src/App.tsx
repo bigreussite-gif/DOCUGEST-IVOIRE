@@ -4,7 +4,7 @@ import { AdSlotsBootstrap } from "./components/promo/AdSlotsBootstrap";
 import Landing from "./views/Landing";
 import Login from "./views/Login";
 import Dashboard from "./views/Dashboard";
-import ResetPassword from "./views/ResetPassword";
+import NextFullPageRedirect from "./views/NextFullPageRedirect";
 
 const AdminApp = lazy(() => import("./views/admin/AdminApp"));
 
@@ -15,7 +15,9 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/forgot-password" element={<NextFullPageRedirect path="/forgot-password" />} />
+        <Route path="/reset-password" element={<NextFullPageRedirect path="/reset-password" />} />
+        <Route path="/register" element={<NextFullPageRedirect path="/register" />} />
         <Route path="/dashboard/*" element={<Dashboard />} />
         <Route
           path="/admin/*"

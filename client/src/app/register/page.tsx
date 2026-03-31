@@ -93,7 +93,7 @@ export default function RegisterPage() {
       <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-md flex-col justify-center">
         <div className="mx-auto mb-6 flex w-full max-w-md items-center justify-between gap-3">
           <div className="rounded-2xl bg-white px-3 py-2 shadow-soft ring-2 ring-slate-200/80">
-            <img src="/logo-docugest-ivoire.png" alt="DocuGest Ivoire" className="h-10 w-auto object-contain" />
+            <img src="/logo-docugest-ivoire.png" alt="DocuGestIvoire" className="h-14 w-auto object-contain" />
           </div>
           <Link
             href="/"
@@ -237,9 +237,17 @@ export default function RegisterPage() {
               Me connecter
             </Link>
           </p>
+          <p className="mt-3 text-center">
+            <Link
+              href="/forgot-password"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-2xl border border-primary/25 bg-primary/5 px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/10"
+            >
+              Mot de passe oublié ? — réinitialiser par e-mail
+            </Link>
+          </p>
 
           <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3.5 text-center">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">Pourquoi DocuGest ?</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">Pourquoi DocuGestIvoire ?</p>
             <p className="mt-1.5 text-xs leading-relaxed text-slate-700">
               Gagnez du temps, professionnalisez vos documents et inspirez confiance à vos clients.
             </p>

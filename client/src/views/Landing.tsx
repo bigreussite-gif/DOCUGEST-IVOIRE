@@ -85,7 +85,7 @@ export default function Landing() {
             <div className="rounded-2xl bg-white px-4 py-2.5 shadow-lg ring-2 ring-primary/20 transition-transform duration-200 hover:scale-[1.01]">
               <img
                 src="/logo-docugest-ivoire.png"
-                alt="DocuGest Ivoire"
+                alt="DocuGestIvoire"
                 className="h-16 w-auto max-w-[min(100%,320px)] object-contain object-left drop-shadow sm:h-20 sm:max-w-[360px]"
                 width={360}
                 height={80}
@@ -106,6 +106,12 @@ export default function Landing() {
             </Link>
             <Link to="/register">
               <Button variant="primary">Créer mon compte — gratuit</Button>
+            </Link>
+            <Link
+              to="/forgot-password"
+              className="w-full text-center text-xs font-semibold text-primary underline-offset-4 hover:underline min-[420px]:w-auto"
+            >
+              Mot de passe oublié ?
             </Link>
           </div>
         </header>
@@ -137,7 +143,7 @@ export default function Landing() {
               </h1>
               <p className="mt-5 max-w-xl text-lg leading-relaxed text-slate-700">
                 Factures, contrats, CV, bulletins de salaire, bons de commande…
-                DocuGest Ivoire centralise <strong>11 types de documents professionnels</strong> en FCFA,
+                DocuGestIvoire centralise <strong>11 types de documents professionnels</strong> en FCFA,
                 en français, pour les entrepreneurs et demandeurs d'emploi de Côte d'Ivoire.
               </p>
               <p className="mt-3 max-w-xl text-base text-slate-600">
@@ -210,7 +216,7 @@ export default function Landing() {
               Tout ce dont tu as besoin, au même endroit
             </h2>
             <p className="mx-auto mt-3 max-w-2xl text-center text-base text-slate-600">
-              Du devis au contrat de travail, de la facture au CV — DocuGest Ivoire couvre l'ensemble de
+              Du devis au contrat de travail, de la facture au CV — DocuGestIvoire couvre l'ensemble de
               ta vie professionnelle. Gratuit. En FCFA. En français.
             </p>
 
@@ -312,7 +318,7 @@ export default function Landing() {
             <p className="mt-3 text-sm leading-relaxed text-slate-700 sm:text-base">
               La facturation électronique normalisée (FNE) et les dispositifs officiels de l'État ont leur
               rôle : conformité, déclarations, interconnexion.{" "}
-              <strong>DocuGest Ivoire ne les remplace pas.</strong> Nous vous aidons à produire au quotidien
+              <strong>DocuGestIvoire ne les remplace pas.</strong> Nous vous aidons à produire au quotidien
               des documents commerciaux clairs — devis, factures PDF, bulletins, contrats — pour gagner du
               temps et rassurer vos clients. Pensez à notre outil comme un{" "}
               <strong>partenaire de mise en forme et d'efficacité</strong>, aligné avec votre démarche

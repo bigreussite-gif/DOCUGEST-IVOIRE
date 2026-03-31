@@ -120,14 +120,9 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <div className="mb-1.5 flex items-center justify-between">
-                <label htmlFor="password" className="text-sm font-medium text-text">
-                  Mot de passe
-                </label>
-                <Link href="/forgot-password" className="text-xs font-medium text-primary underline-offset-4 hover:underline">
-                  Mot de passe oublié ?
-                </Link>
-              </div>
+              <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-text">
+                Mot de passe
+              </label>
               <input
                 id="password"
                 name="password"
@@ -138,6 +133,17 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="min-h-[48px] w-full rounded-2xl border border-border bg-bg px-4 py-3 text-base text-text outline-none ring-primary/25 transition focus:ring-2 sm:text-sm"
               />
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <Link
+                  href="/forgot-password"
+                  className="inline-flex min-h-[44px] items-center justify-center rounded-2xl border border-primary/20 bg-primary/5 px-4 py-2 text-center text-sm font-semibold text-primary transition hover:bg-primary/10"
+                >
+                  Mot de passe oublié — réinitialiser par e-mail
+                </Link>
+                <span className="hidden text-center text-[11px] text-slate-500 sm:block sm:max-w-[10rem] sm:text-right">
+                  Un lien vous est envoyé sur votre boîte mail.
+                </span>
+              </div>
             </div>
 
             {error ? (

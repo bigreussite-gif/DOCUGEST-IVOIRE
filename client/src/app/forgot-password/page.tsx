@@ -88,6 +88,9 @@ export default function ForgotPasswordPage() {
                 <p className="mt-2 text-sm text-slate-600">
                   Entrez votre email et nous vous enverrons un lien pour créer un nouveau mot de passe.
                 </p>
+                <p className="mt-3 rounded-xl border border-amber-200/80 bg-amber-50/90 px-3 py-2 text-xs leading-relaxed text-amber-950">
+                  <strong>Important :</strong> la réinitialisation se fait uniquement par <strong>e-mail</strong>, pas par numéro de téléphone / WhatsApp. Utilisez l’adresse e-mail associée à votre compte.
+                </p>
               </div>
 
               <form onSubmit={onSubmit} className="flex flex-col gap-4">
