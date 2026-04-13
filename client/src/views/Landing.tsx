@@ -140,7 +140,7 @@ export default function Landing() {
                 <div className="flex -space-x-2">
                   {[1, 2, 3, 4].map((i) => (
                     <div key={i} className="h-8 w-8 rounded-full border-2 border-white bg-slate-100 ring-1 ring-slate-200 overflow-hidden">
-                      <img src={`https://i.pravatar.cc/100?u=${i}`} alt="" />
+                      <img src={`/assets/images/avatars/avatar${i}.png`} alt={`Entrepreneur Ivoirien ${i}`} className="h-full w-full object-cover" />
                     </div>
                   ))}
                 </div>
