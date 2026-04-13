@@ -56,20 +56,58 @@ export default function RegisterPage() {
         return;
       }
 
-      console.log("[register] succès, redirection dashboard");
+      console.log("[register] succès, affichage remerciements");
       setSuccess(true);
 
-      // Adaptation au store existant
+      // Adaptation au store existant (garde la session en cache pour plus tard)
       commitAuthSession(data.accessToken, data.user as any);
       await useAuthStore.getState().loadMe();
 
-      router.replace("/dashboard");
+      // On ne redirige plus automatiquement vers /dashboard
+      // router.replace("/dashboard");
     } catch (err: any) {
       console.error("[register] unexpected error", err);
       setError("Erreur inattendue. Réessayez.");
     } finally {
       setLoading(false);
     }
+  }
+
+  if (success && !error) {
+    return (
+      <div className="min-h-screen bg-[#FDFDFE] flex flex-col items-center justify-center p-6 text-center">
+        <AdSlotsBootstrap />
+        <div className="max-w-md w-full bg-white rounded-[3rem] p-10 shadow-modal ring-1 ring-slate-200/50">
+          <div className="mb-8 flex justify-center">
+            <div className="h-24 w-24 rounded-3xl bg-emerald-50 text-emerald-500 flex items-center justify-center text-5xl">
+              🎉
+            </div>
+          </div>
+          <h1 className="text-4xl font-black text-[#111827] mb-4">Merci ! 🇨🇮</h1>
+          <p className="text-lg font-medium text-slate-500 leading-relaxed mb-10">
+            Votre compte a été créé avec succès. Bienvenue sur <span className="text-primary font-bold">DocuGest Ivoire</span>.
+          </p>
+          <div className="space-y-4">
+            <Link href="/dashboard" className="block">
+              <Button variant="primary" className="h-16 w-full rounded-[2rem] text-xl font-bold shadow-primary-glow">
+                Accéder au Dashboard
+              </Button>
+            </Link>
+            <Link href="/login" className="block text-sm font-bold text-slate-400 hover:text-primary transition-colors">
+              Ou se connecter manuellement
+            </Link>
+          </div>
+          
+          <div className="mt-12 pt-8 border-t border-slate-100 italic text-xs text-slate-400">
+            Commencez à créer vos documents pro dès maintenant.
+          </div>
+        </div>
+        
+        <div className="mt-10">
+          <SorobossFooter />
+        </div>
+      </div>
+    );
   }
 
   return (
