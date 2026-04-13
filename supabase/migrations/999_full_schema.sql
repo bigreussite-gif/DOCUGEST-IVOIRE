@@ -9,10 +9,10 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE TABLE IF NOT EXISTS public.users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   full_name VARCHAR(255) NOT NULL,
-  phone VARCHAR(20) NOT NULL,
+  phone VARCHAR(20),
   whatsapp VARCHAR(20),
   email VARCHAR(255) UNIQUE NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
+  password_hash VARCHAR(255),
   company_name VARCHAR(255),
   company_logo_url TEXT,
   company_address TEXT,

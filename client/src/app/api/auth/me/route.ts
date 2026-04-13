@@ -40,14 +40,18 @@ export async function GET(req: Request) {
           const { data } = await res.json();
           const user = data?.user;
           if (user) {
-            console.log("[api/auth/me] Création record pour:", user.email);
-            // On insère l'utilisateur a minima
+            const userId = user.id;
+            const userEmail = user.email;
+            const userName = user.name || user.full_name || userEmail.split('@')[0];
+            const userPhone = user.phone || '';
+
+            console.log("[api/auth/me] Création record pour:", userEmail);
             const pool = getPool();
             await pool.query(
               `INSERT INTO public.users (id, full_name, email, phone, role) 
                VALUES ($1, $2, $3, $4, 'user')
                ON CONFLICT (id) DO UPDATE SET last_login = NOW()`,
-              [user.id, user.name || user.email.split('@')[0], user.email, user.phone || '']
+              [userId, userName, userEmail, userPhone]
             );
             me = await store.getMe(auth.sub);
           }
