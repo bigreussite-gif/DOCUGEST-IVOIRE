@@ -97,7 +97,12 @@ export default function Landing() {
               <div className="text-xs font-bold text-slate-500 uppercase tracking-[0.2em] leading-none mt-2">L'IA Documentaire Ivoirienne</div>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-6">
+            <nav className="flex items-center gap-4 mr-2">
+              <Link to="/blog" className="px-4 py-2 text-sm font-bold text-slate-900 hover:text-primary transition-colors">
+                Blog
+              </Link>
+            </nav>
             <Link to="/login" className="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-primary transition-colors">
               Se connecter
             </Link>
