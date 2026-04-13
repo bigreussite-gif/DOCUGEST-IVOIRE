@@ -24,7 +24,40 @@ export async function GET(req: Request) {
   const auth = await requireSessionAuth(req);
   if (auth instanceof NextResponse) return auth;
 
-  const me = await store.getMe(auth.sub);
+  let me = await store.getMe(auth.sub);
+  
+  // Just-In-Time (JIT) Provisioning : si l'utilisateur est authentifié InsForge mais absent de la DB locale
+  if (!me) {
+    console.log("[api/auth/me] Utilisateur absent de la DB locale, tentative de JIT Provisioning pour UID:", auth.sub);
+    const token = req.headers.get("authorization")?.slice(7);
+    if (token) {
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_INSFORGE_URL;
+        const res = await fetch(`${baseUrl}/auth/user`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const { data } = await res.json();
+          const user = data?.user;
+          if (user) {
+            console.log("[api/auth/me] Création record pour:", user.email);
+            // On insère l'utilisateur a minima
+            const pool = getPool();
+            await pool.query(
+              `INSERT INTO public.users (id, full_name, email, phone, role) 
+               VALUES ($1, $2, $3, $4, 'user')
+               ON CONFLICT (id) DO UPDATE SET last_login = NOW()`,
+              [user.id, user.name || user.email.split('@')[0], user.email, user.phone || '']
+            );
+            me = await store.getMe(auth.sub);
+          }
+        }
+      } catch (err) {
+        console.error("[api/auth/me] JIT fail", err);
+      }
+    }
+  }
+
   if (!me) return NextResponse.json({ message: "Utilisateur introuvable" }, { status: 404 });
   return NextResponse.json(me);
 }
