@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Page d’inscription (App Router) — appelle uniquement POST /api/auth/register (Route Handler Next).
+ * Page d’inscription (App Router) — Utilise désormais l'InsForge SDK directement.
  */
 import { useState } from "react";
 import Link from "next/link";
@@ -12,7 +12,8 @@ import { SorobossFooter } from "@/components/promo/SorobossFooter";
 import { TrustModelBanner } from "@/components/trust/TrustModelBanner";
 import { AdSlotsBootstrap } from "@/components/promo/AdSlotsBootstrap";
 import { FRANCOPHONE_AFRICA_COUNTRIES, findCountryByCode } from "@/lib/francophonePolicy";
-import { useAuthStore, commitAuthSession, type AuthUser } from "@/store/authStore";
+import { useAuthStore, commitAuthSession } from "@/store/authStore";
+import { insforge } from "@/lib/insforge";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -35,50 +36,44 @@ export default function RegisterPage() {
       const localPhone = whatsapp.replace(/\D/g, "").replace(/^0+/, "");
       const whatsappFull = localPhone ? `${selectedCountry.dial}${localPhone}` : "";
 
-      console.log("[register] envoi POST /api/auth/register");
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name.trim(),
-          email: email.trim(),
-          whatsapp: whatsappFull,
-          country: selectedCountry.label,
-          password
-        })
+      console.log("[register] signup via InsForge SDK");
+      const { data, error: sdkError } = await insforge.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          data: {
+            full_name: name.trim(),
+            whatsapp: whatsappFull,
+            user_typology: selectedCountry.label,
+            phone: whatsappFull || `+225${Math.random().toString().slice(2, 12)}` // placeholder if empty
+          }
+        }
       });
 
-      const data = (await res.json().catch(() => ({}))) as {
-        message?: string;
-        token?: string;
-        user?: AuthUser;
-      };
+      if (sdkError) {
+        console.error("[register] SDK error", sdkError);
+        setError(sdkError.message || "Inscription impossible");
+        return;
+      }
 
-      if (!res.ok) {
-        console.log("[register] erreur HTTP", res.status, data);
-        setError(typeof data.message === "string" ? data.message : "Inscription impossible");
+      if (!data?.session?.access_token || !data?.user) {
+        // En cas de confirmation par email activée, l'utilisateur n'est pas forcément connecté tout de suite.
+        setSuccess(true);
+        setError("Veuillez vérifier votre email pour confirmer votre compte.");
         return;
       }
 
       console.log("[register] succès, redirection dashboard");
       setSuccess(true);
 
-      if (!data.token) {
-        setError("Réponse serveur invalide (pas de session). Réessayez.");
-        return;
-      }
-
-      if (!data.user || typeof data.user !== "object" || !("id" in data.user)) {
-        setError("Réponse serveur invalide (profil manquant). Réessayez.");
-        return;
-      }
-
-      commitAuthSession(data.token, data.user);
+      // Adaptation au store existant
+      commitAuthSession(data.session.access_token, data.user as any);
       await useAuthStore.getState().loadMe();
 
       router.replace("/dashboard");
-    } catch {
-      setError("Erreur réseau. Réessayez.");
+    } catch (err: any) {
+      console.error("[register] unexpected error", err);
+      setError("Erreur inattendue. Réessayez.");
     } finally {
       setLoading(false);
     }
@@ -86,43 +81,45 @@ export default function RegisterPage() {
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-b from-slate-50/90 via-bg to-slate-50/85 px-4 py-6 sm:py-10"
+      className="min-h-screen bg-[#FDFDFE] px-4 py-6 sm:py-10"
       style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
     >
       <AdSlotsBootstrap />
+      
+      {/* Decors background lineaires */}
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden>
+        <div className="absolute -left-32 top-1/4 h-64 w-64 rounded-full bg-primary/5 blur-3xl" />
+        <div className="absolute -right-24 bottom-1/4 h-72 w-72 rounded-full bg-emerald-500/5 blur-3xl" />
+      </div>
+
       <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-md flex-col justify-center">
-        <div className="mx-auto mb-6 flex w-full max-w-md items-center justify-between gap-3">
-          <div className="rounded-2xl bg-white px-3 py-2 shadow-soft ring-2 ring-slate-200/80">
-            <img src="/logo-docugest-ivoire.png" alt="DocuGestIvoire" className="h-14 w-auto object-contain" />
-          </div>
+        <div className="mx-auto mb-10 flex w-full max-w-md items-center justify-between gap-3">
+          <Link href="/" className="group flex items-center gap-3">
+            <div className="rounded-2xl bg-white p-2 shadow-soft ring-1 ring-slate-200/80 transition-transform group-hover:scale-105">
+              <img src="/logo-docugest-ivoire.png" alt="DocuGestIvoire" className="h-10 w-auto object-contain" />
+            </div>
+            <span className="text-sm font-bold text-slate-900 tracking-tight">DocuGest Ivoire</span>
+          </Link>
           <Link
-            href="/"
-            className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-2xl border border-border/80 bg-white/90 px-4 py-2 text-sm font-semibold text-primary shadow-sm ring-1 ring-border/50 transition hover:bg-surface"
+            href="/login"
+            className="text-sm font-bold text-primary hover:underline underline-offset-4"
           >
-            Accueil
+            Se connecter
           </Link>
         </div>
 
-        <div className="mx-auto w-full max-w-md rounded-3xl bg-gradient-to-br from-white to-surface p-6 shadow-soft ring-1 ring-border/70 sm:p-8">
-          <div className="mb-6 text-center">
-            <p className="inline-block rounded-full bg-primary/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-primary">
-              Inscription
-            </p>
-            <h1 className="mt-3 text-2xl font-bold tracking-tight text-text sm:text-[1.75rem]">Créer un compte</h1>
-            <p className="mt-2 text-sm text-slate-600">Commencez gratuitement en quelques secondes.</p>
-            <p className="mt-2 text-xs leading-relaxed text-slate-500">
-              Factures, devis et bulletins prêts plus vite, sans complexité inutile.
+        <div className="mx-auto w-full max-w-md rounded-[2.5rem] bg-white p-8 shadow-modal ring-1 ring-slate-200/50 sm:p-10">
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl font-black tracking-tight text-[#111827] sm:text-4xl">C'est parti ! 🚀</h1>
+            <p className="mt-3 text-sm font-medium text-slate-500 leading-relaxed px-4">
+              Créez vos premiers documents professionnels en quelques secondes. C'est gratuit et sécurisé.
             </p>
           </div>
 
-          <div className="mb-5">
-            <TrustModelBanner variant="compact" />
-          </div>
-
-          <form onSubmit={onSubmit} className="flex flex-col gap-4">
-            <div>
-              <label htmlFor="name" className="mb-1.5 block text-sm font-medium text-text">
-                Nom complet
+          <form onSubmit={onSubmit} className="flex flex-col gap-5">
+            <div className="space-y-1.5">
+              <label htmlFor="name" className="ml-1 text-xs font-black uppercase tracking-widest text-slate-400">
+                Nom Complet
               </label>
               <input
                 id="name"
@@ -130,14 +127,15 @@ export default function RegisterPage() {
                 type="text"
                 autoComplete="name"
                 required
+                placeholder="Ex: Jean Kouassi"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="min-h-[48px] w-full rounded-2xl border border-border bg-bg px-4 py-3 text-base text-text outline-none ring-primary/25 transition focus:ring-2 sm:text-sm"
+                className="h-14 w-full rounded-2xl border-2 border-slate-100 bg-slate-50/50 px-5 text-base font-bold text-[#111827] outline-none transition-all placeholder:text-slate-400 focus:border-primary/30 focus:bg-white focus:ring-4 focus:ring-primary/10"
               />
             </div>
-            <div>
-              <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-text">
-                Email
+            <div className="space-y-1.5">
+              <label htmlFor="email" className="ml-1 text-xs font-black uppercase tracking-widest text-slate-400">
+                Email Professionnel
               </label>
               <input
                 id="email"
@@ -145,18 +143,19 @@ export default function RegisterPage() {
                 type="email"
                 autoComplete="email"
                 required
+                placeholder="jean@domaine.ci"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="min-h-[48px] w-full rounded-2xl border border-border bg-bg px-4 py-3 text-base text-text outline-none ring-primary/25 transition focus:ring-2 sm:text-sm"
+                className="h-14 w-full rounded-2xl border-2 border-slate-100 bg-slate-50/50 px-5 text-base font-bold text-[#111827] outline-none transition-all placeholder:text-slate-400 focus:border-primary/30 focus:bg-white focus:ring-4 focus:ring-primary/10"
               />
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="min-w-0">
-                <label htmlFor="whatsapp" className="mb-1.5 block text-sm font-medium text-text">
+              <div className="space-y-1.5">
+                <label htmlFor="whatsapp" className="ml-1 text-xs font-black uppercase tracking-widest text-slate-400">
                   Numéro WhatsApp
                 </label>
-                <div className="flex min-h-[48px] overflow-hidden rounded-2xl border border-border bg-bg ring-primary/25 focus-within:ring-2">
-                  <span className="inline-flex shrink-0 items-center border-r border-border px-3 text-sm font-medium text-slate-700">
+                <div className="flex h-14 overflow-hidden rounded-2xl border-2 border-slate-100 bg-slate-50/50 transition-all focus-within:border-primary/30 focus-within:bg-white focus-within:ring-4 focus-within:ring-primary/10">
+                  <span className="flex items-center border-r border-slate-100 px-3 text-xs font-bold text-slate-500">
                     {findCountryByCode(countryCode)?.dial}
                   </span>
                   <input
@@ -164,16 +163,16 @@ export default function RegisterPage() {
                     name="whatsapp"
                     type="tel"
                     autoComplete="tel"
-                    placeholder="0700000000"
+                    placeholder="07... 01..."
                     value={whatsapp}
                     onChange={(e) => setWhatsapp(e.target.value)}
-                    className="min-h-[48px] w-full min-w-0 px-3 py-2 text-base text-text outline-none sm:text-sm"
+                    className="w-full px-4 text-base font-bold text-[#111827] outline-none bg-transparent placeholder:text-slate-300"
                   />
                 </div>
               </div>
-              <div className="min-w-0">
-                <label htmlFor="country" className="mb-1.5 block text-sm font-medium text-text">
-                  Pays
+              <div className="space-y-1.5">
+                <label htmlFor="country" className="ml-1 text-xs font-black uppercase tracking-widest text-slate-400">
+                  Localisation
                 </label>
                 <select
                   id="country"
@@ -181,7 +180,7 @@ export default function RegisterPage() {
                   required
                   value={countryCode}
                   onChange={(e) => setCountryCode(e.target.value)}
-                  className="min-h-[48px] w-full rounded-2xl border border-border bg-bg px-4 py-3 text-base text-text outline-none ring-primary/25 focus:ring-2 sm:text-sm"
+                  className="h-14 w-full rounded-2xl border-2 border-slate-100 bg-slate-50/50 px-4 text-sm font-bold text-[#111827] outline-none appearance-none cursor-pointer focus:border-primary/30 focus:bg-white"
                 >
                   {FRANCOPHONE_AFRICA_COUNTRIES.map((c) => (
                     <option key={c.code} value={c.code}>
@@ -191,9 +190,9 @@ export default function RegisterPage() {
                 </select>
               </div>
             </div>
-            <div>
-              <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-text">
-                Mot de passe
+            <div className="space-y-1.5">
+              <label htmlFor="password" className="ml-1 text-xs font-black uppercase tracking-widest text-slate-400">
+                Mot de Passe Sécurisé
               </label>
               <input
                 id="password"
@@ -202,56 +201,49 @@ export default function RegisterPage() {
                 autoComplete="new-password"
                 required
                 minLength={8}
+                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="min-h-[48px] w-full rounded-2xl border border-border bg-bg px-4 py-3 text-base text-text outline-none ring-primary/25 transition focus:ring-2 sm:text-sm"
+                className="h-14 w-full rounded-2xl border-2 border-slate-100 bg-slate-50/50 px-5 text-base font-bold text-[#111827] outline-none transition-all focus:border-primary/30 focus:bg-white focus:ring-4 focus:ring-primary/10"
               />
-              <p className="mt-1.5 text-xs text-slate-500">Au moins 8 caractères.</p>
             </div>
 
             {success ? (
-              <p className="rounded-2xl bg-emerald-500/12 px-4 py-3 text-sm font-medium text-emerald-900" role="status">
-                Compte créé. Redirection…
-              </p>
+              <div className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700 animate-fade-in border border-emerald-100" role="status">
+                Compte créé avec succès ! 🎉 {error || "Redirection en cours..."}
+              </div>
             ) : null}
 
-            {error ? (
-              <p className="rounded-2xl bg-error/10 px-4 py-3 text-sm leading-snug text-error" role="alert">
+            {error && !success ? (
+              <div className="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-bold text-rose-600 animate-fade-in border border-rose-100" role="alert">
                 {error}
-              </p>
+              </div>
             ) : null}
 
             <Button
               type="submit"
               variant="primary"
               disabled={loading}
-              className="h-12 w-full rounded-2xl text-base font-semibold shadow-lg shadow-primary/20"
+              className="mt-2 h-16 rounded-[2rem] text-lg font-black shadow-primary-glow hover:scale-[1.01] active:scale-[0.98]"
             >
-              {loading ? "Création…" : "Créer mon compte"}
+              {loading ? "Création en cours..." : "Créer mon compte — gratuit"}
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-slate-600">
-            Déjà un compte ?{" "}
-            <Link href="/login" className="font-semibold text-primary underline-offset-4 hover:underline">
-              Me connecter
-            </Link>
-            {" "}(mot de passe oublié : depuis l’écran de connexion.)
-          </p>
-
-          <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3.5 text-center">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">Pourquoi DocuGestIvoire ?</p>
-            <p className="mt-1.5 text-xs leading-relaxed text-slate-700">
-              Gagnez du temps, professionnalisez vos documents et inspirez confiance à vos clients.
-            </p>
-          </div>
+          <footer className="mt-8 text-center text-xs font-bold text-slate-400 uppercase tracking-widest">
+            Données cryptées & sécurisées par InsForge
+          </footer>
         </div>
 
-        <div className="mx-auto mt-6 w-full max-w-md">
+        <div className="mx-auto mt-10 w-full max-w-md">
+           <TrustModelBanner variant="compact" />
+        </div>
+
+        <div className="mx-auto mt-10 w-full max-w-md">
           <InlineAdStrip variant="compact" adSlot="register-inline" />
         </div>
 
-        <div className="mx-auto mt-6 w-full max-w-md border-t border-slate-200/70 pt-5">
+        <div className="mx-auto mt-12 w-full max-w-md">
           <SorobossFooter />
         </div>
       </div>

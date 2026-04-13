@@ -8,7 +8,8 @@ import { InlineAdStrip } from "@/components/promo/InlineAdStrip";
 import { SorobossFooter } from "@/components/promo/SorobossFooter";
 import { TrustModelBanner } from "@/components/trust/TrustModelBanner";
 import { AdSlotsBootstrap } from "@/components/promo/AdSlotsBootstrap";
-import { useAuthStore, commitAuthSession, type AuthUser } from "@/store/authStore";
+import { useAuthStore, commitAuthSession } from "@/store/authStore";
+import { insforge } from "@/lib/insforge";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,38 +23,33 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), password, rememberMe: true })
+      console.log("[login] connect via InsForge SDK");
+      const { data, error: sdkError } = await insforge.auth.signInWithPassword({
+        email: email.trim(),
+        password
       });
 
-      const data = (await res.json().catch(() => ({}))) as {
-        message?: string;
-        token?: string;
-        user?: AuthUser;
-      };
-      if (!res.ok) {
-        setError(typeof data.message === "string" ? data.message : "Connexion impossible");
+      if (sdkError) {
+        console.error("[login] SDK error", sdkError);
+        setError(sdkError.message || "Identifiants invalides ou erreur de connexion.");
         return;
       }
 
-      if (!data.token) {
-        setError("Réponse serveur invalide (pas de session). Réessayez.");
+      if (!data?.session?.access_token || !data?.user) {
+        setError("Réponse serveur invalide (pas de session).");
         return;
       }
 
-      if (!data.user || typeof data.user !== "object" || !("id" in data.user)) {
-        setError("Réponse serveur invalide (profil manquant). Réessayez.");
-        return;
-      }
-
-      commitAuthSession(data.token, data.user);
+      console.log("[login] succès, redirection dashboard");
+      
+      // Adaptation au store existant
+      commitAuthSession(data.session.access_token, data.user as any);
       await useAuthStore.getState().loadMe();
 
       router.replace("/dashboard");
-    } catch {
-      setError("Erreur réseau. Réessayez.");
+    } catch (err) {
+      console.error("[login] unexpected error", err);
+      setError("Erreur réseau ou technique. Réessayez.");
     } finally {
       setLoading(false);
     }
@@ -61,119 +57,111 @@ export default function LoginPage() {
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-b from-slate-50/90 via-bg to-slate-50/85 px-4 py-6 sm:py-10"
+      className="min-h-screen bg-[#FDFDFE] px-4 py-6 sm:py-10"
       style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
     >
       <AdSlotsBootstrap />
+
+      {/* Decors background lineaires */}
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden>
+        <div className="absolute -right-32 top-10 h-72 w-72 rounded-full bg-primary/5 blur-[120px]" />
+        <div className="absolute -left-24 bottom-1/4 h-80 w-80 rounded-full bg-blue-500/5 blur-[120px]" />
+      </div>
+
       <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-md flex-col justify-center">
-        <div className="mx-auto mb-6 flex w-full max-w-md items-center justify-between gap-3">
-          <div className="rounded-2xl bg-white px-3 py-2 shadow-soft ring-2 ring-primary/15">
-            <img src="/logo-docugest-ivoire.png" alt="DocuGestIvoire" className="h-14 w-auto object-contain drop-shadow" />
-          </div>
+        <div className="mx-auto mb-10 flex w-full max-w-md items-center justify-between gap-3">
+          <Link href="/" className="group flex items-center gap-3">
+            <div className="rounded-2xl bg-white p-2 shadow-soft ring-1 ring-slate-200/80 transition-transform group-hover:scale-105">
+              <img src="/logo-docugest-ivoire.png" alt="DocuGestIvoire" className="h-10 w-auto object-contain" />
+            </div>
+            <span className="text-sm font-bold text-slate-900 tracking-tight">DocuGest Ivoire</span>
+          </Link>
           <Link
-            href="/"
-            className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-2xl border border-border/80 bg-white/90 px-4 py-2 text-sm font-semibold text-primary shadow-sm ring-1 ring-border/50 transition hover:bg-surface"
+            href="/register"
+            className="text-sm font-bold text-primary hover:underline underline-offset-4"
           >
-            Accueil
+            Créer un compte
           </Link>
         </div>
 
-        <div className="mx-auto w-full max-w-md rounded-3xl bg-gradient-to-br from-white to-surface p-6 shadow-soft ring-1 ring-border/70 sm:p-8">
-          <div className="mb-6 text-center">
-            <p className="inline-block rounded-full bg-primary/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-primary">
-              Connexion
-            </p>
-            <h1 className="mt-3 text-2xl font-bold tracking-tight text-text sm:text-[1.75rem]">Bienvenue</h1>
-            <p className="mt-2 text-sm text-slate-600">Accédez à votre espace DocuGestIvoire.</p>
-            <p className="mt-2 text-xs leading-relaxed text-slate-500">
-              Espace professionnel pour l’Afrique francophone — factures, devis, bulletins.
+        <div className="mx-auto w-full max-w-md rounded-[2.5rem] bg-white p-8 shadow-modal ring-1 ring-slate-200/50 sm:p-10">
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl font-black tracking-tight text-[#111827] sm:text-4xl">Bon retour ! 👋</h1>
+            <p className="mt-3 text-sm font-medium text-slate-500 leading-relaxed px-4">
+              Connectez-vous pour retrouver vos documents et vos brouillons en cours.
             </p>
           </div>
 
-          <div className="mb-5">
-            <TrustModelBanner variant="compact" />
-          </div>
-
-          <div className="mb-6 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3.5 text-center">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">Productivité</p>
-            <p className="mt-1.5 text-xs leading-relaxed text-slate-700">
-              Documents prêts à envoyer en quelques minutes, PDF inclus.
-            </p>
-          </div>
-
-          <form onSubmit={onSubmit} className="flex flex-col gap-4">
-            <div>
-              <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-text">
-                Email ou numéro (tél. / WhatsApp)
+          <form onSubmit={onSubmit} className="flex flex-col gap-6">
+            <div className="space-y-1.5">
+              <label htmlFor="email" className="ml-1 text-xs font-black uppercase tracking-widest text-slate-400">
+                Email Professionnel
               </label>
               <input
                 id="email"
                 name="email"
-                type="text"
-                autoComplete="username"
+                type="email"
+                autoComplete="email"
                 required
-                placeholder="ex: vous@email.com ou +225…"
+                placeholder="jean@domaine.ci"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="min-h-[48px] w-full rounded-2xl border border-border bg-bg px-4 py-3 text-base text-text outline-none ring-primary/25 transition focus:ring-2 sm:text-sm"
+                className="h-14 w-full rounded-2xl border-2 border-slate-100 bg-slate-50/50 px-5 text-base font-bold text-[#111827] outline-none transition-all placeholder:text-slate-400 focus:border-primary/30 focus:bg-white focus:ring-4 focus:ring-primary/10"
               />
             </div>
 
-            <div>
-              <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-text">
-                Mot de passe
-              </label>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between px-1">
+                <label htmlFor="password" className="text-xs font-black uppercase tracking-widest text-slate-400">
+                  Mot de Passe
+                </label>
+                <Link href="/forgot-password" size="sm" className="text-[11px] font-bold text-slate-500 hover:text-primary transition-colors">
+                  Oublié ?
+                </Link>
+              </div>
               <input
                 id="password"
                 name="password"
                 type="password"
                 autoComplete="current-password"
                 required
+                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="min-h-[48px] w-full rounded-2xl border border-border bg-bg px-4 py-3 text-base text-text outline-none ring-primary/25 transition focus:ring-2 sm:text-sm"
+                className="h-14 w-full rounded-2xl border-2 border-slate-100 bg-slate-50/50 px-5 text-base font-bold text-[#111827] outline-none transition-all focus:border-primary/30 focus:bg-white focus:ring-4 focus:ring-primary/10"
               />
-              <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <Link
-                  href="/forgot-password"
-                  className="inline-flex min-h-[44px] items-center justify-center rounded-2xl border border-primary/20 bg-primary/5 px-4 py-2 text-center text-sm font-semibold text-primary transition hover:bg-primary/10"
-                >
-                  Mot de passe oublié — réinitialiser par e-mail
-                </Link>
-                <span className="hidden text-center text-[11px] text-slate-500 sm:block sm:max-w-[10rem] sm:text-right">
-                  Un lien vous est envoyé sur votre boîte mail.
-                </span>
-              </div>
             </div>
 
             {error ? (
-              <p className="rounded-2xl bg-error/10 px-4 py-3 text-sm leading-snug text-error" role="alert">
+              <div className="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-bold text-rose-600 animate-fade-in border border-rose-100" role="alert">
                 {error}
-              </p>
+              </div>
             ) : null}
 
             <Button
               type="submit"
               variant="primary"
               disabled={loading}
-              className="h-12 w-full rounded-2xl text-base font-semibold shadow-lg shadow-primary/20"
+              className="mt-2 h-16 rounded-[2rem] text-lg font-black shadow-primary-glow hover:scale-[1.01] active:scale-[0.98]"
             >
-              {loading ? "Connexion…" : "Me connecter"}
+              {loading ? "Connexion en cours..." : "Me connecter"}
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-slate-600">
-            Pas encore de compte ?{" "}
-            <Link href="/register" className="font-semibold text-primary underline-offset-4 hover:underline">
-              Créer un compte
-            </Link>
-          </p>
+          <footer className="mt-8 text-center text-xs font-bold text-slate-400 uppercase tracking-widest">
+            Accès sécurisé et protégé par InsForge
+          </footer>
         </div>
 
-        <div className="mx-auto mt-6 w-full max-w-md">
+        <div className="mx-auto mt-10 w-full max-w-md">
+           <TrustModelBanner variant="compact" />
+        </div>
+
+        <div className="mx-auto mt-10 w-full max-w-md">
           <InlineAdStrip variant="compact" adSlot="login-inline" />
         </div>
-        <div className="mx-auto mt-6 w-full max-w-md border-t border-slate-200/70 pt-5">
+
+        <div className="mx-auto mt-12 w-full max-w-md">
           <SorobossFooter />
         </div>
       </div>
