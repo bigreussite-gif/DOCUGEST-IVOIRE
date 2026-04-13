@@ -81,20 +81,20 @@ export default function Landing() {
 
         {/* ─── Premium Header ─── */}
         <header className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-          <div className="group flex items-center gap-4">
-            <div className="rounded-3xl bg-white p-2.5 shadow-soft ring-1 ring-slate-200/80 transition-all duration-300 group-hover:scale-105 group-hover:shadow-float">
+          <div className="flex items-center gap-6">
+            <div className="transition-all duration-300 hover:scale-105">
               <img
                 src="/logo-docugest-ivoire.png"
                 alt="DocuGestIvoire"
-                className="h-12 w-auto object-contain sm:h-14"
-                width={300}
-                height={60}
+                className="h-24 w-auto object-contain sm:h-28"
+                width={500}
+                height={120}
                 loading="eager"
               />
             </div>
-            <div className="hidden lg:block border-l border-slate-200 pl-4">
-              <div className="text-sm font-bold text-slate-900 tracking-tight">DocuGest Ivoire</div>
-              <div className="text-[11px] font-medium text-slate-500 uppercase tracking-widest leading-none mt-1">L'IA Documentaire Ivoirienne</div>
+            <div className="hidden lg:block border-l border-slate-200 pl-6">
+              <div className="text-xl font-black text-slate-900 tracking-tight">DocuGest Ivoire</div>
+              <div className="text-xs font-bold text-slate-500 uppercase tracking-[0.2em] leading-none mt-2">L'IA Documentaire Ivoirienne</div>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3 sm:gap-4">
@@ -102,7 +102,7 @@ export default function Landing() {
               Se connecter
             </Link>
             <Link to="/register">
-              <Button variant="primary" className="h-11 rounded-2xl px-6 text-sm font-bold shadow-primary-glow">
+              <Button variant="primary" className="h-14 rounded-2xl px-8 text-base font-bold shadow-primary-glow">
                 Essayer gratuitement
               </Button>
             </Link>
@@ -268,10 +268,10 @@ export default function Landing() {
                 <div className="relative">
                   <div className="aspect-square rounded-[3rem] bg-gradient-to-br from-orange-100 to-rose-50 flex flex-col items-center justify-center p-12 text-center border border-white shadow-inner">
                     <div className="mb-6 flex items-center justify-center gap-4">
-                       <img src="/logo-docugest-ivoire.png" className="h-10 w-auto" alt="DocuGest"/>
+                       <img src="/logo-docugest-ivoire.png" className="h-14 w-auto object-contain" alt="DocuGest"/>
                        <span className="text-2xl font-black text-slate-300">×</span>
                        <div className="flex flex-col items-center">
-                          <img src="https://dgi.gouv.ci/templates/dgiv2/images/logo_dgi.png" className="h-14 w-auto grayscale opacity-80" alt="DGI CI"/>
+                          <img src="https://dgi.gouv.ci/templates/dgiv2/images/logo_dgi.png" className="h-16 w-auto grayscale opacity-80" alt="DGI CI"/>
                        </div>
                     </div>
                     <div className="px-6 py-3 rounded-2xl bg-white/80 backdrop-blur border border-orange-200 shadow-sm text-orange-700 font-bold text-sm mb-6">
@@ -346,10 +346,10 @@ export default function Landing() {
             <div className="absolute right-0 bottom-0 h-96 w-96 bg-emerald-500/10 blur-[120px]" />
             
             <div className="relative z-10 flex flex-col items-center">
-              <div className="mb-10 flex h-24 w-24 items-center justify-center rounded-3xl bg-white/10 border border-white/20 shadow-2xl backdrop-blur-xl group hover:bg-white/15 transition-all">
+              <div className="mb-10 flex h-32 w-48 items-center justify-center rounded-[2rem] bg-white p-6 shadow-2xl transition-transform hover:scale-105">
                  <img 
                    src="/logo-docugest-ivoire.png" 
-                   className="h-12 w-auto object-contain brightness-0 invert" 
+                   className="h-full w-full object-contain" 
                    alt="Logo DocuGest"
                  />
               </div>

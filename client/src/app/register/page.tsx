@@ -214,19 +214,20 @@ export default function RegisterPage() {
       </div>
 
       <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-md flex-col justify-center">
-        <div className="mx-auto mb-10 flex w-full max-w-md items-center justify-between gap-3">
-          <Link href="/" className="group flex items-center gap-3">
-            <div className="rounded-2xl bg-white p-2 shadow-soft ring-1 ring-slate-200/80 transition-transform group-hover:scale-105">
-              <img src="/logo-docugest-ivoire.png" alt="DocuGestIvoire" className="h-10 w-auto object-contain" />
-            </div>
-            <span className="text-sm font-bold text-slate-900 tracking-tight">DocuGest Ivoire</span>
+        <div className="mx-auto mb-10 flex w-full max-w-md flex-col items-center justify-center gap-6">
+          <Link href="/" className="flex flex-col items-center gap-4">
+            <img src="/logo-docugest-ivoire.png" alt="DocuGestIvoire" className="h-32 w-auto object-contain" />
+            <span className="text-xl font-black text-slate-900 tracking-tight">DocuGest Ivoire</span>
           </Link>
-          <Link
-            href="/login"
-            className="text-sm font-bold text-primary hover:underline underline-offset-4"
-          >
-            Se connecter
-          </Link>
+          <div className="flex gap-2 text-sm font-bold">
+            <span className="text-slate-400">Déjà inscrit ?</span>
+            <Link
+              href="/login"
+              className="text-primary hover:underline underline-offset-4"
+            >
+              Se connecter
+            </Link>
+          </div>
         </div>
 
         <div className="mx-auto w-full max-w-md rounded-[2.5rem] bg-white p-8 shadow-modal ring-1 ring-slate-200/50 sm:p-10">
