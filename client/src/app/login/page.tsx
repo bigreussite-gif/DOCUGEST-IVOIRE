@@ -35,7 +35,7 @@ export default function LoginPage() {
         return;
       }
 
-      if (!data?.session?.access_token || !data?.user) {
+      if (!data?.accessToken || !data?.user) {
         setError("Réponse serveur invalide (pas de session).");
         return;
       }
@@ -43,7 +43,7 @@ export default function LoginPage() {
       console.log("[login] succès, redirection dashboard");
       
       // Adaptation au store existant
-      commitAuthSession(data.session.access_token, data.user as any);
+      commitAuthSession(data.accessToken, data.user as any);
       await useAuthStore.getState().loadMe();
 
       router.replace("/dashboard");
@@ -115,7 +115,7 @@ export default function LoginPage() {
                 <label htmlFor="password" className="text-xs font-black uppercase tracking-widest text-slate-400">
                   Mot de Passe
                 </label>
-                <Link href="/forgot-password" size="sm" className="text-[11px] font-bold text-slate-500 hover:text-primary transition-colors">
+                <Link href="/forgot-password" className="text-[11px] font-bold text-slate-500 hover:text-primary transition-colors">
                   Oublié ?
                 </Link>
               </div>

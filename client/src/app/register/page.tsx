@@ -40,14 +40,7 @@ export default function RegisterPage() {
       const { data, error: sdkError } = await insforge.auth.signUp({
         email: email.trim(),
         password,
-        options: {
-          data: {
-            full_name: name.trim(),
-            whatsapp: whatsappFull,
-            user_typology: selectedCountry.label,
-            phone: whatsappFull || `+225${Math.random().toString().slice(2, 12)}` // placeholder if empty
-          }
-        }
+        name: name.trim()
       });
 
       if (sdkError) {
@@ -56,7 +49,7 @@ export default function RegisterPage() {
         return;
       }
 
-      if (!data?.session?.access_token || !data?.user) {
+      if (!data?.accessToken || !data?.user) {
         // En cas de confirmation par email activée, l'utilisateur n'est pas forcément connecté tout de suite.
         setSuccess(true);
         setError("Veuillez vérifier votre email pour confirmer votre compte.");
@@ -67,7 +60,7 @@ export default function RegisterPage() {
       setSuccess(true);
 
       // Adaptation au store existant
-      commitAuthSession(data.session.access_token, data.user as any);
+      commitAuthSession(data.accessToken, data.user as any);
       await useAuthStore.getState().loadMe();
 
       router.replace("/dashboard");
