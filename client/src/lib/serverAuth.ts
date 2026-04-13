@@ -15,14 +15,43 @@ export function getBearerToken(req: Request): string | null {
 
 export type SessionAuth = { sub: string; role: string };
 
-function decodeSessionToken(token: string): SessionAuth | null {
+async function decodeSessionToken(token: string): Promise<SessionAuth | null> {
   try {
+    // 1. Tentative locale (pour les tokens internes si on en a)
     const secret = process.env.JWT_SECRET;
-    if (!secret) return null;
-    const payload = jwt.verify(token, secret) as jwt.JwtPayload & { sub?: string; role?: string };
-    if (!payload.sub) return null;
-    return { sub: payload.sub, role: String(payload.role ?? "user") };
-  } catch {
+    if (secret) {
+      try {
+        const payload = jwt.verify(token, secret) as jwt.JwtPayload & { sub?: string; role?: string };
+        if (payload.sub) return { sub: payload.sub, role: String(payload.role ?? "user") };
+      } catch {
+        /* On continue avec l'étape 2 */
+      }
+    }
+
+    // 2. Vérification via InsForge (pour les tokens du SDK)
+    const baseUrl = process.env.NEXT_PUBLIC_INSFORGE_URL;
+    if (!baseUrl) return null;
+
+    console.log("[serverAuth] Vérification token via InsForge...");
+    const res = await fetch(`${baseUrl}/auth/user`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+
+    if (res.ok) {
+      const { data } = await res.json();
+      if (data?.user?.id) {
+        // DocuGest Ivoire : le rôle par défaut est 'user' sauf s'il est spécifié autrement
+        // Note: On pourra affiner le rôle plus tard via la DB
+        return { sub: data.user.id, role: "user" };
+      }
+    }
+
+    return null;
+  } catch (err) {
+    console.error("[serverAuth] Erreur critique verification", err);
     return null;
   }
 }
@@ -33,21 +62,19 @@ export async function requireSessionAuth(req: Request): Promise<SessionAuth | Ne
     console.log("[serverAuth] pas de token Bearer");
     return NextResponse.json({ message: "Non authentifié" }, { status: 401 });
   }
-  try {
-    const auth = decodeSessionToken(token);
-    if (!auth) return NextResponse.json({ message: "Token invalide" }, { status: 401 });
-    return auth;
-  } catch (e) {
-    console.log("[serverAuth] JWT invalide", e);
-    return NextResponse.json({ message: "Token invalide ou expiré" }, { status: 401 });
+  
+  const auth = await decodeSessionToken(token);
+  if (!auth) {
+    return NextResponse.json({ message: "Token invalide ou session expirée" }, { status: 401 });
   }
+  return auth;
 }
 
 /** Retourne la session si le token est valide, sinon null (sans erreur 401). */
-export function optionalSessionAuth(req: Request): SessionAuth | null {
+export async function optionalSessionAuth(req: Request): Promise<SessionAuth | null> {
   const token = getBearerToken(req);
   if (!token) return null;
-  return decodeSessionToken(token);
+  return await decodeSessionToken(token);
 }
 
 export function roleRank(role: string): number {

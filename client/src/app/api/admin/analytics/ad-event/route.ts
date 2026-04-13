@@ -13,7 +13,7 @@ const adEventSchema = z.object({
 
 export async function POST(req: Request) {
   console.log("[api/admin/analytics/ad-event] POST");
-  const auth = optionalSessionAuth(req);
+  const auth = await optionalSessionAuth(req);
 
   const parsed = adEventSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
