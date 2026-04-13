@@ -215,6 +215,82 @@ export default function Landing() {
             </div>
           </section>
 
+          {/* ─── FNE & Partnership Section ─── */}
+          <section className="mt-32">
+            <div className="relative overflow-hidden rounded-[4rem] bg-white border-2 border-slate-100 p-8 sm:p-16 shadow-soft group hover:shadow-float transition-all duration-700">
+              {/* Background accent */}
+              <div className="absolute top-0 right-0 h-full w-1/3 bg-emerald-50/50 -skew-x-12 translate-x-1/2 pointer-events-none" />
+              
+              <div className="relative z-10 grid gap-12 lg:grid-cols-2 lg:items-center">
+                <div>
+                  <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-1.5 text-xs font-black text-orange-600 mb-6">
+                    <span className="flex h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
+                    CONFORMITÉ FISCALE & MODERNISATION
+                  </div>
+                  <h2 className="text-3xl font-black sm:text-5xl text-[#111827] leading-tight mb-6">
+                    Prêt pour la <br/>
+                    <span className="text-orange-600">Facture Normalisée Électronique (FNE)</span>
+                  </h2>
+                  <p className="text-lg font-medium text-slate-600 leading-relaxed mb-8">
+                    La <strong>FNE</strong> est le nouveau dispositif de la <strong>Direction Générale des Impôts (DGI)</strong> visant à dématérialiser et sécuriser chaque transaction commerciale en Côte d'Ivoire.
+                  </p>
+                  
+                  <div className="space-y-4 mb-10">
+                    {[
+                      { icon: "🛡️", title: "Sécurité & Traçabilité", desc: "Authentification immédiate de vos factures via QR Code." },
+                      { icon: "📉", title: "Lutte contre la fraude", desc: "Un écosystème sain pour une concurrence loyale." },
+                      { icon: "⚡", title: "Déclaration simplifiée", desc: "Pré-remplissage automatique de vos dossiers TVA." }
+                    ].map((item) => (
+                      <div key={item.title} className="flex gap-4">
+                        <div className="flex-shrink-0 h-10 w-10 rounded-xl bg-orange-50 flex items-center justify-center text-xl">{item.icon}</div>
+                        <div>
+                          <h4 className="font-bold text-slate-900">{item.title}</h4>
+                          <p className="text-sm text-slate-500 font-medium">{item.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-4 items-center">
+                    <a 
+                      href="https://fne.dgi.gouv.ci/" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 transition-all shadow-xl"
+                    >
+                      Consulter le site officiel
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                    </a>
+                    <span className="text-xs font-bold text-slate-400">Source : fne.dgi.gouv.ci</span>
+                  </div>
+                </div>
+
+                <div className="relative">
+                  <div className="aspect-square rounded-[3rem] bg-gradient-to-br from-orange-100 to-rose-50 flex flex-col items-center justify-center p-12 text-center border border-white shadow-inner">
+                    <div className="mb-6 flex items-center justify-center gap-4">
+                       <img src="/logo-docugest-ivoire.png" className="h-10 w-auto" alt="DocuGest"/>
+                       <span className="text-2xl font-black text-slate-300">×</span>
+                       <div className="flex flex-col items-center">
+                          <img src="https://dgi.gouv.ci/templates/dgiv2/images/logo_dgi.png" className="h-14 w-auto grayscale opacity-80" alt="DGI CI"/>
+                       </div>
+                    </div>
+                    <div className="px-6 py-3 rounded-2xl bg-white/80 backdrop-blur border border-orange-200 shadow-sm text-orange-700 font-bold text-sm mb-6">
+                      Partenaire de Modernisation
+                    </div>
+                    <p className="text-base font-bold text-slate-600 leading-relaxed italic">
+                      "DocuGest Ivoire accompagne les startups et PME vers la mise en conformité avec les nouvelles réformes de l'État Ivoirien."
+                    </p>
+                    
+                    {/* Badge DGI */}
+                    <div className="mt-10 flex h-24 w-24 items-center justify-center rounded-full bg-white shadow-xl ring-4 ring-orange-50 border border-orange-100">
+                       <span className="text-xs font-black text-orange-600 text-center">LABEL<br/>CONFORME</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* ─── Premium Modules Grid ─── */}
           <section className="mt-32" id="features">
             <div className="text-center mb-16">
