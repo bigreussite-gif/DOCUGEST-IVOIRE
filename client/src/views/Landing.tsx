@@ -190,11 +190,13 @@ export default function Landing() {
           </div>
 
           {/* ─── Steps Section ─── */}
-          <section className="mt-32 rounded-[4rem] bg-slate-900 px-8 py-20 text-white shadow-2xl overflow-hidden relative">
-            <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-primary/10 to-transparent pointer-events-none" />
+          <section className="mt-32 rounded-[4rem] bg-[#0F172A] px-8 py-20 text-white shadow-2xl overflow-hidden relative border border-white/5">
+            <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-primary/20 to-transparent pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-1/2 h-full bg-gradient-to-r from-emerald-500/10 to-transparent pointer-events-none" />
+            
             <div className="relative z-10 max-w-4xl mx-auto text-center mb-16">
-              <h2 className="text-3xl font-black sm:text-5xl tracking-tight">Comment ça marche ?</h2>
-              <p className="mt-4 text-lg text-slate-400 font-medium">Trois étapes simples pour un administratif irréprochable.</p>
+              <h2 className="text-4xl font-black sm:text-6xl tracking-tight text-white mb-6">Comment ça marche ?</h2>
+              <p className="text-xl text-slate-300 font-medium">Trois étapes simples pour un administratif irréprochable.</p>
             </div>
             
             <div className="grid gap-8 md:grid-cols-3 relative z-10 max-w-5xl mx-auto">
@@ -203,13 +205,13 @@ export default function Landing() {
                 { step: "02", title: "Saisissez les données", desc: "Remplissez les champs. Notre IA s'occupe des calculs compliqués (TVA, CNPS).", icon: "✍️" },
                 { step: "03", title: "Téléchargez en PDF", desc: "Obtenez un document pro, prêt à être envoyé ou imprimé en un clic.", icon: "🚀" }
               ].map((s) => (
-                <div key={s.step} className="group flex flex-col items-center text-center p-8 rounded-[2.5rem] bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
-                  <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/20 text-3xl group-hover:scale-110 transition-transform">
+                <div key={s.step} className="group flex flex-col items-center text-center p-10 rounded-[3rem] bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-500 hover:-translate-y-2">
+                  <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/20 text-4xl shadow-2xl transition-transform group-hover:scale-110">
                     {s.icon}
                   </div>
-                  <span className="text-xs font-black text-primary uppercase tracking-[0.2em] mb-4">Étape {s.step}</span>
-                  <h3 className="text-xl font-bold mb-3">{s.title}</h3>
-                  <p className="text-sm text-slate-400 leading-relaxed font-medium">{s.desc}</p>
+                  <span className="text-xs font-black text-primary uppercase tracking-[0.3em] mb-4">Étape {s.step}</span>
+                  <h3 className="text-2xl font-black text-white mb-4">{s.title}</h3>
+                  <p className="text-base text-slate-400 leading-relaxed font-medium">{s.desc}</p>
                 </div>
               ))}
             </div>
