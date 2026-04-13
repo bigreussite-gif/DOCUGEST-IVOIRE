@@ -273,7 +273,7 @@ export default function Landing() {
                        <img src="/logo-docugest-ivoire.png" className="h-14 w-auto object-contain" alt="DocuGest"/>
                        <span className="text-2xl font-black text-slate-300">×</span>
                        <div className="flex flex-col items-center">
-                          <img src="https://dgi.gouv.ci/templates/dgiv2/images/logo_dgi.png" className="h-16 w-auto grayscale opacity-80" alt="DGI CI"/>
+                          <img src="/assets/images/logo-dgi.png" className="h-20 w-auto object-contain" alt="DGI CI"/>
                        </div>
                     </div>
                     <div className="px-6 py-3 rounded-2xl bg-white/80 backdrop-blur border border-orange-200 shadow-sm text-orange-700 font-bold text-sm mb-6">
