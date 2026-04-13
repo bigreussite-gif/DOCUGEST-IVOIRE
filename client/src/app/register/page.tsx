@@ -22,9 +22,11 @@ export default function RegisterPage() {
   const [whatsapp, setWhatsapp] = useState("");
   const [countryCode, setCountryCode] = useState("CI");
   const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showOtpStep, setShowOtpStep] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -49,25 +51,54 @@ export default function RegisterPage() {
         return;
       }
 
-      if (!data?.accessToken || !data?.user) {
-        // En cas de confirmation par email activée, l'utilisateur n'est pas forcément connecté tout de suite.
-        setSuccess(true);
-        setError("Veuillez vérifier votre email pour confirmer votre compte.");
+      if (data?.requireEmailVerification) {
+        console.log("[register] vérification email requise (OTP)");
+        setShowOtpStep(true);
         return;
       }
 
-      console.log("[register] succès, affichage remerciements");
+      console.log("[register] succès direct (pas de vérification)");
       setSuccess(true);
-
-      // Adaptation au store existant (garde la session en cache pour plus tard)
-      commitAuthSession(data.accessToken, data.user as any);
-      await useAuthStore.getState().loadMe();
-
-      // On ne redirige plus automatiquement vers /dashboard
-      // router.replace("/dashboard");
+      if (data?.accessToken && data?.user) {
+        commitAuthSession(data.accessToken, data.user as any);
+        await useAuthStore.getState().loadMe();
+      }
     } catch (err: any) {
       console.error("[register] unexpected error", err);
       setError("Erreur inattendue. Réessayez.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function onVerifyOtp(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      console.log("[register] vérification OTP");
+      const { data, error: verifyError } = await insforge.auth.verifyEmail({
+        email: email.trim(),
+        otp: otp.trim()
+      });
+
+      if (verifyError) {
+        console.error("[register] OTP error", verifyError);
+        setError(verifyError.message || "Code invalide ou expiré");
+        return;
+      }
+
+      console.log("[register] OTP validé, succès");
+      setSuccess(true);
+      setShowOtpStep(false);
+      
+      if (data?.accessToken && data?.user) {
+        commitAuthSession(data.accessToken, data.user as any);
+        await useAuthStore.getState().loadMe();
+      }
+    } catch (err: any) {
+      console.error("[register] verify otp error", err);
+      setError("Erreur lors de la validation du code.");
     } finally {
       setLoading(false);
     }
@@ -85,7 +116,7 @@ export default function RegisterPage() {
           </div>
           <h1 className="text-4xl font-black text-[#111827] mb-4">Merci ! 🇨🇮</h1>
           <p className="text-lg font-medium text-slate-500 leading-relaxed mb-10">
-            Votre compte a été créé avec succès. Bienvenue sur <span className="text-primary font-bold">DocuGest Ivoire</span>.
+            Votre compte a été créé et vérifié avec succès. Bienvenue sur <span className="text-primary font-bold">DocuGest Ivoire</span>.
           </p>
           <div className="space-y-4">
             <Link href="/dashboard" className="block">
@@ -94,7 +125,7 @@ export default function RegisterPage() {
               </Button>
             </Link>
             <Link href="/login" className="block text-sm font-bold text-slate-400 hover:text-primary transition-colors">
-              Ou se connecter manuellement
+              Se connecter manuellement
             </Link>
           </div>
           
@@ -105,6 +136,65 @@ export default function RegisterPage() {
         
         <div className="mt-10">
           <SorobossFooter />
+        </div>
+      </div>
+    );
+  }
+
+  if (showOtpStep) {
+    return (
+      <div className="min-h-screen bg-[#FDFDFE] px-4 py-8 flex flex-col justify-center">
+        <AdSlotsBootstrap />
+        <div className="mx-auto w-full max-w-md rounded-[2.5rem] bg-white p-8 shadow-modal ring-1 ring-slate-200/50 sm:p-10">
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl font-black text-[#111827]">Vérifiez vos mails 📧</h1>
+            <p className="mt-4 text-sm font-medium text-slate-500 leading-relaxed">
+              Nous avons envoyé un code de confirmation à <br/>
+              <strong className="text-slate-900">{email}</strong>.
+            </p>
+          </div>
+
+          <form onSubmit={onVerifyOtp} className="flex flex-col gap-6">
+            <div className="space-y-1.5">
+              <label htmlFor="otp" className="ml-1 text-xs font-black uppercase tracking-widest text-slate-400">
+                Code de confirmation
+              </label>
+              <input
+                id="otp"
+                name="otp"
+                type="text"
+                required
+                maxLength={6}
+                placeholder="123456"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                className="h-16 w-full rounded-2xl border-2 border-slate-100 bg-slate-50/50 px-5 text-center text-3xl font-black tracking-[0.5em] text-[#111827] outline-none transition-all placeholder:text-slate-200 focus:border-primary/30 focus:bg-white focus:ring-4 focus:ring-primary/10"
+              />
+            </div>
+
+            {error && (
+              <div className="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-bold text-rose-600 border border-rose-100">
+                {error}
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={loading}
+              className="h-16 rounded-[2rem] text-lg font-black shadow-primary-glow"
+            >
+              {loading ? "Vérification..." : "Confirmer mon inscription"}
+            </Button>
+            
+            <button
+              type="button"
+              onClick={() => setShowOtpStep(false)}
+              className="text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              ← Retour au formulaire
+            </button>
+          </form>
         </div>
       </div>
     );
