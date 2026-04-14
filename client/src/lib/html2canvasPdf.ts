@@ -69,16 +69,17 @@ export async function captureElementToPdfFile(element: HTMLElement, fileName: st
   const pageW = 210;
   const pageH = 297;
   const imgH = (canvas.height * pageW) / canvas.width;
-  if (imgH <= pageH) {
+  if (imgH <= pageH + 1) { // Tolérance de 1mm
     pdf.addImage(imgData, "JPEG", 0, 0, pageW, imgH);
   } else {
     let y = 0;
     let remaining = imgH;
-    while (remaining > 0) {
+    // On ignore les restes de l'image de moins de 5mm (souvent juste une marge vide)
+    while (remaining > 5) {
       pdf.addImage(imgData, "JPEG", 0, -y, pageW, imgH);
       remaining -= pageH;
       y += pageH;
-      if (remaining > 0) pdf.addPage();
+      if (remaining > 5) pdf.addPage();
     }
   }
   pdf.save(fileName);
