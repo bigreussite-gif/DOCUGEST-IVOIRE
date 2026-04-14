@@ -79,7 +79,11 @@ export default function InvoicePreview({ docTypeLabel, themeColor, customAccentH
     <div className="bg-slate-100/80 p-2 print:bg-white print:p-0">
       <div
         className="mx-auto flex min-h-[297mm] w-[210mm] flex-col bg-white text-[10px] leading-snug text-slate-800 shadow-xl print:shadow-none"
-        style={{ fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif" }}
+        style={{
+          fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif",
+          WebkitPrintColorAdjust: "exact",
+          printColorAdjust: "exact"
+        }}
       >
         {/* Ligne de couleur supérieure */}
         <div className="h-3 w-full" style={{ backgroundColor: accentColor }} />

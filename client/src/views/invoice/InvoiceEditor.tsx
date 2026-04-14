@@ -511,11 +511,16 @@ export default function InvoiceEditor() {
       }
     } catch (e) {
       console.error(e);
-      alert("Erreur lors de la sauvegarde.");
+      const errMessage = e instanceof Error ? e.message : String(e);
+      alert(`Erreur lors de la sauvegarde : ${errMessage}`);
     } finally {
       setSaving(false);
     }
   }
+
+  const onInvalidForm = () => {
+    alert("Impossible de sauvegarder : certains champs obligatoires doivent être corrigés (surlignés en rouge dans le formulaire, comme le nom du client ou de l'entreprise).");
+  };
 
   // Drag & drop reorder
   const dragIndexRef = useRef<number | null>(null);
@@ -565,7 +570,7 @@ export default function InvoiceEditor() {
                   </div>
                   <Button
                     className="min-h-[48px] w-full shrink-0 px-6 text-base font-semibold lg:w-auto lg:min-w-[11rem]"
-                    onClick={form.handleSubmit(onSave)}
+                    onClick={form.handleSubmit(onSave, onInvalidForm)}
                     disabled={saving}
                   >
                     {saving ? "Sauvegarde…" : "Sauvegarder"}
