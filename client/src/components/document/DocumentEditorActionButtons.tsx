@@ -47,7 +47,10 @@ export function DocumentEditorActionButtons({
         className={btnClass}
         disabled={disabled || saving}
         loading={saving}
-        onClick={() => void onSave()}
+        onClick={async () => {
+          await onSave();
+          alert("Brouillon sauvegardé !");
+        }}
       >
         {saveLabel}
       </Button>

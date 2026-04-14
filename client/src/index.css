@@ -162,3 +162,30 @@ code, .counter {
   padding: 2px 6px;
   background: #f1f5f9;
 }
+
+/* ─── Fix pour l'impression native des documents ─── */
+@media print {
+  /* Masquer tous les éléments UI de base par défaut */
+  body * {
+    visibility: hidden;
+  }
+  
+  /* Cible spécifiquement le container du document hors-écran configuré par PDF_OFFSCREEN_CAPTURE_STYLE */
+  [aria-hidden="true"][style*="-10000px"] {
+    display: block !important;
+    visibility: visible !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    min-height: 100vh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  /* Rendre visibles tous les enfants du document */
+  [aria-hidden="true"][style*="-10000px"] * {
+    visibility: visible !important;
+  }
+}

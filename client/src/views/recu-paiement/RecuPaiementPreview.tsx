@@ -33,7 +33,7 @@ export default function RecuPaiementPreview({ data, logoDataUrl, accentColor }: 
   const showBalance = data.paymentType !== "Paiement intégral" && data.totalDue > 0;
 
   return (
-    <div style={{ fontFamily: "Arial, sans-serif", fontSize: 11, color: "#1a1a2e", background: "#fff", padding: 32, maxWidth: 680, minHeight: "297mm", display: "flex", flexDirection: "column" }}>
+    <div style={{ fontFamily: "Arial, sans-serif", fontSize: 11, color: "#1a1a2e", background: "#fff", padding: 32, width: "100%", maxWidth: 794, margin: "0 auto", minHeight: "297mm", display: "flex", flexDirection: "column", boxSizing: "border-box" }}>
       {/* En-tête */}
       <div style={{ border: `3px solid ${ACCENT}`, borderRadius: 8, padding: "16px 20px", marginBottom: 20 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>

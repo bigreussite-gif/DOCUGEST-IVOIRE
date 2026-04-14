@@ -34,8 +34,6 @@ export type PayslipPreviewData = {
   accentHex?: string | null;
 };
 
-const PEACH = "#fde4d6";
-const BLUE = "#1e3a5f";
 const BLUE_LIGHT = "#2563eb";
 
 export default function PayslipPreview({ data }: { data: PayslipPreviewData }) {
@@ -73,7 +71,7 @@ export default function PayslipPreview({ data }: { data: PayslipPreviewData }) {
               </div>
             )}
             <div className="min-w-0">
-              <div className="text-[11px] font-semibold" style={{ color: BLUE }}>
+              <div className="text-[11px] font-semibold" style={{ color: accent }}>
                 {data.employerName}
               </div>
               <div className="mt-1 max-w-[14rem] whitespace-pre-line text-[9px] text-slate-600">{data.employerAddress}</div>
@@ -88,13 +86,12 @@ export default function PayslipPreview({ data }: { data: PayslipPreviewData }) {
           </div>
         </header>
 
-        {/* Titre type fiche paie FR */}
         <div className="mt-5 flex justify-center">
           <div
-            className="border-2 border-slate-900 px-10 py-2 text-center"
-            style={{ backgroundColor: PEACH }}
+            className="border-2 px-10 py-2 text-center rounded"
+            style={{ backgroundColor: accent, borderColor: accent }}
           >
-            <h1 className="text-[15px] font-bold tracking-wide text-slate-900">BULLETIN DE PAIE</h1>
+            <h1 className="text-[15px] font-bold tracking-wide text-white">BULLETIN DE PAIE</h1>
           </div>
         </div>
 
@@ -103,10 +100,9 @@ export default function PayslipPreview({ data }: { data: PayslipPreviewData }) {
           {fiscalLine.length > 0 ? <div className="font-medium text-slate-700">{fiscalLine.join(" · ")}</div> : null}
         </div>
 
-        {/* Blocs salarié + période */}
         <div className="mt-6 grid gap-3 md:grid-cols-2">
           <div className="overflow-hidden rounded-md ring-1 ring-slate-200" style={{ borderColor: accent }}>
-            <div className="px-3 py-1.5 text-[9px] font-bold uppercase tracking-wide text-white" style={{ backgroundColor: BLUE }}>
+            <div className="px-3 py-1.5 text-[9px] font-bold uppercase tracking-wide text-white" style={{ backgroundColor: accent }}>
               Salarié
             </div>
             <div className="space-y-2 bg-slate-50/50 p-3">
@@ -131,8 +127,8 @@ export default function PayslipPreview({ data }: { data: PayslipPreviewData }) {
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-md ring-1 ring-slate-200">
-            <div className="px-3 py-1.5 text-[9px] font-bold uppercase tracking-wide text-white" style={{ backgroundColor: BLUE }}>
+          <div className="overflow-hidden rounded-md ring-1 ring-slate-200" style={{ borderColor: accent }}>
+            <div className="px-3 py-1.5 text-[9px] font-bold uppercase tracking-wide text-white" style={{ backgroundColor: accent }}>
               Période & paiement
             </div>
             <div className="space-y-2 bg-white p-3">
@@ -148,11 +144,10 @@ export default function PayslipPreview({ data }: { data: PayslipPreviewData }) {
           </div>
         </div>
 
-        {/* Table gains / retenues */}
-        <div className="mt-6 overflow-hidden rounded-t-md border border-slate-200">
+        <div className="mt-6 overflow-hidden rounded-t-md border border-slate-200" style={{ borderColor: accent }}>
           <table className="w-full border-collapse text-[9.5px]">
             <thead>
-              <tr className="text-white" style={{ backgroundColor: BLUE }}>
+              <tr className="text-white" style={{ backgroundColor: accent }}>
                 <th className="px-2 py-2 text-left font-semibold">Libellé</th>
                 <th className="w-28 px-2 py-2 text-right font-semibold">Montant (FCFA)</th>
               </tr>

@@ -246,6 +246,7 @@ function CVClassique({ data, accent, logoDataUrl }: { data: CVData; accent: stri
           <p style={{ padding: "0 36px 36px", marginTop: "auto", fontSize: 9.5, fontStyle: "italic", color: "#64748b" }}>✓ Références disponibles sur demande.</p>
         )}
       </div>
+      </div>
     </div>
   );
 }
@@ -595,6 +596,7 @@ function CVCompact({ data, accent, logoDataUrl }: { data: CVData; accent: string
             ))}
           </>
         )}
+      </div>
       </div>
     </div>
   );
