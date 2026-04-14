@@ -165,10 +165,10 @@ export default function CVEditor() {
   const selectClass = "w-full rounded-xl border border-border/70 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40";
 
   return (
-    <div className="min-h-screen bg-surface">
+    <div className="min-h-screen bg-surface print:bg-white">
       <title>CV Professionnel Gratuit — DocuGestIvoire</title>
 
-      <div className="sticky top-0 z-30 border-b border-border/60 bg-white/95 backdrop-blur-sm shadow-xs">
+      <div className="sticky top-0 z-30 border-b border-border/60 bg-white/95 backdrop-blur-sm shadow-xs print:hidden">
         <div className="space-y-2 px-4 py-3">
           <div className="flex items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-3">
@@ -196,9 +196,9 @@ export default function CVEditor() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-3 py-5 sm:px-4 lg:grid lg:grid-cols-2 lg:gap-6 lg:py-6">
-        <div className={showPreview ? "hidden lg:block" : ""}>
-          <form className="space-y-5" onSubmit={onSubmit}>
+      <div className="mx-auto max-w-7xl px-3 py-5 sm:px-4 lg:grid lg:grid-cols-2 lg:gap-6 lg:py-6 print:block print:w-full print:m-0 print:p-0">
+        <div className={`print:hidden ${showPreview ? "hidden lg:block" : ""}`}>
+          <form className="space-y-5 print:hidden" onSubmit={onSubmit}>
             <InlineAdStrip variant="compact" adSlot="cv-editor-inline" />
 
             {/* Branding */}
@@ -534,11 +534,11 @@ export default function CVEditor() {
           </form>
         </div>
 
-        <div className={`${showPreview ? "" : "hidden"} lg:block`}>
-          <div className="sticky top-[73px]">
-            <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">Aperçu du CV</p>
-            <div className="max-h-[calc(100vh-120px)] overflow-y-auto rounded-2xl border border-border/60 bg-white shadow-card">
-              <div ref={previewRef} className="bg-white">
+        <div className={`${showPreview ? "" : "hidden"} lg:block print:block`}>
+          <div className="sticky top-[73px] print:static">
+            <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400 print:hidden">Aperçu du CV</p>
+            <div className="max-h-[calc(100vh-120px)] overflow-y-auto rounded-2xl border border-border/60 bg-white shadow-card print:border-none print:shadow-none print:m-0 print:p-0 print:overflow-visible print:max-h-fit">
+              <div ref={previewRef} className="bg-white print:m-0 print:p-0">
                 <CVPreview
                   data={values as import("./CVPreview").CVData}
                   accentColor={brand.accentColor}

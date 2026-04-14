@@ -130,10 +130,10 @@ export default function CVPreview({ data, accentColor, logoDataUrl }: {
 function CVClassique({ data, accent, logoDataUrl }: { data: CVData; accent: string; logoDataUrl?: string | null }) {
   const pastel = lighten(accent, 0.90);
   return (
-    <div style={{ display: "flex", maxWidth: 794, background: "#fff", lineHeight: 1.6, boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.04)" }}>
-      {/* Bandeau vertical gauche — identité « classique » (différent du compact latéral droit) */}
+    <div style={{ display: "flex", width: "210mm", minHeight: "297mm", background: "#fff", lineHeight: 1.6, boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.04)" }}>
+      {/* Bandeau vertical gauche */}
       <div style={{ width: 7, flexShrink: 0, backgroundColor: accent, background: accent }} aria-hidden />
-      <div style={{ flex: 1, minWidth: 0, fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 11, color: "#1e293b" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 11, color: "#1e293b" }}>
       {/* Bannière d'en-tête */}
       <div style={{ background: pastel, borderBottom: `4px solid ${accent}`, padding: "24px 36px 20px", display: "flex", alignItems: "center", gap: 20 }}>
         {data.photoDataUrl && (
@@ -243,13 +243,8 @@ function CVClassique({ data, accent, logoDataUrl }: { data: CVData; accent: stri
         )}
 
         {data.referencesDisponibles && (
-          <p style={{ marginTop: 16, fontSize: 9.5, fontStyle: "italic", color: "#64748b" }}>✓ Références disponibles sur demande.</p>
+          <p style={{ padding: "0 36px 36px", marginTop: "auto", fontSize: 9.5, fontStyle: "italic", color: "#64748b" }}>✓ Références disponibles sur demande.</p>
         )}
-      </div>
-
-      <div style={{ borderTop: `1px solid ${lighten(accent, 0.7)}`, padding: "6px 36px", textAlign: "center", fontSize: 8, color: "#94a3b8" }}>
-        CV généré sur DocuGestIvoire — docugest-ivoire.vercel.app
-      </div>
       </div>
     </div>
   );
@@ -277,7 +272,7 @@ function CVModerne({ data, accent, logoDataUrl }: { data: CVData; accent: string
   const barTrack = isLight(accent) ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.22)";
 
   return (
-    <div style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: 11, color: "#111", display: "flex", minHeight: 1000, background: "#fff", maxWidth: 794 }}>
+    <div style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: 11, color: "#111", display: "flex", width: "210mm", minHeight: "297mm", background: "#fff" }}>
       {/* ── Sidebar gauche — backgroundColor + background pour forcer la teinte choisie ── */}
       <div
         style={{
@@ -412,7 +407,7 @@ function CVModerne({ data, accent, logoDataUrl }: { data: CVData; accent: string
           </ModerneRightSection>
         )}
         {data.referencesDisponibles && (
-          <p style={{ marginTop: 14, fontSize: 9.5, fontStyle: "italic", color: "#64748b" }}>✓ Références disponibles sur demande.</p>
+          <p style={{ marginTop: "auto", fontSize: 9.5, fontStyle: "italic", color: "#64748b" }}>✓ Références disponibles sur demande.</p>
         )}
       </div>
     </div>
@@ -450,8 +445,8 @@ function CVCompact({ data, accent, logoDataUrl }: { data: CVData; accent: string
   const barTrack = isLight(accent) ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.2)";
 
   return (
-    <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "#1e293b", background: "#fff", maxWidth: 794 }}>
-      <div style={{ display: "flex", flexDirection: "row", minHeight: 960 }}>
+    <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "#1e293b", background: "#fff", width: "210mm", minHeight: "297mm" }}>
+      <div style={{ display: "flex", flexDirection: "row", minHeight: "297mm" }}>
       {/* ── Colonne gauche : contenu principal (pas de bandeau haut coloré) ── */}
       <div style={{ flex: 1, padding: "28px 22px 24px 28px", minWidth: 0 }}>
         <div style={{ borderBottom: `3px solid ${accent}`, paddingBottom: 10, marginBottom: 14 }}>
@@ -600,11 +595,6 @@ function CVCompact({ data, accent, logoDataUrl }: { data: CVData; accent: string
             ))}
           </>
         )}
-      </div>
-      </div>
-
-      <div style={{ borderTop: "1px solid #e2e8f0", padding: "5px 20px", textAlign: "center", fontSize: 7.5, color: "#94a3b8" }}>
-        CV généré sur DocuGestIvoire — docugest-ivoire.vercel.app
       </div>
     </div>
   );
