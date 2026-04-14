@@ -39,6 +39,7 @@ const lineSchema = z.object({
 const editorSchema = z.object({
   docType: z.enum(["invoice", "proforma", "devis"]),
   docNumber: z.string().min(1),
+  layoutTheme: z.enum(["premium", "classic"]).default("premium"),
   emissionDate: z.string().min(1),
   dueDateMode: z.enum(["net30", "net60", "onOrder", "manual"]),
   dueDateManual: z.string().default(""),
@@ -142,6 +143,7 @@ export default function InvoiceEditor() {
     return {
       docType,
       docNumber: `${pref}-${year}-001`,
+      layoutTheme: "premium",
       emissionDate: todayISO(),
       dueDateMode: "net30",
       dueDateManual: "",
@@ -336,6 +338,7 @@ export default function InvoiceEditor() {
           emissionDate?: string;
           dueDateMode?: EditorValues["dueDateMode"];
           dueDateManual?: string;
+          layoutTheme?: EditorValues["layoutTheme"];
           fiscalRegime?: EditorValues["fiscalRegime"];
           ciVatRegime?: EditorValues["ciVatRegime"];
           lines?: EditorValues["lines"];
@@ -369,6 +372,7 @@ export default function InvoiceEditor() {
           clientPhone: d.client?.phone ?? "",
           clientEmail: d.client?.email ?? "",
           emissionDate: d.emissionDate || todayISO(),
+          layoutTheme: d.layoutTheme ?? "premium",
           dueDateMode: d.dueDateMode ?? "net30",
           dueDateManual: d.dueDateManual ?? "",
           fiscalRegime: d.fiscalRegime ?? "informal",
@@ -475,6 +479,7 @@ export default function InvoiceEditor() {
         },
         docNumber: values.docNumber,
         emissionDate: values.emissionDate,
+        layoutTheme: values.layoutTheme,
         dueDateText: dueDateText(values),
         dueDateMode: values.dueDateMode,
         dueDateManual: values.dueDateManual,
@@ -664,6 +669,19 @@ export default function InvoiceEditor() {
                       onChange={(e) => setBrandPrimaryHex(e.target.value)}
                       className="w-full rounded-lg border border-border px-3 py-2 text-sm"
                     />
+                  </div>
+                </div>
+                <div className="mt-6 border-t border-border pt-4">
+                  <span className="mb-3 block text-sm font-medium text-text">Modèle de disposition du document</span>
+                  <div className="flex flex-wrap gap-4">
+                    <label className="flex items-center gap-2">
+                      <input type="radio" value="premium" {...form.register("layoutTheme")} className="text-primary focus:ring-primary h-4 w-4" />
+                      <span className="text-sm font-medium text-slate-700">Premium (Couleurs & blocs)</span>
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input type="radio" value="classic" {...form.register("layoutTheme")} className="text-primary focus:ring-primary h-4 w-4" />
+                      <span className="text-sm font-medium text-slate-700">Classique (Épuré & traditionnel)</span>
+                    </label>
                   </div>
                 </div>
               </div>
@@ -974,6 +992,7 @@ export default function InvoiceEditor() {
                 themeColor={themeColor}
                 customAccentHex={accentForPreview}
                 docTypeLabel={docTypeLabel(previewValues.docType)}
+                layoutTheme={previewValues.layoutTheme}
                 data={{
                   sender: {
                     companyName: previewValues.senderCompanyName,
@@ -1018,6 +1037,7 @@ export default function InvoiceEditor() {
                   themeColor={themeColor}
                   customAccentHex={accentForPreview}
                   docTypeLabel={docTypeLabel(previewValues.docType)}
+                  layoutTheme={previewValues.layoutTheme}
                   data={{
                     sender: {
                       companyName: previewValues.senderCompanyName,
