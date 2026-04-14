@@ -33,12 +33,12 @@ export async function GET(req: Request) {
     if (token) {
       try {
         const baseUrl = process.env.NEXT_PUBLIC_INSFORGE_URL;
-        const res = await fetch(`${baseUrl}/auth/user`, {
+        const res = await fetch(`${baseUrl}/api/auth/sessions/current`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
         if (res.ok) {
-          const { data } = await res.json();
-          const user = data?.user;
+          const body = await res.json();
+          const user = body?.user || body?.data?.user;
           if (user) {
             const userId = user.id;
             const userEmail = user.email;

@@ -33,7 +33,7 @@ async function decodeSessionToken(token: string): Promise<SessionAuth | null> {
     if (!baseUrl) return null;
 
     console.log("[serverAuth] Vérification token via InsForge...");
-    const res = await fetch(`${baseUrl}/auth/user`, {
+    const res = await fetch(`${baseUrl}/api/auth/sessions/current`, {
       method: "GET",
       headers: {
         "Authorization": `Bearer ${token}`
@@ -41,11 +41,12 @@ async function decodeSessionToken(token: string): Promise<SessionAuth | null> {
     });
 
     if (res.ok) {
-      const { data } = await res.json();
-      if (data?.user?.id) {
+      const body = await res.json();
+      const user = body?.user || body?.data?.user;
+      if (user?.id) {
         // DocuGest Ivoire : le rôle par défaut est 'user' sauf s'il est spécifié autrement
         // Note: On pourra affiner le rôle plus tard via la DB
-        return { sub: data.user.id, role: "user" };
+        return { sub: user.id, role: "user" };
       }
     }
 
