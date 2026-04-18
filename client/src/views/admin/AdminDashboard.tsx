@@ -15,6 +15,15 @@ type Overview = {
   adSummary: { views: number; clicks: number; ctrPct: number; byZone: Record<string, { views?: number; clicks?: number; ctrPct?: number }> };
   documentsTrendLast14Days?: { day: string; count: number }[];
   meta?: { filtered?: boolean; from?: string | null; to?: string | null };
+  hatchery?: {
+    revenueService: number;
+    revenueSales: number;
+    activeCouvaisons: number;
+    expectedHatchingToday: number;
+    criticalStocks: number;
+    avgHatchingRate: number;
+    activeClientCount: number;
+  };
 };
 
 export function AdminDashboard() {
@@ -204,6 +213,48 @@ export function AdminDashboard() {
           </p>
         </section>
       </div>
+
+      {/* ─── Hatchery & Business KPIs ─── */}
+      {overview.hatchery && (
+        <section className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-black text-slate-800 tracking-tight">Activité Couvaison & Commerce</h2>
+            <div className="flex gap-2">
+               <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase rounded-full">
+                 {overview.hatchery.activeClientCount} Clients Partenaires
+               </span>
+            </div>
+          </div>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="p-6 rounded-[2rem] bg-white border border-slate-200 shadow-sm transition-hover">
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Chiffre d'Affaire (Services)</div>
+              <div className="text-2xl font-black text-slate-900">{overview.hatchery.revenueService.toLocaleString()} F</div>
+              <div className="mt-2 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-full bg-emerald-500 w-2/3"></div>
+              </div>
+            </div>
+            <div className="p-6 rounded-[2rem] bg-white border border-slate-200 shadow-sm transition-hover">
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Lots en cours</div>
+              <div className="text-2xl font-black text-slate-900">{overview.hatchery.activeCouvaisons}</div>
+              <div className="text-[11px] font-medium text-slate-500 mt-2">
+                {overview.hatchery.expectedHatchingToday} éclosion(s) prévue(s) ce jour
+              </div>
+            </div>
+            <div className="p-6 rounded-[2rem] bg-white border border-slate-200 shadow-sm transition-hover">
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Taux de Réussite Moyen</div>
+              <div className="text-2xl font-black text-indigo-600">{Math.round(overview.hatchery.avgHatchingRate)}%</div>
+              <p className="text-[11px] text-slate-500 mt-2 font-medium">Performance globale couvoir</p>
+            </div>
+            <div className="p-6 rounded-[2rem] bg-white border border-slate-200 shadow-sm transition-hover">
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Stock Alerte</div>
+              <div className={`text-2xl font-black ${overview.hatchery.criticalStocks > 0 ? "text-rose-600" : "text-emerald-600"}`}>
+                {overview.hatchery.criticalStocks}
+              </div>
+              <p className="text-[11px] text-slate-500 mt-2 font-medium">Produits sous le seuil critique</p>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ─── local AI Insights ─── */}
       {insights && (

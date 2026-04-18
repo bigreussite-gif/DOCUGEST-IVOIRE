@@ -17,23 +17,28 @@ export type SessionAuth = { sub: string; role: string };
 
 async function decodeSessionToken(token: string): Promise<SessionAuth | null> {
   try {
-    // 1. Tentative locale (pour les tokens internes si on en a)
+    // 1. Tentative locale (JWT interne)
     const secret = process.env.JWT_SECRET;
     if (secret) {
       try {
         const payload = jwt.verify(token, secret) as jwt.JwtPayload & { sub?: string; role?: string };
         if (payload.sub) return { sub: payload.sub, role: String(payload.role ?? "user") };
       } catch {
-        /* On continue avec l'étape 2 */
+        /* On continue */
       }
     }
 
-    // 2. Vérification via InsForge (pour les tokens du SDK)
-    const baseUrl = process.env.NEXT_PUBLIC_INSFORGE_URL;
-    if (!baseUrl) return null;
+    // 2. Vérification via InsForge API
+    const baseUrl = process.env.NEXT_PUBLIC_INSFORGE_URL || process.env.INSFORGE_URL || process.env.APP_URL;
+    if (!baseUrl) {
+      console.warn("[serverAuth] baseUrl manquant pour verification");
+      return null;
+    }
 
-    console.log("[serverAuth] Vérification token via InsForge...");
-    const res = await fetch(`${baseUrl}/api/auth/sessions/current`, {
+    // Endpoint standard InsForge pour verifier le token actuel
+    const checkUrl = `${baseUrl.replace(/\/$/, "")}/api/auth/me`;
+    
+    const res = await fetch(checkUrl, {
       method: "GET",
       headers: {
         "Authorization": `Bearer ${token}`
@@ -42,12 +47,13 @@ async function decodeSessionToken(token: string): Promise<SessionAuth | null> {
 
     if (res.ok) {
       const body = await res.json();
-      const user = body?.user || body?.data?.user;
+      // InsForge renvoie souvent { data: { user: ... } } ou { user: ... }
+      const user = body?.user || body?.data?.user || body?.data;
       if (user?.id) {
-        // DocuGest Ivoire : le rôle par défaut est 'user' sauf s'il est spécifié autrement
-        // Note: On pourra affiner le rôle plus tard via la DB
         return { sub: user.id, role: "user" };
       }
+    } else {
+      console.log("[serverAuth] verification echouée sur", checkUrl, res.status);
     }
 
     return null;

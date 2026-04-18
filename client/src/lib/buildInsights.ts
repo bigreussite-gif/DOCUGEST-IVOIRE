@@ -88,10 +88,28 @@ export function buildInsights(snapshot: AnalyticsSnapshot) {
     }
   }
 
-  const demographics = (snapshot.demographics as { gender?: Record<string, number> }) ?? {};
-  const demo = demographics.gender ?? {};
-  if (Object.keys(demo).length > 0) {
-    lines.push("Répartition démographique (genre renseigné) disponible pour cibler des partenariats.");
+  // --- Hatchery & Business ---
+  const hatchery = (snapshot.hatchery as any) || {};
+  if (hatchery.revenueService > 0 || hatchery.revenueSales > 0) {
+    lines.push(`Business : CA Services ${hatchery.revenueService.toLocaleString()} F, CA Ventes ${hatchery.revenueSales.toLocaleString()} F.`);
+  }
+  if (hatchery.activeCouvaisons > 0) {
+    lines.push(`Écloserie : ${hatchery.activeCouvaisons} lots en cours.`);
+    if (hatchery.expectedHatchingToday > 0) {
+      recos.push(`${hatchery.expectedHatchingToday} éclosion(s) prévue(s) aujourd'hui : s'assurer que les agents sont prêts pour le tri et le comptage.`);
+    }
+  }
+
+  const successRate = hatchery.avgHatchingRate ?? 0;
+  if (successRate > 0) {
+    lines.push(`Taux de réussite moyen : ${Math.round(successRate)}%.`);
+    if (successRate < 70) {
+       recos.push("Taux de réussite sous 70% : surveiller la température des machines et la qualité des œufs à la réception.");
+    }
+  }
+
+  if (hatchery.criticalStocks > 0) {
+    recos.push(`${hatchery.criticalStocks} produit(s) en rupture ou stock critique : prévoir un réapprovisionnement rapide.`);
   }
 
   recos.push(
