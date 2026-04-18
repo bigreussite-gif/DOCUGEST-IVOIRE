@@ -249,7 +249,7 @@ function AdminLogin({
       try {
         const ref = await fetch("/api/auth/refresh", {
           method: "POST",
-          headers: { Authorization: `Bearer ${data.token}` },
+          headers: { Authorization: `Bearer ${data.accessToken}` },
         });
         if (ref.ok) {
           const r = (await ref.json()) as { token?: string; user?: unknown };

@@ -150,7 +150,7 @@ export function AdminDashboard() {
                 type="button"
                 onClick={() => {
                   setPeriodMode(key);
-                  if (key !== "custom" && key !== "all") {
+                  if (key !== "all") {
                     const r = rangeForPreset(key);
                     setCustomFrom(r.from);
                     setCustomTo(r.to);
