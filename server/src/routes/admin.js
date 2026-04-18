@@ -239,7 +239,129 @@ router.get("/audit", async (req, res) => {
   }
 });
 
-// --- Tracking publicitaire (peut être appelé depuis le client authentifié) ---
+// --- Contacts (Clients & Fournisseurs) ---
+
+router.get("/contacts", async (req, res) => {
+  try {
+    const items = await store.getContacts(req.query.type);
+    return res.json({ items });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Erreur liste contacts" });
+  }
+});
+
+router.post("/contacts", async (req, res) => {
+  try {
+    const created = await store.createContact(req.body);
+    await store.appendAuditLog({
+      actorId: req.auth.sub,
+      action: "contact.create",
+      targetType: "contact",
+      targetId: created.id,
+      metadata: { name: created.full_name, type: created.type },
+      ip: clientIp(req)
+    });
+    return res.status(201).json(created);
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Erreur création contact" });
+  }
+});
+
+// --- Couvaisons ---
+
+router.get("/couvaisons", async (req, res) => {
+  try {
+    const items = await store.getCouvaisons(req.query);
+    return res.json({ items });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Erreur liste couvaisons" });
+  }
+});
+
+router.post("/couvaisons", async (req, res) => {
+  try {
+    const created = await store.createCouvaison(req.body);
+    await store.appendAuditLog({
+      actorId: req.auth.sub,
+      action: "couvaison.create",
+      targetType: "couvaison",
+      targetId: created.id,
+      metadata: { egg_type: created.egg_type, qty: created.quantity_initial },
+      ip: clientIp(req)
+    });
+    return res.status(201).json(created);
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Erreur création couvaison" });
+  }
+});
+
+router.patch("/couvaisons/:id", async (req, res) => {
+  try {
+    const updated = await store.updateCouvaison(req.params.id, req.body);
+    await store.appendAuditLog({
+      actorId: req.auth.sub,
+      action: "couvaison.update",
+      targetType: "couvaison",
+      targetId: req.params.id,
+      metadata: req.body,
+      ip: clientIp(req)
+    });
+    return res.json(updated);
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Erreur mise à jour couvaison" });
+  }
+});
+
+router.post("/couvaisons/:id/mirage", async (req, res) => {
+  try {
+    const result = await store.recordMirage({
+      couvaison_id: req.params.id,
+      ...req.body,
+      checked_by: req.auth.sub
+    });
+    await store.appendAuditLog({
+      actorId: req.auth.sub,
+      action: "couvaison.mirage",
+      targetType: "couvaison",
+      targetId: req.params.id,
+      metadata: { removed: req.body.quantity_removed },
+      ip: clientIp(req)
+    });
+    return res.json(result);
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Erreur mirage" });
+  }
+});
+
+router.post("/couvaisons/:id/eclosion", async (req, res) => {
+  try {
+    const result = await store.recordEclosion({
+      couvaison_id: req.params.id,
+      ...req.body,
+      checked_by: req.auth.sub
+    });
+    await store.appendAuditLog({
+      actorId: req.auth.sub,
+      action: "couvaison.eclosion",
+      targetType: "couvaison",
+      targetId: req.params.id,
+      metadata: { rate: result.taux_reussite },
+      ip: clientIp(req)
+    });
+    return res.json(result);
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Erreur éclosion" });
+  }
+});
+
+// --- Tracking publicitaire ---
 
 const adEventSchema = z.object({
   event_type: z.enum(["view", "click"]),

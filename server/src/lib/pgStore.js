@@ -317,8 +317,38 @@ async function adminAnalyticsSnapshot() {
       ctrPct: views > 0 ? Math.round((clicks / views) * 10000) / 100 : 0,
       byZone
     };
-  } catch {
+  } catch (e) {
     /* table absente */
+  }
+
+  // --- Hatchery & Business BI ---
+  let hatcheryStats = {
+    revenueService: 0,
+    revenueSales: 0,
+    activeCouvaisons: 0,
+    expectedHatchingToday: 0,
+    criticalStocks: 0,
+    avgHatchingRate: 0
+  };
+
+  try {
+    const { rows: revService } = await pool.query(`SELECT SUM(total_price)::float AS total FROM public.couvaisons`);
+    const { rows: revSales } = await pool.query(`SELECT SUM(total_amount)::float AS total FROM public.sales`);
+    const { rows: activeC } = await pool.query(`SELECT COUNT(*)::int AS count FROM public.couvaisons WHERE status NOT IN ('completed', 'cancelled')`);
+    const { rows: hatchingToday } = await pool.query(`SELECT COUNT(*)::int AS count FROM public.couvaisons WHERE date_eclosion::date = CURRENT_DATE`);
+    const { rows: lowStocks } = await pool.query(`SELECT COUNT(*)::int AS count FROM public.products WHERE stock_quantity <= stock_alert`);
+    const { rows: rate } = await pool.query(`SELECT AVG(taux_reussite)::float AS avg FROM public.eclosion_results`);
+
+    hatcheryStats = {
+      revenueService: revService[0]?.total ?? 0,
+      revenueSales: revSales[0]?.total ?? 0,
+      activeCouvaisons: activeC[0]?.count ?? 0,
+      expectedHatchingToday: hatchingToday[0]?.count ?? 0,
+      criticalStocks: lowStocks[0]?.count ?? 0,
+      avgHatchingRate: rate[0]?.avg ?? 0
+    };
+  } catch (e) {
+    console.error("Hatchery analytics error", e);
   }
 
   const { rows: docTotal } = await pool.query(`SELECT COUNT(*)::int AS c FROM public.documents`);
@@ -333,7 +363,8 @@ async function adminAnalyticsSnapshot() {
     monthlyActiveUsers,
     recentLogins,
     demographics,
-    adSummary
+    adSummary,
+    hatchery: hatcheryStats
   };
 }
 
@@ -429,6 +460,172 @@ async function deleteDocumentById({ userId, id }) {
   return rowCount > 0;
 }
 
+// ─── CONTACTS (Clients & Fournisseurs) ───
+
+export async function getContacts(type?: string) {
+  const query = type 
+    ? { text: "SELECT * FROM public.contacts WHERE type = $1 ORDER BY full_name ASC", values: [type] }
+    : { text: "SELECT * FROM public.contacts ORDER BY full_name ASC" };
+  const { rows } = await pool.query(query);
+  return rows;
+}
+
+export async function createContact(data: { full_name: string; phone?: string; whatsapp?: string; email?: string; type?: string }) {
+  const { full_name, phone, whatsapp, email, type = "client" } = data;
+  const { rows } = await pool.query(
+    "INSERT INTO public.contacts (full_name, phone, whatsapp, email, type) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+    [full_name, phone, whatsapp, email, type]
+  );
+  return rows[0];
+}
+
+export async function updateContact(id: string, data: Partial<{ full_name: string; phone: string; whatsapp: string; email: string; balance: number }>) {
+  const fields = Object.keys(data);
+  if (fields.length === 0) return null;
+  const setClause = fields.map((f, i) => `${f} = $${i + 2}`).join(", ");
+  const values = Object.values(data);
+  const { rows } = await pool.query(
+    `UPDATE public.contacts SET ${setClause}, updated_at = NOW() WHERE id = $1 RETURNING *`,
+    [id, ...values]
+  );
+  return rows[0];
+}
+
+// ─── COUVAISONS ───
+
+export async function getCouvaisons(filters?: { status?: string; contact_id?: string }) {
+  let sql = "SELECT c.*, co.full_name as contact_name, co.whatsapp as contact_whatsapp FROM public.couvaisons c LEFT JOIN public.contacts co ON c.contact_id = co.id";
+  const where = [];
+  const values = [];
+  if (filters?.status) {
+    where.push(`c.status = $${values.length + 1}`);
+    values.push(filters.status);
+  }
+  if (filters?.contact_id) {
+    where.push(`c.contact_id = $${values.length + 1}`);
+    values.push(filters.contact_id);
+  }
+  if (where.length > 0) sql += " WHERE " + where.join(" AND ");
+  sql += " ORDER BY c.date_start DESC";
+  const { rows } = await pool.query(sql, values);
+  return rows;
+}
+
+export async function createCouvaison(data: { contact_id: string; egg_type: string; quantity_initial: number; total_price: number; amount_paid?: number; notes?: string }) {
+  const { contact_id, egg_type, quantity_initial, total_price, amount_paid = 0, notes } = data;
+  const { rows } = await pool.query(
+    "INSERT INTO public.couvaisons (contact_id, egg_type, quantity_initial, total_price, amount_paid, notes) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+    [contact_id, egg_type, quantity_initial, total_price, amount_paid, notes]
+  );
+  return rows[0];
+}
+
+export async function updateCouvaison(id: string, data: Partial<{ status: string; amount_paid: number; notes: string }>) {
+  const fields = Object.keys(data);
+  if (fields.length === 0) return null;
+  const setClause = fields.map((f, i) => `${f} = $${i + 2}`).join(", ");
+  const values = Object.values(data);
+  const { rows } = await pool.query(
+    `UPDATE public.couvaisons SET ${setClause} WHERE id = $1 RETURNING *`,
+    [id, ...values]
+  );
+  return rows[0];
+}
+
+export async function recordMirage(data: { couvaison_id: string; quantity_removed: number; quantity_remaining: number; checked_by: string }) {
+  const { couvaison_id, quantity_removed, quantity_remaining, checked_by } = data;
+  await pool.query("BEGIN");
+  try {
+    const { rows } = await pool.query(
+      "INSERT INTO public.mirage_results (couvaison_id, quantity_removed, quantity_remaining, checked_by) VALUES ($1, $2, $3, $4) RETURNING *",
+      [couvaison_id, quantity_removed, quantity_remaining, checked_by]
+    );
+    await pool.query("UPDATE public.couvaisons SET status = 'mirage_done' WHERE id = $1", [couvaison_id]);
+    await pool.query("COMMIT");
+    return rows[0];
+  } catch (e) {
+    await pool.query("ROLLBACK");
+    throw e;
+  }
+}
+
+export async function recordEclosion(data: { couvaison_id: string; poussins_vif: number; poussins_mort: number; oeufs_non_eclos: number; checked_by: string }) {
+  const { couvaison_id, poussins_vif, poussins_mort, oeufs_non_eclos, checked_by } = data;
+  const total = poussins_vif + poussins_mort + oeufs_non_eclos;
+  const rate = total > 0 ? (poussins_vif / total) * 100 : 0;
+  
+  await pool.query("BEGIN");
+  try {
+    const { rows } = await pool.query(
+      "INSERT INTO public.eclosion_results (couvaison_id, poussins_vif, poussins_mort, oeufs_non_eclos, taux_reussite, checked_by) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+      [couvaison_id, poussins_vif, poussins_mort, oeufs_non_eclos, rate, checked_by]
+    );
+    await pool.query("UPDATE public.couvaisons SET status = 'completed' WHERE id = $1", [couvaison_id]);
+    await pool.query("COMMIT");
+    return rows[0];
+  } catch (e) {
+    await pool.query("ROLLBACK");
+    throw e;
+  }
+}
+
+// ─── PRODUITS & CATALOGUE ───
+
+export async function getProducts(category?: string) {
+  const query = category 
+    ? { text: "SELECT * FROM public.products WHERE category = $1 ORDER BY name ASC", values: [category] }
+    : { text: "SELECT * FROM public.products ORDER BY name ASC" };
+  const { rows } = await pool.query(query);
+  return rows;
+}
+
+export async function createProduct(data: { name: string; category: string; price: number; stock?: number; unit?: string }) {
+  const { name, category, price, stock = 0, unit = "unité" } = data;
+  const { rows } = await pool.query(
+    "INSERT INTO public.products (name, category, price, stock, unit) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+    [name, category, price, stock, unit]
+  );
+  return rows[0];
+}
+
+// ─── VENTES & TRANSACTIONS ───
+
+export async function getSales(filters?: { contact_id?: string }) {
+  let sql = "SELECT s.*, co.full_name as contact_name FROM public.sales s LEFT JOIN public.contacts co ON s.contact_id = co.id";
+  const values = [];
+  if (filters?.contact_id) {
+    sql += " WHERE s.contact_id = $1";
+    values.push(filters.contact_id);
+  }
+  sql += " ORDER BY s.created_at DESC";
+  const { rows } = await pool.query(sql, values);
+  return rows;
+}
+
+export async function recordSale(data: { contact_id: string; total_amount: number; amount_paid?: number; items: Array<{ product_id: string; quantity: number; unit_price: number }> }) {
+  const { contact_id, total_amount, amount_paid = 0, items } = data;
+  
+  await pool.query("BEGIN");
+  try {
+    const { rows: saleRows } = await pool.query(
+      "INSERT INTO public.sales (contact_id, total_amount, amount_paid, status) VALUES ($1, $2, $3, 'paid') RETURNING *",
+      [contact_id, total_amount, amount_paid]
+    );
+    const saleId = saleRows[0].id;
+    for (const item of items) {
+      await pool.query(
+        "UPDATE public.products SET stock = stock - $1 WHERE id = $2",
+        [item.quantity, item.product_id]
+      );
+    }
+    await pool.query("COMMIT");
+    return saleRows[0];
+  } catch (e) {
+    await pool.query("ROLLBACK");
+    throw e;
+  }
+}
+
 async function verifyPasswordByEmail({ email, passwordHashCandidate }) {
   return getUserByEmail(email);
 }
@@ -457,5 +654,17 @@ module.exports = {
   appendAuditLog,
   listAuditLogs,
   insertAdEvent,
-  adminAnalyticsSnapshot
+  adminAnalyticsSnapshot,
+  getContacts,
+  createContact,
+  updateContact,
+  getCouvaisons,
+  createCouvaison,
+  updateCouvaison,
+  recordMirage,
+  recordEclosion,
+  getProducts,
+  createProduct,
+  getSales,
+  recordSale
 };
