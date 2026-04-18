@@ -84,8 +84,8 @@ export default function Landing() {
           <div className="flex items-center gap-6">
             <div className="transition-all duration-300 hover:scale-105">
               <img
-                src="/logo-docugest-ivoire.png"
-                alt="DocuGestIvoire"
+                src="/logo-docugest.png"
+                alt="DocuGest"
                 className="h-24 w-auto object-contain sm:h-28"
                 width={500}
                 height={120}
@@ -93,7 +93,7 @@ export default function Landing() {
               />
             </div>
             <div className="hidden lg:block border-l border-slate-200 pl-6">
-              <div className="text-xl font-black text-slate-900 tracking-tight">DocuGest Ivoire</div>
+              <div className="text-xl font-black text-slate-900 tracking-tight">DocuGest</div>
               <div className="text-xs font-bold text-slate-500 uppercase tracking-[0.2em] leading-none mt-2">L'IA Documentaire Ivoirienne</div>
             </div>
           </div>
@@ -169,7 +169,7 @@ export default function Landing() {
               <div className="relative overflow-hidden rounded-[3rem] border border-white/80 bg-white/30 p-2 shadow-2xl backdrop-blur-md ring-1 ring-slate-200/20">
                 <img
                   src="/assets/images/hero_illustration_new.png"
-                  alt="Interface DocuGest Ivoire"
+                  alt="Interface DocuGest"
                   className="rounded-[2.5rem] shadow-float transition-transform duration-700 hover:scale-[1.02]"
                   width={1000}
                   height={1000}
@@ -275,7 +275,7 @@ export default function Landing() {
                 <div className="relative">
                   <div className="aspect-square rounded-[3rem] bg-gradient-to-br from-orange-100 to-rose-50 flex flex-col items-center justify-center p-12 text-center border border-white shadow-inner">
                     <div className="mb-6 flex items-center justify-center gap-4">
-                       <img src="/logo-docugest-ivoire.png" className="h-14 w-auto object-contain" alt="DocuGest"/>
+                       <img src="/logo-docugest.png" className="h-14 w-auto object-contain" alt="DocuGest"/>
                        <span className="text-2xl font-black text-slate-300">×</span>
                        <div className="flex flex-col items-center">
                           <img src="/assets/images/logo-dgi.png" className="h-20 w-auto object-contain" alt="DGI CI"/>
@@ -285,7 +285,7 @@ export default function Landing() {
                       Partenaire de Modernisation
                     </div>
                     <p className="text-base font-bold text-slate-600 leading-relaxed italic">
-                      "DocuGest Ivoire accompagne les startups et PME vers la mise en conformité avec les nouvelles réformes de l'État Ivoirien."
+                      "DocuGest accompagne les startups et PME vers la mise en conformité avec les nouvelles réformes de l'État Ivoirien."
                     </p>
                     
                     {/* Badge DGI */}
@@ -355,7 +355,7 @@ export default function Landing() {
             <div className="relative z-10 flex flex-col items-center">
               <div className="mb-10 flex h-32 w-48 items-center justify-center rounded-[2rem] bg-white p-6 shadow-2xl transition-transform hover:scale-105">
                  <img 
-                   src="/logo-docugest-ivoire.png" 
+                   src="/logo-docugest.png" 
                    className="h-full w-full object-contain" 
                    alt="Logo DocuGest"
                  />

@@ -23,46 +23,34 @@ export function AdminLayout({ session }: { session: AdminSession }) {
 
   const navItems: NavItem[] = [
     {
-      to: "/admin", end: true, label: "Vue d'ensemble", labelShort: "Synthèse",
+      to: "/admin", end: true, label: "Synthèse", labelShort: "Dashboard",
       icon: (
         <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
-          <rect x="14" y="14" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" />
+          <path d="M3 3h7v7H3z" /><path d="M14 3h7v7h-7z" /><path d="M14 14h7v7h-7z" /><path d="M3 14h7v7H3z" />
         </svg>
       )
     },
     {
-      to: "/admin/documents", label: "Documents", labelShort: "Docs",
+      to: "/admin/contacts", label: "Clients & Partenaires", labelShort: "Contacts",
       icon: (
         <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-          <polyline points="14 2 14 8 20 8" />
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
         </svg>
       )
     },
     {
-      to: "/admin/blog", label: "Blog & SEO", labelShort: "Blog",
+      to: "/admin/documents", label: "Archives Docs", labelShort: "Docs",
       icon: (
         <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" />
         </svg>
       )
     },
     {
-      to: "/admin/ads", label: "Publicités", labelShort: "Pub",
+      to: "/admin/users", label: "Équipe", labelShort: "Users", restricted: !canManageUsers,
       icon: (
         <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="2" y="7" width="20" height="14" rx="2" />
-          <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
-        </svg>
-      )
-    },
-    {
-      to: "/admin/users", label: "Utilisateurs", labelShort: "Users", restricted: !canManageUsers,
-      icon: (
-        <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
         </svg>
       )
     },
@@ -70,28 +58,11 @@ export function AdminLayout({ session }: { session: AdminSession }) {
       to: "/admin/audit", label: "Traçabilité", labelShort: "Journal",
       icon: (
         <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-        </svg>
-      )
-    },
-    {
-      to: "/admin/reports", label: "Rapports & exports", labelShort: "Rapports",
-      icon: (
-        <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" />
-          <line x1="6" y1="20" x2="6" y2="14" />
-        </svg>
-      )
-    },
-    {
-      to: "/admin/growth", label: "Croissance & partenariats", labelShort: "Croissance",
-      icon: (
-        <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-          <polyline points="17 6 23 6 23 12" />
+          <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" /><path d="M12 6v6l4 2" />
         </svg>
       )
     }
+
   ];
 
   const visibleItems = navItems.filter((i) => !i.restricted);
@@ -124,7 +95,7 @@ export function AdminLayout({ session }: { session: AdminSession }) {
               DG
             </div>
             <div>
-              <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">DocuGestIvoire</div>
+              <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">DocuGest</div>
               <div className="text-sm font-bold text-text leading-tight">Back-office</div>
             </div>
           </div>
@@ -216,7 +187,7 @@ export function AdminLayout({ session }: { session: AdminSession }) {
         </main>
 
         <footer className="border-t border-slate-200/60 px-4 py-3.5 text-center text-[11px] text-slate-400 md:px-8">
-          DocuGestIvoire · Administration · by Soroboss
+          DocuGest · Administration · by Soroboss
         </footer>
       </div>
     </div>

@@ -8,9 +8,12 @@ import { AdminAudit } from "./AdminAudit";
 import { AdminDocuments } from "./AdminDocuments";
 import { AdminAds } from "./AdminAds";
 import { AdminBlog } from "./AdminBlog";
+import { AdminContacts } from "./AdminContacts";
 import { AdminComingSoon } from "./AdminComingSoon";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
+import { insforge } from "../../lib/insforge";
+import { commitAuthSession, useAuthStore } from "../../store/authStore";
 
 export default function AdminApp() {
   const location = useLocation();
@@ -85,7 +88,7 @@ export default function AdminApp() {
       <div className="mx-auto max-w-lg px-6 py-20 text-center">
         <h1 className="text-xl font-bold text-text">Accès réservé</h1>
         <p className="mt-3 text-slate-600">
-          Votre compte n’a pas les droits pour accéder à l’administration DocuGestIvoire. Contactez un administrateur
+          Votre compte n’a pas les droits pour accéder à l’administration DocuGest. Contactez un administrateur
           général.
         </p>
         <button
@@ -141,35 +144,17 @@ export default function AdminApp() {
       <Route path="session" element={<Navigate to="/admin" replace />} />
       <Route element={<AdminLayout session={session} />}>
         <Route index element={<AdminDashboard />} />
+        
+        <Route path="contacts" element={<AdminContacts />} />
+
         <Route path="documents" element={<AdminDocuments />} />
-        <Route path="blog" element={<AdminBlog />} />
-        <Route path="ads" element={<AdminAds />} />
         <Route path="users" element={<AdminUsers />} />
         <Route path="audit" element={<AdminAudit />} />
-        <Route
-          path="reports"
-          element={
-            <AdminComingSoon
-              title="Rapports & exports"
-              description="Exports PDF/Excel, tableaux de bord partagés et snapshots pour investisseurs — en cours de conception."
-              highlights={["Exports planifiés", "Filtres multi-tenant", "Partage sécurisé (lien à durée limitée)"]}
-            />
-          }
-        />
-        <Route
-          path="growth"
-          element={
-            <AdminComingSoon
-              title="Croissance & partenariats"
-              description="Vue pipeline partenaires, campagnes et co-marketing pour accélérer l’acquisition sur les marchés cibles."
-              highlights={["Suivi des leads B2B", "Intégrations annonceurs", "Objectifs trimestriels"]}
-            />
-          }
-        />
       </Route>
     </Routes>
   );
 }
+
 
 function AdminLogin({
   onLoggedIn,
@@ -240,24 +225,26 @@ function AdminLogin({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), password, rememberMe: true })
+      console.log("[admin login] attempting InsForge SDK login");
+      const { data, error: sdkError } = await insforge.auth.signInWithPassword({
+        email: email.trim(),
+        password
       });
-      const data = (await res.json().catch(() => ({}))) as { token?: string; user?: unknown; message?: string };
-      if (!res.ok) {
-        setError(typeof data.message === "string" ? data.message : "Connexion impossible");
+
+      if (sdkError) {
+        console.error("[admin login] SDK error", sdkError);
+        setError(sdkError.message || "Identifiants invalides ou erreur de connexion.");
         return;
       }
-      if (!data?.token) {
-        setError("Connexion réussie mais token absent. Vérifiez la configuration serveur.");
+
+      if (!data?.accessToken || !data?.user) {
+        setError("Réponse serveur invalide (pas de session).");
         return;
       }
-      localStorage.setItem("docugest_token", data.token);
-      if (data?.user) {
-        localStorage.setItem("docugest_user_cache", JSON.stringify(data.user));
-      }
+
+      // Sauvegarde dans le store (partagé avec le dashboard)
+      commitAuthSession(data.accessToken, data.user as any);
+      await useAuthStore.getState().loadMe();
 
       try {
         const ref = await fetch("/api/auth/refresh", {
@@ -357,7 +344,7 @@ function AdminLogin({
               Espace administration securise
             </div>
             <h1 className="mt-4 text-3xl font-extrabold leading-tight text-text sm:text-4xl">
-              Pilotez DocuGestIvoire avec une
+              Pilotez DocuGest avec une
               <span className="bg-gradient-to-r from-primary to-emerald-600 bg-clip-text text-transparent"> vision claire </span>
               et fiable.
             </h1>
@@ -384,7 +371,7 @@ function AdminLogin({
           <div className="w-full rounded-3xl border border-slate-200 bg-white p-6 shadow-soft sm:p-8">
             <div className="mb-5">
               <h2 className="text-xl font-bold text-text">Connexion administrateur</h2>
-              <p className="mt-1 text-sm text-slate-600">Accès au tableau de bord admin DocuGestIvoire.</p>
+              <p className="mt-1 text-sm text-slate-600">Accès au tableau de bord admin DocuGest.</p>
               <p className="mt-2 text-xs text-slate-500">
                 Première installation (promouvoir le super admin) :{" "}
                 <a href="/setup-super-admin" className="font-semibold text-primary underline-offset-2 hover:underline">
@@ -445,7 +432,7 @@ function AdminLogin({
         </div>
 
         <footer className="mt-8 border-t border-slate-200/80 pt-4 text-center text-xs text-slate-500">
-          DocuGestIvoire · Administration · by Soroboss · +225 07 57 22 87 31 · soroboss.bossimpact@gmail.com
+          DocuGest · Administration · by Soroboss · +225 07 57 22 87 31 · soroboss.bossimpact@gmail.com
         </footer>
       </div>
     </div>

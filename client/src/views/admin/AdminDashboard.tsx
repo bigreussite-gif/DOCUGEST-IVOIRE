@@ -14,146 +14,135 @@ type Overview = {
   demographics: { gender: Record<string, number>; user_typology: Record<string, number> };
   adSummary: { views: number; clicks: number; ctrPct: number; byZone: Record<string, { views?: number; clicks?: number; ctrPct?: number }> };
   documentsTrendLast14Days?: { day: string; count: number }[];
-  topCountriesByLogin?: { country: string; count: number }[];
   meta?: { filtered?: boolean; from?: string | null; to?: string | null };
 };
 
-type Insights = {
-  summary: string;
-  recommendations: string[];
-  generatedAt: string;
-  model: string;
-};
-
-const days = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
-
-type PeriodMode = "all" | DatePreset;
-
-function analyticsQuery(mode: PeriodMode, customFrom: string, customTo: string): string {
-  if (mode === "all") return "";
-  if (mode === "custom") {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(customFrom) || !/^\d{4}-\d{2}-\d{2}$/.test(customTo)) return "";
-    if (customFrom > customTo) return "";
-    return `?${new URLSearchParams({ from: customFrom, to: customTo }).toString()}`;
-  }
-  const { from, to } = rangeForPreset(mode);
-  return `?${new URLSearchParams({ from, to }).toString()}`;
-}
-
 export function AdminDashboard() {
-  const m = rangeForPreset("month");
-  const [periodMode, setPeriodMode] = useState<PeriodMode>("month");
-  const [customFrom, setCustomFrom] = useState(m.from);
-  const [customTo, setCustomTo] = useState(m.to);
   const [overview, setOverview] = useState<Overview | null>(null);
-  const [insights, setInsights] = useState<Insights | null>(null);
+  const [periodMode, setPeriodMode] = useState<DatePreset | "custom" | "all">("all");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+  const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [lastRefresh, setLastRefresh] = useState<string | null>(null);
+  const [insights, setInsights] = useState<{ summary: string; recommendations: string[]; generatedAt: string; model: string } | null>(null);
 
   const load = useCallback(async () => {
-    const qs = analyticsQuery(periodMode, customFrom, customTo);
-    if (periodMode === "custom" && !qs) {
-      setErr("Dates personnalisées invalides (format AAAA-MM-JJ, du ≤ au).");
-      return;
-    }
+    setLoading(true);
     setErr(null);
     try {
-      const [overviewRes, insightsRes] = await Promise.allSettled([
-        adminFetch<Overview>(`/analytics/overview${qs}`),
-        adminFetch<Insights>(`/analytics/insights${qs}`)
-      ]);
-
-      if (overviewRes.status === "fulfilled") {
-        setOverview(overviewRes.value);
-      } else {
-        const msg = overviewRes.reason instanceof Error ? overviewRes.reason.message : "Erreur";
-        setErr(msg);
-        return;
+      const qs = new URLSearchParams();
+      if (periodMode !== "all") {
+        if (customFrom) qs.set("from", customFrom);
+        if (customTo) qs.set("to", customTo);
       }
+      const data = await adminFetch<Overview>(`/analytics/overview?${qs.toString()}`);
+      setOverview(data);
 
-      if (insightsRes.status === "fulfilled") {
-        setInsights(insightsRes.value);
-      } else {
-        setInsights({
-          summary: "Le module d'analyse avancée est temporairement indisponible.",
-          recommendations: ["Les KPI principaux restent disponibles dans cette vue."],
-          generatedAt: new Date().toISOString(),
-          model: "client-fallback-v1"
-        });
-      }
-      setLastRefresh(new Date().toISOString());
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "Erreur");
+      const ins = await adminFetch<any>("/analytics/insights");
+      setInsights(ins);
+    } catch (e: any) {
+      setErr(e.message || "Erreur de chargement");
+    } finally {
+      setLoading(false);
     }
   }, [periodMode, customFrom, customTo]);
 
   useEffect(() => {
     void load();
-    const t = setInterval(() => void load(), 30_000);
-    return () => clearInterval(t);
   }, [load]);
 
   if (!overview && err) return <div className="rounded-xl bg-rose-50 p-4 text-rose-800">{err}</div>;
   if (!overview) return <div className="text-slate-600">Chargement des indicateurs…</div>;
 
-  const filtered = Boolean(overview.meta?.filtered);
-  const periodLabel =
-    filtered && overview.meta?.from && overview.meta?.to
-      ? `${overview.meta.from} → ${overview.meta.to}`
-      : "Toutes données";
-
-  const typeEntries = Object.entries(overview.documentsByType);
-  const maxType = Math.max(1, ...typeEntries.map(([, n]) => n));
-
-  const hourEntries = Array.from({ length: 24 }, (_, h) => [h, overview.documentsByHour[h] ?? overview.documentsByHour[String(h)] ?? 0] as const);
-  const maxHour = Math.max(1, ...hourEntries.map(([, n]) => n));
-  const adoptionRate =
-    !filtered && overview.userCount > 0
-      ? Math.round((overview.monthlyActiveUsers / overview.userCount) * 1000) / 10
-      : 0;
-  const adRevenueSignal = Math.round((overview.adSummary.clicks || 0) * 120);
-  const trustedScore = Math.min(
-    100,
-    Math.round(
-      45 +
-        adoptionRate * 0.35 +
-        Math.min(25, (overview.documentsTotal / Math.max(1, overview.userCount)) * 5) +
-        Math.min(20, (overview.adSummary.ctrPct || 0) * 10)
-    )
-  );
-  const liveText = lastRefresh ? new Date(lastRefresh).toLocaleTimeString("fr-FR") : "—";
-  const trend = overview.documentsTrendLast14Days ?? [];
-  const maxTrend = Math.max(1, ...trend.map((d) => Number(d.count || 0)));
-
   return (
-    <div className="space-y-8">
-      <section className="rounded-[28px] border border-teal-200/70 bg-gradient-to-br from-[#f4fffd] via-white to-[#eef8f7] p-6 shadow-[0_10px_30px_rgba(15,118,110,0.08)] sm:p-8">
-        <div className="mx-auto max-w-3xl text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal-700">Vue investisseur</p>
-          <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">Synthèse exécutive DocuGestIvoire</h1>
-          <p className="mt-2 text-sm leading-relaxed text-slate-600 sm:text-base">
-            Indicateurs clés pour le board : base utilisateurs, production documentaire, signal monétisation et qualité
-            perçue.
-          </p>
-          <p className="mt-3 text-xs text-slate-500">Dernière mise à jour · {liveText}</p>
+    <div className="space-y-8 animate-in fade-in duration-500">
+      
+      {/* ─── Hero Section Premium ─── */}
+      <div className="relative overflow-hidden rounded-[2.5rem] bg-slate-950 shadow-2xl shadow-slate-200/50 min-h-[350px] flex items-center">
+        {/* Visual Background Pattern */}
+        <div className="absolute inset-0 z-0">
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
+          <div className="absolute inset-0 bg-gradient-to-tr from-slate-950 via-slate-900/60 to-blue-900/20" />
+          {/* Decorative circles */}
+          <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl" />
+          <div className="absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-indigo-500/10 blur-3xl" />
         </div>
 
-        <div className="mx-auto mt-6 max-w-4xl rounded-2xl border border-teal-200/50 bg-white/90 p-4 shadow-sm">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Filtrer les données</p>
-              <p className="mt-1 text-[11px] text-slate-500">Jour / mois / année (UTC) ou plage personnalisée.</p>
+        <div className="relative z-10 w-full px-8 py-12 md:px-16 md:py-16 lg:grid lg:grid-cols-2 lg:gap-12 lg:items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-blue-500/10 px-3.5 py-1.5 text-xs font-black uppercase tracking-widest text-blue-400 ring-1 ring-blue-500/20 backdrop-blur-sm">
+              <span className="flex h-2 w-2 animate-pulse rounded-full bg-blue-500" />
+              Intelligence Documentaire & Analytics
             </div>
-            <p className="text-right text-[11px] font-medium text-teal-800">{periodLabel}</p>
+            
+            <h1 className="mt-8 text-4xl font-black leading-[1.05] text-white md:text-5xl lg:text-6xl tracking-tight">
+              Pilotez l'excellence avec <span className="bg-gradient-to-r from-blue-400 via-indigo-300 to-slate-200 bg-clip-text text-transparent">DocuGest.</span>
+            </h1>
+            
+            <p className="mt-8 max-w-lg text-lg font-medium leading-relaxed text-slate-300/80">
+              Transformez vos flux de documents en données actionnables. Suivez l'activité utilisateur et optimisez vos services digitaux.
+            </p>
           </div>
-          <div className="mt-3 flex flex-wrap gap-2">
+
+          <div className="hidden lg:block relative group">
+            <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-3xl blur opacity-25 group-hover:opacity-40 transition duration-1000"></div>
+            <div className="relative bg-slate-900 border border-white/10 rounded-3xl p-8 shadow-2xl overflow-hidden">
+               <div className="absolute top-0 right-0 p-4">
+                 <svg className="w-12 h-12 text-blue-500/20" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+               </div>
+               <div className="text-sm font-bold text-blue-400 uppercase tracking-widest mb-2">Production Documents</div>
+               <div className="text-4xl font-black text-white mb-6">{overview.documentsTotal.toLocaleString()} total</div>
+               <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden mb-4">
+                 <div className="h-full bg-blue-500 rounded-full w-4/5 animate-pulse"></div>
+               </div>
+               <div className="flex justify-between text-[11px] font-bold text-slate-500">
+                 <span>VOLUME MENSUEL</span>
+                 <span>TENDANCE POSITIVE</span>
+               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Generic KPIs ─── */}
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <KpiCard
+          label="Documents Générés"
+          value={String(overview.documentsTotal)}
+          hint="Total cumulé"
+          accent="teal"
+          icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
+        />
+        <KpiCard
+          label="Utilisateurs Actifs"
+          value={String(overview.monthlyActiveUsers)}
+          hint="Ce mois-ci"
+          accent="emerald"
+          icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>}
+        />
+        <KpiCard
+          label="Nouveaux Inscrits"
+          value={String(overview.userCount)}
+          hint="Base totale"
+          accent="cyan"
+          icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>}
+        />
+      </div>
+
+      {/* ─── Filters & Controls ─── */}
+      <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-xl font-black text-slate-800 tracking-tight">Analyse Temporelle</h2>
+            <p className="text-sm font-medium text-slate-500">Filtrage dynamique des indicateurs clés</p>
+          </div>
+          <div className="flex flex-wrap gap-2.5 bg-slate-50 p-1.5 rounded-2xl ring-1 ring-slate-200/50">
             {(
               [
-                ["all", "Tout"],
-                ["day", "Jour"],
-                ["month", "Mois"],
-                ["year", "Année"],
-                ["custom", "Personnalisé"]
+                ["all", "Synthese Globale"],
+                ["day", "Aujourd'hui"],
+                ["month", "Ce mois"],
+                ["year", "Année"]
               ] as const
             ).map(([key, label]) => (
               <button
@@ -168,356 +157,151 @@ export function AdminDashboard() {
                   }
                 }}
                 className={[
-                  "min-h-[40px] rounded-xl px-3 py-2 text-xs font-semibold ring-1 transition sm:text-sm",
+                  "rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-wider transition-all",
                   periodMode === key
-                    ? "bg-teal-600 text-white ring-teal-500"
-                    : "bg-slate-50 text-slate-700 ring-slate-200 hover:bg-slate-100"
+                    ? "bg-slate-900 text-white shadow-lg"
+                    : "text-slate-500 hover:text-slate-900 hover:bg-white"
                 ].join(" ")}
               >
                 {label}
               </button>
             ))}
           </div>
-          {periodMode === "custom" ? (
-            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-              <label className="flex flex-col text-xs font-medium text-slate-600">
-                Du
-                <input
-                  type="date"
-                  value={customFrom}
-                  onChange={(e) => setCustomFrom(e.target.value)}
-                  className="mt-1 min-h-[44px] rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900"
-                />
-              </label>
-              <label className="flex flex-col text-xs font-medium text-slate-600">
-                Au
-                <input
-                  type="date"
-                  value={customTo}
-                  onChange={(e) => setCustomTo(e.target.value)}
-                  className="mt-1 min-h-[44px] rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900"
-                />
-              </label>
-              <button
-                type="button"
-                onClick={() => void load()}
-                className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-700"
-              >
-                Appliquer
-              </button>
-            </div>
-          ) : null}
-          {err ? <p className="mt-2 text-xs text-rose-600">{err}</p> : null}
-        </div>
-
-        <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <KpiCard
-            label={filtered ? "Nouveaux comptes" : "Utilisateurs"}
-            value={String(overview.userCount)}
-            hint={filtered ? "inscriptions sur la période" : "base totale"}
-            accent="teal"
-          />
-          <KpiCard
-            label={filtered ? "Actifs (documents)" : "Adoption 30j"}
-            value={filtered ? String(overview.monthlyActiveUsers) : `${adoptionRate}%`}
-            hint={filtered ? "ayant créé au moins un doc" : `${overview.monthlyActiveUsers} actifs`}
-            accent="emerald"
-          />
-          <KpiCard
-            label="Documents"
-            value={String(overview.documentsTotal)}
-            hint={filtered ? "créés sur la période" : "volume produit"}
-            accent="cyan"
-          />
-          <KpiCard label="Revenue signal" value={`${adRevenueSignal.toLocaleString("fr-FR")} FCFA`} hint="proxy pub" accent="amber" />
         </div>
       </section>
 
-      {insights ? (
-        <section className="mx-auto max-w-3xl rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50/90 to-white p-5 shadow-sm sm:p-6">
-          <h2 className="text-center text-sm font-semibold text-slate-800">Lecture stratégique</h2>
-          <p className="mt-3 text-center text-sm leading-relaxed text-slate-700">{insights.summary}</p>
-          <ul className="mt-4 space-y-2 text-sm text-slate-700">
-            {insights.recommendations.slice(0, 4).map((r, i) => (
-              <li key={i} className="flex gap-2 border-l-2 border-amber-300/80 pl-3">
-                {r}
-              </li>
+      {/* ─── Documents & Traffic Grid ─── */}
+      <div className="grid gap-8 lg:grid-cols-3">
+        {/* Core Documents Stats */}
+        <section className="lg:col-span-2 rounded-[2.5rem] border border-slate-200 bg-white p-8 shadow-sm">
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-black text-slate-900 tracking-tight">Archives & Documents</h2>
+              <p className="text-sm font-medium text-slate-500">Volume de production DocuGest</p>
+            </div>
+            <div className="text-3xl font-black text-primary">{overview.documentsTotal}</div>
+          </div>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {Object.entries(overview.documentsByType || {}).map(([type, count]) => (
+              <div key={type} className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{type}</div>
+                <div className="text-lg font-black text-slate-800">{count}</div>
+              </div>
             ))}
-          </ul>
-          <p className="mt-4 text-center text-[10px] text-slate-400">
-            {new Date(insights.generatedAt).toLocaleString("fr-FR")} · {insights.model}
+          </div>
+        </section>
+
+        {/* Global Users Stats */}
+        <section className="rounded-[2.5rem] border border-slate-200 bg-white p-8 shadow-sm flex flex-col justify-center text-center">
+          <div className="mb-2 text-4xl font-black text-slate-900">{overview.userCount}</div>
+          <div className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-6">Utilisateurs inscrits</div>
+          <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden mb-4">
+             <div className="h-full bg-primary rounded-full w-2/3"></div>
+          </div>
+          <p className="text-xs text-slate-500 font-medium leading-relaxed">
+            Dont <span className="text-emerald-600 font-bold">{overview.monthlyActiveUsers} actifs</span> ce mois-ci.
           </p>
         </section>
-      ) : null}
+      </div>
 
-      <div className="grid gap-5 xl:grid-cols-[1.6fr_1fr]">
-        <section className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="text-base font-semibold text-slate-800">
-              Évolution documents {filtered ? "(période)" : "(14 jours)"}
+      {/* ─── local AI Insights ─── */}
+      {insights && (
+        <section className="relative overflow-hidden rounded-[2.5rem] border border-amber-200/50 bg-gradient-to-br from-amber-50/50 via-white to-white p-8 shadow-xl shadow-amber-900/5">
+          <div className="absolute top-0 right-0 p-6 opacity-10">
+            <svg className="w-24 h-24 text-amber-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
+          </div>
+          <div className="relative z-10">
+            <h2 className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-amber-600 mb-6">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+              Expert Analysis (Beta)
             </h2>
-            <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-medium text-slate-600">Live</span>
-          </div>
-          {trend.length === 0 ? (
-            <p className="mt-3 text-sm text-slate-500">Pas assez de données.</p>
-          ) : (
-            <div className="mt-4 overflow-x-auto">
-              <svg viewBox="0 0 560 190" className="h-[190px] w-full min-w-[560px]">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <line key={i} x1="10" x2="550" y1={25 + i * 28} y2={25 + i * 28} stroke="#e5e7eb" strokeWidth="1" />
-                ))}
-                <polyline
-                  fill="none"
-                  stroke="#14b8a6"
-                  strokeWidth="4"
-                  points={trend
-                    .map((p, i) => {
-                      const x = (i / Math.max(1, trend.length - 1)) * 540 + 10;
-                      const y = 170 - (Number(p.count || 0) / maxTrend) * 130;
-                      return `${x},${y}`;
-                    })
-                    .join(" ")}
-                />
-                {trend.map((p, i) => {
-                  const x = (i / Math.max(1, trend.length - 1)) * 540 + 10;
-                  const y = 170 - (Number(p.count || 0) / maxTrend) * 130;
-                  return <circle key={p.day} cx={x} cy={y} r="4" fill="#0f766e" />;
-                })}
-              </svg>
-              <div className="mt-2 flex justify-between text-[10px] text-slate-500">
-                <span>{trend[0]?.day ?? "—"}</span>
-                <span>{trend[trend.length - 1]?.day ?? "—"}</span>
-              </div>
-            </div>
-          )}
-        </section>
-
-        <section className="space-y-5">
-          <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-base font-semibold text-slate-800">Activité / qualité</h2>
-            <div className="mt-4 flex items-center gap-4">
-              <div className="relative h-28 w-28 rounded-full bg-[conic-gradient(#0ea5e9_0_38%,#f59e0b_38%_62%,#e5e7eb_62%_100%)] p-3">
-                <div className="flex h-full w-full items-center justify-center rounded-full bg-white text-sm font-bold text-slate-700">
-                  {trustedScore}%
+            <p className="text-xl font-bold leading-relaxed text-slate-900 max-w-2xl mb-8">
+              {insights.summary}
+            </p>
+            <div className="grid gap-4 md:grid-cols-2">
+              {insights.recommendations.slice(0, 4).map((r, i) => (
+                <div key={i} className="flex gap-4 items-start p-4 rounded-2xl bg-white border border-amber-100 shadow-sm">
+                  <span className="shrink-0 flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-[10px] font-black text-amber-600">{i+1}</span>
+                  <p className="text-sm font-medium leading-relaxed text-slate-700">{r}</p>
                 </div>
-              </div>
-              <div className="space-y-1 text-sm text-slate-600">
-                <p>
-                  <span className="font-semibold text-slate-800">Score confiance:</span> {trustedScore}/100
-                </p>
-                <p>
-                  <span className="font-semibold text-slate-800">CTR pub:</span> {overview.adSummary.ctrPct ?? 0}%
-                </p>
-                <p>
-                  <span className="font-semibold text-slate-800">Docs/utilisateur:</span>{" "}
-                  {(overview.documentsTotal / Math.max(1, overview.userCount)).toFixed(1)}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-base font-semibold text-slate-800">Dernières activités</h2>
-            <ul className="mt-3 space-y-2">
-              {overview.recentLogins.slice(0, 4).map((u) => (
-                <li key={u.id} className="flex items-start justify-between gap-2 rounded-xl bg-slate-50 px-3 py-2 text-xs">
-                  <div>
-                    <p className="font-semibold text-slate-700">{u.full_name}</p>
-                    <p className="text-slate-500">{u.email}</p>
-                  </div>
-                  <span className="text-slate-400">{u.last_login ? new Date(u.last_login).toLocaleTimeString("fr-FR") : "—"}</span>
-                </li>
               ))}
-            </ul>
+            </div>
+            <div className="mt-8 pt-6 border-t border-amber-100 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
+               <span>Generated by {insights.model}</span>
+               <span>{new Date(insights.generatedAt).toLocaleDateString("fr-FR")}</span>
+            </div>
           </div>
         </section>
-      </div>
+      )}
 
-      <div className="grid gap-5 xl:grid-cols-3">
-        <section className="rounded-[22px] border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2">
-          <h2 className="text-base font-semibold text-slate-800">Mix produit (documents par type)</h2>
-          <div className="mt-4 space-y-3">
-            {typeEntries.length === 0 ? (
-              <p className="text-sm text-slate-500">Aucune donnée.</p>
-            ) : (
-              typeEntries.map(([type, n]) => (
-                <div key={type}>
-                  <div className="flex justify-between text-sm">
-                    <span className="capitalize text-slate-700">{labelType(type)}</span>
-                    <span className="font-medium">{n}</span>
-                  </div>
-                  <div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      className="h-full rounded-full bg-primary transition-all"
-                      style={{ width: `${(n / maxType) * 100}%` }}
-                    />
+      {/* ─── Bottom Grid: Users & Logins ─── */}
+      <div className="grid gap-8 lg:grid-cols-2">
+        <section className="rounded-[2.5rem] border border-slate-200 bg-white p-8 shadow-sm">
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="text-xl font-black text-slate-900 tracking-tight">Équipe & Accès</h2>
+            <Link to="/admin/users" className="text-xs font-bold text-primary hover:underline">Gérer l'équipe →</Link>
+          </div>
+          <div className="space-y-4">
+            {overview.recentLogins.slice(0, 5).map(u => (
+              <div key={u.id} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100 transition-hover hover:border-slate-300">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-slate-200 flex items-center justify-center font-black text-slate-500">{u.full_name[0]}</div>
+                  <div>
+                    <div className="text-sm font-bold text-slate-900">{u.full_name}</div>
+                    <div className="text-[11px] text-slate-500">{u.email}</div>
                   </div>
                 </div>
-              ))
-            )}
-          </div>
-        </section>
-
-        <section className="rounded-[22px] border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-800">Pays connectés</h2>
-          <div className="mt-3 space-y-2 text-sm">
-            {(overview.topCountriesByLogin ?? []).length === 0 ? (
-              <p className="text-slate-500">Aucune donnée disponible.</p>
-            ) : (
-              (overview.topCountriesByLogin ?? []).slice(0, 6).map((c) => (
-                <div key={c.country} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-                  <span>{c.country}</span>
-                  <span className="font-semibold">{c.count}</span>
+                <div className="text-right">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Dernière activité</div>
+                  <div className="text-[11px] font-medium text-slate-700">{u.last_login ? new Date(u.last_login).toLocaleString() : 'Jamais'}</div>
                 </div>
-              ))
-            )}
-          </div>
-        </section>
-      </div>
-
-      <div className="grid gap-5 xl:grid-cols-2">
-        <section className="rounded-[22px] border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-800">Rythme horaire (UTC)</h2>
-          <div className="mt-4 flex h-36 items-end gap-0.5">
-            {hourEntries.map(([h, n]) => (
-              <div key={h} className="flex flex-1 flex-col items-center justify-end">
-                <div
-                  className="w-full max-w-[10px] rounded-t bg-gradient-to-t from-teal-600 to-cyan-400"
-                  style={{ height: `${Math.max(4, (n / maxHour) * 100)}%` }}
-                  title={`${h}h : ${n}`}
-                />
               </div>
             ))}
           </div>
-          <div className="mt-1 flex justify-between text-[10px] text-slate-400">
-            <span>0h</span>
-            <span>12h</span>
-            <span>23h</span>
-          </div>
         </section>
 
-        <section className="rounded-[22px] border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-800">Saisonnalité hebdomadaire</h2>
-          <div className="mt-4 flex flex-wrap gap-3">
-            {days.map((d, i) => {
-              const n = overview.documentsByWeekday[i] ?? overview.documentsByWeekday[String(i)] ?? 0;
-              const maxD = Math.max(1, ...Object.values(overview.documentsByWeekday).map(Number));
-              return (
-                <div key={d} className="flex flex-col items-center">
-                  <div
-                    className="flex w-10 items-end justify-center rounded-t bg-gradient-to-t from-teal-700 to-emerald-400"
-                    style={{ height: `${Math.max(8, (n / maxD) * 80)}px` }}
-                  />
-                  <span className="mt-1 text-xs text-slate-600">{d}</span>
-                </div>
-              );
-            })}
-          </div>
+        <section className="rounded-[2.5rem] border border-slate-200 bg-white p-8 shadow-sm">
+            <div className="mb-6">
+              <h2 className="text-xl font-black text-slate-900 tracking-tight">Ressources & Documentation</h2>
+              <p className="text-sm font-medium text-slate-500">Accès rapide aux bibliothèques DocuGest</p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-6 rounded-3xl bg-blue-50 border border-blue-100 group hover:bg-blue-100/50 transition-all cursor-pointer">
+                <div className="h-12 w-12 rounded-2xl bg-white flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform">📄</div>
+                <div className="text-sm font-black text-blue-900">Archives Docs</div>
+                <div className="text-[11px] text-blue-700 mt-1">Gérer les factures et reçus archivés.</div>
+              </div>
+              <div className="p-6 rounded-3xl bg-teal-50 border border-teal-100 group hover:bg-teal-100/50 transition-all cursor-pointer">
+                <div className="h-12 w-12 rounded-2xl bg-white flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform">⚙️</div>
+                <div className="text-sm font-black text-teal-900">Config Systéme</div>
+                <div className="text-[11px] text-teal-700 mt-1">Paramétrages globaux et sécurité.</div>
+              </div>
+            </div>
         </section>
       </div>
-
-      <section className="rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/5 to-teal-50/50 p-5 sm:p-6">
-        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-          <div>
-            <h2 className="text-base font-semibold text-slate-900">Équipe & gouvernance</h2>
-            <p className="mt-1 text-sm text-slate-600">
-              Création de comptes, rôles et permissions — centralisé pour éviter d’alourdir cette vue.
-            </p>
-          </div>
-          <Link
-            to="/admin/users"
-            className="inline-flex shrink-0 items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:brightness-95"
-          >
-            Ouvrir Utilisateurs
-          </Link>
-        </div>
-      </section>
-
-      <div className="grid gap-5 xl:grid-cols-2">
-        <section className="rounded-[22px] border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-800">Audience qualifiée</h2>
-          <div className="mt-3 space-y-2 text-sm">
-            <div className="font-medium text-slate-700">Genre</div>
-            {Object.keys(overview.demographics.gender).length === 0 ? (
-              <p className="text-slate-500">Pas encore de données.</p>
-            ) : (
-              Object.entries(overview.demographics.gender).map(([k, v]) => (
-                <div key={k} className="flex justify-between">
-                  <span>{k}</span>
-                  <span>{v}</span>
-                </div>
-              ))
-            )}
-            <div className="mt-3 font-medium text-slate-700">Typologie</div>
-            {Object.keys(overview.demographics.user_typology).length === 0 ? (
-              <p className="text-slate-500">Non renseigné.</p>
-            ) : (
-              Object.entries(overview.demographics.user_typology).map(([k, v]) => (
-                <div key={k} className="flex justify-between">
-                  <span>{k}</span>
-                  <span>{v}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
-
-        <section className="rounded-[22px] border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-800">Performance pub par zone</h2>
-          <div className="mt-3 space-y-2 text-sm">
-            {Object.keys(overview.adSummary.byZone || {}).length === 0 ? (
-              <p className="text-slate-500">Aucun événement enregistré.</p>
-            ) : (
-              Object.entries(overview.adSummary.byZone).map(([zone, z]) => (
-                <div key={zone} className="flex flex-wrap justify-between gap-2 border-b border-slate-100 py-2">
-                  <span className="font-medium">{zone}</span>
-                  <span className="text-slate-600">
-                    vues {z.views ?? 0} · clics {z.clicks ?? 0} · CTR {z.ctrPct ?? 0}%
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
-      </div>
-
     </div>
   );
 }
 
-function KpiCard({
-  label,
-  value,
-  hint,
-  accent
-}: {
-  label: string;
-  value: string;
-  hint: string;
-  accent: "teal" | "emerald" | "cyan" | "amber";
-}) {
-  const accentMap: Record<string, string> = {
-    teal: "from-teal-50 to-teal-100 text-teal-800",
-    emerald: "from-emerald-50 to-emerald-100 text-emerald-800",
-    cyan: "from-cyan-50 to-cyan-100 text-cyan-800",
-    amber: "from-amber-50 to-amber-100 text-amber-800"
+function KpiCard({ label, value, hint, accent, icon }: { label: string; value: string; hint: string; accent: "emerald" | "amber" | "teal" | "cyan"; icon: React.ReactNode }) {
+  const styles = {
+    emerald: "bg-emerald-50 text-emerald-700 border-emerald-100 ring-emerald-500/10 shadow-emerald-900/5",
+    amber: "bg-amber-50 text-amber-700 border-amber-100 ring-amber-500/10 shadow-amber-900/5",
+    teal: "bg-teal-50 text-teal-700 border-teal-100 ring-teal-500/10 shadow-teal-900/5",
+    cyan: "bg-cyan-50 text-cyan-700 border-cyan-100 ring-cyan-500/10 shadow-cyan-900/5"
   };
 
   return (
-    <div className={`rounded-2xl border border-slate-200 bg-gradient-to-br p-4 shadow-sm ${accentMap[accent]}`}>
-      <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{label}</div>
-      <div className="mt-1 text-2xl font-extrabold">{value}</div>
-      <div className="mt-1 text-xs text-slate-600">{hint}</div>
+    <div className={`p-6 rounded-[2rem] border bg-white shadow-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${styles[accent]}`}>
+      <div className="flex items-center justify-between mb-4">
+        <div className="p-2.5 rounded-2xl bg-white border border-inherit shadow-sm">
+          {icon}
+        </div>
+        <div className="text-[10px] font-black uppercase tracking-widest opacity-80">{hint}</div>
+      </div>
+      <div className="text-[11px] font-bold uppercase tracking-widest opacity-60 mb-1">{label}</div>
+      <div className="text-2xl font-black tracking-tight leading-none">{value}</div>
     </div>
   );
-}
-
-function labelType(t: string) {
-  const m: Record<string, string> = {
-    invoice: "Factures",
-    proforma: "Proforma",
-    devis: "Devis",
-    payslip: "Bulletins de salaire"
-  };
-  return m[t] ?? t;
 }

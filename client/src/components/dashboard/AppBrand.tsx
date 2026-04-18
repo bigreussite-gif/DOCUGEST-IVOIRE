@@ -14,7 +14,7 @@ export function AppBrand({ compact, className = "" }: Props) {
     <Link
       to="/dashboard"
       className={`flex shrink-0 items-center gap-2.5 transition-opacity hover:opacity-95 ${className}`}
-      aria-label="DocuGestIvoire — Tableau de bord"
+      aria-label="DocuGest — Tableau de bord"
     >
       {!imgErr ? (
         <span
@@ -25,7 +25,7 @@ export function AppBrand({ compact, className = "" }: Props) {
           }
         >
           <img
-            src="/logo-docugest-ivoire.png"
+            src="/logo-docugest.png"
             alt=""
             width={compact ? 48 : 56}
             height={compact ? 48 : 56}
@@ -48,7 +48,7 @@ export function AppBrand({ compact, className = "" }: Props) {
       )}
       {!compact ? (
         <span className="hidden font-semibold tracking-tight text-text sm:inline sm:max-w-[160px] sm:truncate md:max-w-none">
-          DocuGestIvoire
+          DocuGest
         </span>
       ) : null}
     </Link>
