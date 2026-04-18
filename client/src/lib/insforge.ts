@@ -13,8 +13,8 @@ if (!baseUrl || !anonKey) {
 }
 
 export const insforge = createClient({
-  baseUrl: baseUrl || "https://bzna2rx5.eu-central.insforge.app",
-  anonKey: anonKey || "ik_bde2c73e789f5234a01bd842ad7bb3fa",
+  baseUrl: baseUrl || "https://zx2bx4r6.eu-central.insforge.app",
+  anonKey: anonKey || "ik_103b0ea9ee5971ba5ad3fd789e7cfb74",
 });
 
 /**
