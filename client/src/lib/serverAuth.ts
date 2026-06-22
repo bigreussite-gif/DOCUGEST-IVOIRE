@@ -36,7 +36,7 @@ async function decodeSessionToken(token: string): Promise<SessionAuth | null> {
     }
 
     // Endpoint standard InsForge pour verifier le token actuel
-    const checkUrl = `${baseUrl.replace(/\/$/, "")}/api/auth/me`;
+    const checkUrl = `${baseUrl.replace(/\/$/, "")}/api/auth/sessions/current`;
     
     const res = await fetch(checkUrl, {
       method: "GET",

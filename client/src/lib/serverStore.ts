@@ -1158,11 +1158,13 @@ export async function deleteBlogPost(id: string): Promise<void> {
 
 export async function getContacts(type?: string) {
   const pool = getPool();
-  const query = type 
-    ? { text: "SELECT * FROM public.contacts WHERE type = $1 ORDER BY full_name ASC", values: [type] }
-    : { text: "SELECT * FROM public.contacts ORDER BY full_name ASC" };
-  const { rows } = await pool.query(query);
-  return rows;
+  if (type) {
+    const { rows } = await pool.query("SELECT * FROM public.contacts WHERE type = $1 ORDER BY full_name ASC", [type]);
+    return rows;
+  } else {
+    const { rows } = await pool.query("SELECT * FROM public.contacts ORDER BY full_name ASC");
+    return rows;
+  }
 }
 
 export async function createContact(data: { full_name: string; phone?: string; whatsapp?: string; email?: string; type?: string }) {
@@ -1266,11 +1268,13 @@ export async function recordEclosion(data: { couvaison_id: string; poussins_vif:
 
 export async function getProducts(category?: string) {
   const pool = getPool();
-  const query = category 
-    ? { text: "SELECT * FROM public.products WHERE category = $1 ORDER BY name ASC", values: [category] }
-    : { text: "SELECT * FROM public.products ORDER BY name ASC" };
-  const { rows } = await pool.query(query);
-  return rows;
+  if (category) {
+    const { rows } = await pool.query("SELECT * FROM public.products WHERE category = $1 ORDER BY name ASC", [category]);
+    return rows;
+  } else {
+    const { rows } = await pool.query("SELECT * FROM public.products ORDER BY name ASC");
+    return rows;
+  }
 }
 
 export async function createProduct(data: any) {

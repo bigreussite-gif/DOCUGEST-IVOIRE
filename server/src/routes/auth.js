@@ -70,8 +70,30 @@ router.post("/login", async (req, res) => {
 // GET /api/auth/me
 router.get("/me", requireAuth, async (req, res) => {
   const userId = req.auth.sub;
-  const me = await store.getMe(userId);
+  
+  let me = await store.getMe(userId);
+  
+  // Si l'utilisateur est dans auth.users (token valide) mais absent de public.users (créé avant le trigger)
+  if (!me && req.auth.email) {
+    try {
+      await store.createUser({
+        full_name: req.auth.email.split("@")[0],
+        email: req.auth.email,
+        password_hash: "migrated_from_auth",
+      });
+      // Force update of the ID to match auth.users (since createUser generates a new UUID if not provided)
+      await store.pool.query("UPDATE public.users SET id = $1 WHERE email = $2", [userId, req.auth.email]);
+      me = await store.getMe(userId);
+    } catch (e) {
+      console.error("Erreur lors de la synchro manuelle de l'utilisateur", e);
+    }
+  }
+
   if (!me) return res.status(404).json({ message: "Utilisateur introuvable" });
+
+  await store.ensureBootstrapAdmin(userId);
+  me = await store.getMe(userId); // Re-fetch in case role was updated to super_admin
+
   return res.json(me);
 });
 
