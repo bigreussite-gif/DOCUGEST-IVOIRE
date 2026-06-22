@@ -32,7 +32,7 @@ export async function GET(req: Request) {
     const token = req.headers.get("authorization")?.slice(7);
     if (token) {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_INSFORGE_URL;
+        const baseUrl = process.env.NEXT_PUBLIC_INSFORGE_URL || process.env.INSFORGE_URL || "https://d5rjfctn.us-east.database.insforge.app";
         const res = await fetch(`${baseUrl}/api/auth/sessions/current`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
@@ -63,6 +63,14 @@ export async function GET(req: Request) {
   }
 
   if (!me) return NextResponse.json({ message: "Utilisateur introuvable" }, { status: 404 });
+
+  try {
+    await store.ensureBootstrapAdmin(auth.sub);
+    me = await store.getMe(auth.sub);
+  } catch (err) {
+    console.error("[api/auth/me] error running bootstrap admin", err);
+  }
+
   return NextResponse.json(me);
 }
 

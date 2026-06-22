@@ -29,7 +29,7 @@ async function decodeSessionToken(token: string): Promise<SessionAuth | null> {
     }
 
     // 2. Vérification via InsForge API
-    const baseUrl = process.env.NEXT_PUBLIC_INSFORGE_URL || process.env.INSFORGE_URL || process.env.APP_URL;
+    const baseUrl = process.env.NEXT_PUBLIC_INSFORGE_URL || process.env.INSFORGE_URL || "https://d5rjfctn.us-east.database.insforge.app";
     if (!baseUrl) {
       console.warn("[serverAuth] baseUrl manquant pour verification");
       return null;
