@@ -25,7 +25,7 @@ export function AppBrand({ compact, className = "" }: Props) {
           }
         >
           <img
-            src="/logo-docugest.png"
+            src="/logo-docugest-ivoire.png"
             alt=""
             width={compact ? 48 : 56}
             height={compact ? 48 : 56}
