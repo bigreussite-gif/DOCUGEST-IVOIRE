@@ -3,6 +3,7 @@ import { apiFetch, type ApiError } from "../lib/api";
 import { networkFetch, isNetworkFailure, getHttpStatusFromError } from "../lib/apiNetwork";
 import { flushSyncQueue } from "../lib/offline/sync";
 import { AD_SLOTS_LS_KEY } from "./adSlotsStore";
+import { insforge } from "../lib/insforge";
 
 const USER_CACHE_KEY = "docugest_user_cache";
 
@@ -101,6 +102,13 @@ export const useAuthStore = create<AuthState>((set) => ({
   error: null,
 
   loadMe: async () => {
+    // Synchroniser le token InsForge (après une redirection Google OAuth)
+    const { data } = await insforge.auth.getSession();
+    const session = data?.session;
+    if (session?.accessToken) {
+      localStorage.setItem("docugest_token", session.accessToken);
+    }
+
     const token = localStorage.getItem("docugest_token");
     if (!token) {
       set({ user: null, loading: false });
