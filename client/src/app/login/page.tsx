@@ -60,9 +60,7 @@ export default function LoginPage() {
     try {
       const { error: sdkError } = await insforge.auth.signInWithOAuth({
         provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/dashboard`
-        }
+        redirectTo: `${window.location.origin}/dashboard`
       });
       if (sdkError) setError(sdkError.message);
     } catch (err) {

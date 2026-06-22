@@ -71,9 +71,7 @@ export default function Landing() {
     try {
       await insforge.auth.signInWithOAuth({
         provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/dashboard`
-        }
+        redirectTo: `${window.location.origin}/dashboard`
       });
     } catch (err) {
       console.error("[google auth]", err);
